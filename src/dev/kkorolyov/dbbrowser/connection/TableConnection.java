@@ -1,6 +1,7 @@
-package dev.kkorolyov.jdbmanager.connection;
+package dev.kkorolyov.dbbrowser.connection;
 
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
 /**
@@ -27,12 +28,17 @@ public interface TableConnection {
 	 * @return results from statement execution
 	 * @throws SQLException
 	 */
-	ResultSet execute(String baseStatement, Object... parameters) throws SQLException;
+	ResultSet execute(String baseStatement, Object[] parameters) throws SQLException;
 	
 	/**
 	 * Closes all open statements.
 	 */
 	void flush();
+	
+	/**
+	 * @return table metadata
+	 */
+	ResultSetMetaData getMetaData();
 	
 	/**
 	 * @return name of this table
@@ -44,7 +50,7 @@ public interface TableConnection {
 	String getDBName();
 	
 	/**
-	 * @return names of all columns
+	 * @return names of all table columns
 	 */
 	String[] getColumnNames();
 	

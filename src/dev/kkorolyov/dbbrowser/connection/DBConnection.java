@@ -1,12 +1,22 @@
-package dev.kkorolyov.jdbmanager.connection;
+package dev.kkorolyov.dbbrowser.connection;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import dev.kkorolyov.dbbrowser.exceptions.DuplicateTableException;
+import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
 
 /**
  * Opens a connection to a single database and allows for SQL statement execution.
  */
 public interface DBConnection {
+	
+	/**
+	 * Connects to a table on this database, if it exists.
+	 * @param table name of table to connect to
+	 * @return connection to the table, if it exists, {@code null} if otherwise
+	 */
+	TableConnection connect(String table);
 	
 	/**
 	 * Closes the connection and releases all resources.
@@ -27,7 +37,7 @@ public interface DBConnection {
 	 * @return results from statement execution
 	 * @throws SQLException if attempting to execute an invalid statement
 	 */
-	ResultSet execute(String baseStatement, Object... parameters) throws SQLException;
+	ResultSet execute(String baseStatement, Object[] parameters) throws SQLException;
 	
 	/**
 	 * Closes all opened statements.
@@ -35,8 +45,20 @@ public interface DBConnection {
 	void flush();
 	
 	/**
+	 * Creates a table with the specifed name and columns.
+	 * @param table new table name
+	 * @param columns new table columns (name and type)
+	 */
+	void createTable(String table, Column[] columns) throws DuplicateTableException;
+	/**
+	 * Drops a table from the database.
+	 * @param table name of table to drop
+	 */
+	void dropTable(String table) throws NullTableException;
+	
+	/**
 	 * @param table name of table to search for
-	 * @return {@code true} if this database contains a table of the specified name, {@code false} if otherwise 
+	 * @return {@code true} if this database contains a table of the specified name (ignoring case), {@code false} if otherwise 
 	 */
 	boolean containsTable(String table);
 	
