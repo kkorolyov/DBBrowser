@@ -1,6 +1,8 @@
 package dev.kkorolyov.dbbrowser.connection.concrete;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,8 +11,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import dev.kkorolyov.dbbrowser.connection.PGColumn;
 import dev.kkorolyov.dbbrowser.connection.DBConnection;
-import dev.kkorolyov.dbbrowser.connection.concrete.SimpleDBConnection;
+import dev.kkorolyov.dbbrowser.exceptions.DuplicateTableException;
+import dev.kkorolyov.dbbrowser.exceptions.NullParameterException;
+import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
 
 public class SimpleDBConnectionTest {
 	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB", TEST_TABLE = "TEST_TABLE";
@@ -36,7 +41,7 @@ public class SimpleDBConnectionTest {
 	}
 	
 	@Test
-	public void testClose() {
+	public void testClose() throws SQLException {
 		try {
 			conn.execute(VALIDITY_STATEMENT);
 		} catch (SQLException e) {
@@ -47,26 +52,48 @@ public class SimpleDBConnectionTest {
 		
 		try {
 			conn.execute(VALIDITY_STATEMENT);
-		} catch (NullPointerException | SQLException e) {
+		} catch (NullPointerException e) {	// Should not be able to hit SQLException if resource access nullified
 			return;
 		}
-		fail("Statement execution failed to fail");
+		fail("Resources failed to nullify");
 	}
 
 	@Test
 	public void testExecute() throws SQLException {
-		String testString = "SELECT";
-		conn.execute(testString);
+		String testString = "SELECT * FROM " + TEST_TABLE;
+		ResultSet rs = conn.execute(testString);
+		rs.next();	// Move to row 1
+		
+		assertEquals(TEST_INT_VAL, rs.getInt(TEST_INT_COL_NUM));
+		assertEquals(TEST_STRING_VAL, rs.getString(TEST_STRING_COL_NUM));
+		assertEquals(TEST_BOOLEAN_VAL, rs.getBoolean(TEST_BOOLEAN_COL_NUM));
 	}
 	@Test
 	public void testExecuteParams() throws SQLException {
 		String testString = "SELECT * FROM " + TEST_TABLE + " WHERE " + TEST_INT_COL_NAME + " = ? AND " + TEST_STRING_COL_NAME + " = ? AND " + TEST_BOOLEAN_COL_NAME + " = ?";
 		ResultSet rs = conn.execute(testString, new Object[]{TEST_INT_VAL, TEST_STRING_VAL, TEST_BOOLEAN_VAL});
-		rs.next();	// Move to row 1;
+		rs.next();	// Move to row 1
 		
 		assertEquals(TEST_INT_VAL, rs.getInt(TEST_INT_COL_NUM));
 		assertEquals(TEST_STRING_VAL, rs.getString(TEST_STRING_COL_NUM));
 		assertEquals(TEST_BOOLEAN_VAL, rs.getBoolean(TEST_BOOLEAN_COL_NUM));
+	}
+	
+	@Test
+	public void testCreateTable() throws DuplicateTableException, NullParameterException, NullTableException {
+		String testTable = "TEST_TABLE_CREATE";
+		
+		PGColumn.Type[] typeValues = PGColumn.Type.values();
+		PGColumn[] testColumns = new PGColumn[typeValues.length];	// Test all column types
+		for (int i = 0; i < testColumns.length; i++) {
+			testColumns[i] = new PGColumn("TEST_COLUMN_" + i, typeValues[i]);
+		}
+		
+		assertTrue(!conn.containsTable(testTable));	// Null test
+		conn.createTable(testTable, testColumns);
+		assertTrue(conn.containsTable(testTable));
+		
+		conn.dropTable(testTable);	// Cleanup
 	}
 	
 	@Test

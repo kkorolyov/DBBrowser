@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import dev.kkorolyov.dbbrowser.exceptions.DuplicateTableException;
+import dev.kkorolyov.dbbrowser.exceptions.NullParameterException;
 import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
 
 /**
@@ -20,6 +21,7 @@ public interface DBConnection {
 	
 	/**
 	 * Closes the connection and releases all resources.
+	 * Has no effect if called on a closed connection.
 	 */
 	void close();
 	
@@ -49,7 +51,7 @@ public interface DBConnection {
 	 * @param table new table name
 	 * @param columns new table columns (name and type)
 	 */
-	void createTable(String table, Column[] columns) throws DuplicateTableException;
+	void createTable(String table, PGColumn[] columns) throws DuplicateTableException, NullParameterException;
 	/**
 	 * Drops a table from the database.
 	 * @param table name of table to drop

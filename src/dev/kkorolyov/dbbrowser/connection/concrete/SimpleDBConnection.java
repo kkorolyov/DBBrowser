@@ -4,10 +4,11 @@ import java.util.LinkedList;
 import java.util.List;
 
 import dev.kkorolyov.dbbrowser.browser.DBLogger;
-import dev.kkorolyov.dbbrowser.connection.Column;
+import dev.kkorolyov.dbbrowser.connection.PGColumn;
 import dev.kkorolyov.dbbrowser.connection.DBConnection;
 import dev.kkorolyov.dbbrowser.connection.TableConnection;
 import dev.kkorolyov.dbbrowser.exceptions.DuplicateTableException;
+import dev.kkorolyov.dbbrowser.exceptions.NullParameterException;
 import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
 import dev.kkorolyov.dbbrowser.strings.Strings;
 
@@ -20,13 +21,6 @@ public class SimpleDBConnection implements DBConnection {
 
 	private static final String jdbcDriverClassName = "org.postgresql.Driver";
 	private static final String jdbcHeader = "jdbc:postgresql:";
-	
-	private static final String booleanString = "boolean";
-	private static final String charString = "char";
-	private static final String doubleString = "double";
-	private static final String floatString = "float";
-	private static final String integerString = "integer";
-	private static final String varcharString = "varchar";
 		
 	private String URL, DB;
 	private Connection conn;
@@ -125,9 +119,11 @@ public class SimpleDBConnection implements DBConnection {
 	}
 	
 	@Override
-	public void createTable(String table, Column[] columns) throws DuplicateTableException {
+	public void createTable(String table, PGColumn[] columns) throws DuplicateTableException, NullParameterException {
 		if (containsTable(table))
 			throw new DuplicateTableException(DB, table);
+		if (table == null || (columns == null || columns.length <= 0))
+			throw new NullParameterException(new String[]{"table", "columns"});
 		
 		try {
 			execute(buildCreateTableStatement(table, columns));
@@ -135,33 +131,12 @@ public class SimpleDBConnection implements DBConnection {
 			log.exceptionSevere(e);
 		}
 	}
-	private String buildCreateTableStatement(String table, Column[] columns) {
+	private String buildCreateTableStatement(String table, PGColumn[] columns) {
 		String createTableStatement = "CREATE TABLE " + table + " (";
-		for (Column column : columns) {
-			createTableStatement += "\"" + column.getName() + "\" ";	// Set column name TODO verify \" works
-			
-			switch (column.getType()) {	// Set column type
-			case (Column.BOOLEAN):
-				createTableStatement += booleanString;
-				break;
-			case (Column.CHAR):
-				createTableStatement += charString;
-				break;
-			case (Column.DOUBLE):
-				createTableStatement += doubleString;
-				break;
-			case (Column.FLOAT):
-				createTableStatement += floatString;
-				break;
-			case (Column.INTEGER):
-				createTableStatement += integerString;
-				break;
-			case (Column.VARCHAR):
-				createTableStatement += varcharString;
-				break;
-			}
+		for (int i = 0; i < columns.length - 1; i++) {	// Build all but last column names + types
+			createTableStatement += columns[i].getName()+ " " + columns[i].getTypeName() + ", ";
 		}
-		createTableStatement += ")";	// End columns
+		createTableStatement += columns[columns.length - 1].getName() + " " + columns[columns.length - 1].getTypeName() + ")";	// End columns
 		return createTableStatement;
 	}
 	
