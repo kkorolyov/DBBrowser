@@ -8,6 +8,7 @@ import java.util.List;
 
 import dev.kkorolyov.dbbrowser.browser.DBLogger;
 import dev.kkorolyov.dbbrowser.connection.DBConnection;
+import dev.kkorolyov.dbbrowser.connection.PGColumn;
 import dev.kkorolyov.dbbrowser.connection.TableConnection;
 import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
 
@@ -32,14 +33,11 @@ public class SimpleTableConnection implements TableConnection {
 	 * @throws NullTableException if such a table does not exist on the specified database
 	 */
 	public SimpleTableConnection(DBConnection conn, String tableName) throws NullTableException {		
-		if (!isValidTableName(conn, tableName))
+		if (!conn.containsTable(tableName))
 			throw new NullTableException(conn.getDBName(), tableName);
 		
 		this.conn = conn;
 		this.tableName = tableName;
-	}
-	private boolean isValidTableName(DBConnection conn, String tableName) {
-		return conn.containsTable(tableName);
 	}
 	
 	@Override
@@ -53,12 +51,52 @@ public class SimpleTableConnection implements TableConnection {
 	}
 	
 	@Override
-	public ResultSet execute(String statement) throws SQLException {
-		return conn.execute(statement);
+	public ResultSet select(String[] columns) throws SQLException {
+		return select(columns, null);
 	}
 	@Override
-	public ResultSet execute(String baseStatement, Object[] parameters) throws SQLException {
-		return conn.execute(baseStatement, parameters);
+	public ResultSet select(String[] columns, PGColumn[] criteria) throws SQLException {
+		String selectStatement = "SELECT ";	// Initial select statement
+		Object[] selectParameters = null;	// Parameters to use in execute call
+
+		selectStatement += buildSelectColumns(columns);	// Add columns to statement
+		
+		selectStatement += " FROM " + tableName;	// Add table to statement
+
+		if (criteria != null && criteria.length > 0) {
+			selectStatement += " " + buildSelectCriteriaMarkers(criteria);	// Add criteria to statement
+			
+			selectParameters = new Object[criteria.length];
+			for (int i = 0; i < selectParameters.length; i++) {
+				selectParameters[i] = criteria[i].getValue();	// Build parameters to use in execute call
+			}
+		}
+		
+		return conn.execute(selectStatement, selectParameters);
+	}
+	private String buildSelectColumns(String[] columns) {
+		String selectColumns = "";
+		String wildcard = "*";
+		
+		if (columns[0].equals(wildcard))
+			return wildcard;
+		
+		for (int i = 0; i < columns.length - 1; i++)
+			selectColumns += columns[i] + ", ";
+		selectColumns += columns[columns.length - 1];	// Add final column without a ", "
+		
+		return selectColumns;
+	}
+	private String buildSelectCriteriaMarkers(PGColumn[] criteria) {
+		String selectCriteria = "WHERE ";
+		
+		selectCriteria += criteria[0].getName() + "=?";	// Mark for a PreparedStatement to set values later
+		if (criteria.length > 1) {
+			for (int i = 1; i < criteria.length; i++) {
+				selectCriteria += " AND " + criteria[i].getName() + "=?";	// Mark
+			}
+		}
+		return selectCriteria;
 	}
 	
 	@Override
@@ -87,7 +125,7 @@ public class SimpleTableConnection implements TableConnection {
 	}
 	
 	@Override
-	public String[] getColumnNames() {
+	public PGColumn[] getColumns() {	// TODO Reorganize into try
 		ResultSetMetaData rsmd = getMetaData();
 		int columnCount = 0;
 		try {
@@ -95,16 +133,39 @@ public class SimpleTableConnection implements TableConnection {
 		} catch (SQLException e) {
 			log.exceptionSevere(e);
 		}
-		String[] columnNames = new String[columnCount];
+		PGColumn[] columns = new PGColumn[columnCount];
 		
-		for (int i = 0; i < columnNames.length; i++) {	// Build column names
+		for (int i = 0; i < columns.length; i++) {	// Build columns
 			try {
-				columnNames[i] = rsmd.getColumnName(i + 1);	// RSMD column names start from 1
+				String columnName = rsmd.getColumnName(i + 1);	// RSMD column names start from 1
+				PGColumn.Type columnType = null;
+				
+				switch (rsmd.getColumnType(i + 1)) {	// Set correct column type
+				case (java.sql.Types.BOOLEAN):
+					columnType = PGColumn.Type.BOOLEAN;
+					break;
+				case (java.sql.Types.CHAR):
+					columnType = PGColumn.Type.CHAR;
+					break;
+				case (java.sql.Types.DOUBLE):
+					columnType = PGColumn.Type.DOUBLE;
+					break;
+				case (java.sql.Types.INTEGER):
+					columnType = PGColumn.Type.INTEGER;
+					break;
+				case (java.sql.Types.REAL):
+					columnType = PGColumn.Type.REAL;
+					break;
+				case (java.sql.Types.VARCHAR):
+					columnType = PGColumn.Type.VARCHAR;
+					break;
+				}
+				columns[i] = new PGColumn(columnName, columnType);
 			} catch (SQLException e) {
 				log.exceptionSevere(e);
 			}
 		}
-		return columnNames;
+		return columns;
 	}
 	
 	@Override

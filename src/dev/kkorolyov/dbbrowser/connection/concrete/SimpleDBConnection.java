@@ -87,14 +87,20 @@ public class SimpleDBConnection implements DBConnection {
 		PreparedStatement s = conn.prepareStatement(baseStatement);
 		openStatements.add(s);	// Add to flushable list
 		
-		if (parameters != null) {
+		if (parameters != null && parameters.length > 0) {
 			for (int i = 0; i < parameters.length; i++) {	// Prepare with appropriate types
-				if (parameters[i] instanceof String)
-					s.setString(i + 1, (String) parameters[i]);
+				if (parameters[i] instanceof Boolean)
+					s.setBoolean(i + 1, (boolean) parameters[i]);
+				else if (parameters[i] instanceof Character)
+					s.setString(i + 1, String.valueOf((char) parameters[i]));
+				else if (parameters[i] instanceof Double)
+					s.setDouble(i + 1, (double) parameters[i]);
+				else if (parameters[i] instanceof Float)
+					s.setFloat(i + 1, (float) parameters[i]);
 				else if (parameters[i] instanceof Integer)
 					s.setInt(i + 1, (int) parameters[i]);
-				else if (parameters[i] instanceof Boolean)
-					s.setBoolean(i + 1, (boolean) parameters[i]);
+				else if (parameters[i] instanceof String)
+					s.setString(i + 1, (String) parameters[i]);
 			}
 		}
 		ResultSet rs = s.execute() ? s.getResultSet() : null;	// ResultSet if returns one, null if otherwise

@@ -15,20 +15,27 @@ public interface TableConnection {
 	void close();
 	
 	/**
-	 * Executes a complete SQL statement.
-	 * @param statement statement to execute
-	 * @return results from statement execution
-	 * @throws SQLException
+	 * Executes a SELECT statement on the table.
+	 * @param columns column(s) to return; if {@code columns[0]} = "*", will return all columns
+	 * @return results meeting the specified columns
+	 * @throws SQLException if specified parameters result in an invalid statement
 	 */
-	ResultSet execute(String statement) throws SQLException;
+	ResultSet select(String[] columns) throws SQLException;
 	/**
-	 * Executes a partial SQL statement with parameters declared separately.
-	 * @param baseStatement statement without parameters, with {@code ?} denoting an area where a parameter should be substituted in
-	 * @param parameters parameters to use, will be substituted into the base statement in the order of appearance
-	 * @return results from statement execution
+	 * Executes a SELECT statement with additional criteria on the table.
+	 * @param columns column(s) to return; if {@code columns[0]} = '*', will return all columns
+	 * @param criteria specified as columns with certain values
+	 * @return results meeting the specified columns and criteria
+	 * @throws SQLException if specified parameters result in an invalid statement
+	 */
+	ResultSet select(String[] columns, PGColumn[] criteria) throws SQLException;
+	
+	/**
+	 * Inserts a row into the table.
+	 * @param values column values in order of column appearance
 	 * @throws SQLException
 	 */
-	ResultSet execute(String baseStatement, Object[] parameters) throws SQLException;
+	void insert(Object[] values) throws SQLException;
 	
 	/**
 	 * Closes all open statements.
@@ -50,9 +57,9 @@ public interface TableConnection {
 	String getDBName();
 	
 	/**
-	 * @return names of all table columns
+	 * @return all table columns
 	 */
-	String[] getColumnNames();
+	PGColumn[] getColumns();
 	
 	/**
 	 * @return total number of columns in this table

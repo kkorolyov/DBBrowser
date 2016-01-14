@@ -8,6 +8,7 @@ package dev.kkorolyov.dbbrowser.connection;
 public class PGColumn {	
 	private String name;
 	private Type type;
+	private Object value;
 	
 	/**
 	 * Creates a column of the specified name and type.
@@ -31,6 +32,7 @@ public class PGColumn {
 	public String getName() {
 		return name;
 	}
+	
 	/** @return column type code from {@code java.sql.Types} */
 	public int getType() {
 		return type.typeCode;
@@ -38,6 +40,20 @@ public class PGColumn {
 	/** @return column type common name */
 	public String getTypeName() {
 		return type.typeName;
+	}
+	
+	/** @return column value */
+	public Object getValue() {
+		return value;
+	}
+	
+	/**
+	 * Sets the column's value.
+	 * Necessary in order to use this column as a criterion in a SELECT statement.
+	 * @param value
+	 */
+	public void setValue(Object value) {
+		this.value = value;
 	}
 	
 	/**

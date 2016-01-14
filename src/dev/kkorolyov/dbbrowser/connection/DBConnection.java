@@ -34,7 +34,7 @@ public interface DBConnection {
 	/**
 	 * Executes a partial SQL statement with parameters declared separately.
 	 * @param baseStatement statement without parameters, with {@code ?} denoting an area where a parameter should be substituted in
-	 * @param parameters parameters to use, will be substituted into the base statement in the order of appearance
+	 * @param parameters parameters to use, will be substituted into the base statement in the order of appearance, if {@code null}, will not use parameters
 	 * @return results from statement execution, or {@code null} if the statement does not return results
 	 * @throws SQLException if attempting to execute an invalid statement
 	 */
