@@ -11,10 +11,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import dev.kkorolyov.dbbrowser.connection.PGColumn;
 import dev.kkorolyov.dbbrowser.connection.DBConnection;
+import dev.kkorolyov.dbbrowser.connection.PGColumn;
 import dev.kkorolyov.dbbrowser.exceptions.DuplicateTableException;
-import dev.kkorolyov.dbbrowser.exceptions.NullParameterException;
 import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
 
 public class SimpleDBConnectionTest {
@@ -80,8 +79,11 @@ public class SimpleDBConnectionTest {
 	}
 	
 	@Test
-	public void testCreateTable() throws DuplicateTableException, NullParameterException, NullTableException {
+	public void testCreateTable() throws DuplicateTableException, NullTableException, SQLException {
 		String testTable = "TEST_TABLE_CREATE";
+		
+		if (conn.containsTable(testTable))	// Clear stale test table from a previous run, if exists
+			conn.dropTable(testTable);
 		
 		PGColumn.Type[] typeValues = PGColumn.Type.values();
 		PGColumn[] testColumns = new PGColumn[typeValues.length];	// Test all column types
@@ -89,11 +91,24 @@ public class SimpleDBConnectionTest {
 			testColumns[i] = new PGColumn("TEST_COLUMN_" + i, typeValues[i]);
 		}
 		
-		assertTrue(!conn.containsTable(testTable));	// Null test
+		assertTrue(!conn.containsTable(testTable));
 		conn.createTable(testTable, testColumns);
 		assertTrue(conn.containsTable(testTable));
 		
 		conn.dropTable(testTable);	// Cleanup
+	}
+	@Test
+	public void testDropTable() throws DuplicateTableException, NullTableException, SQLException {
+		String testTable = "TEST_TABLE_DROP";
+		
+		if (conn.containsTable(testTable))	// Clear stale test table from a previous run, if exists
+			conn.dropTable(testTable);
+		
+		conn.createTable(testTable, new PGColumn[]{new PGColumn("TEST_COLUMN", PGColumn.Type.BOOLEAN)});
+		
+		assertTrue(conn.containsTable(testTable));
+		conn.dropTable(testTable);
+		assertTrue(!conn.containsTable(testTable));
 	}
 	
 	@Test
@@ -103,7 +118,7 @@ public class SimpleDBConnectionTest {
 	}
 	
 	@Test
-	public void testGetTables() {
+	public void testGetTables() {	// TODO Better assertion
 		String[] testTables = conn.getTables();
 		assertEquals(1, testTables.length);
 		assertTrue(TEST_TABLE.equalsIgnoreCase(testTables[0]));

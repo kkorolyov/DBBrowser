@@ -4,7 +4,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import dev.kkorolyov.dbbrowser.exceptions.DuplicateTableException;
-import dev.kkorolyov.dbbrowser.exceptions.NullParameterException;
 import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
 
 /**
@@ -28,7 +27,7 @@ public interface DBConnection {
 	/**
 	 * Executes a complete SQL statement.
 	 * @param statement statement to execute
-	 * @return results from statement execution
+	 * @return results from statement execution, or {@code null} if the statement does not return results
 	 * @throws SQLException if attempting to execute an invalid statement
 	 */
 	ResultSet execute(String statement) throws SQLException;
@@ -36,7 +35,7 @@ public interface DBConnection {
 	 * Executes a partial SQL statement with parameters declared separately.
 	 * @param baseStatement statement without parameters, with {@code ?} denoting an area where a parameter should be substituted in
 	 * @param parameters parameters to use, will be substituted into the base statement in the order of appearance
-	 * @return results from statement execution
+	 * @return results from statement execution, or {@code null} if the statement does not return results
 	 * @throws SQLException if attempting to execute an invalid statement
 	 */
 	ResultSet execute(String baseStatement, Object[] parameters) throws SQLException;
@@ -48,15 +47,19 @@ public interface DBConnection {
 	
 	/**
 	 * Creates a table with the specifed name and columns.
-	 * @param table new table name
-	 * @param columns new table columns (name and type)
+	 * @param name new table name
+	 * @param columns new table columns in the order they should appear
+	 * @throws DuplicateTableException if a table of the specified name already exists
+	 * @throws SQLException if specified parameters lead to invalid statement execution
 	 */
-	void createTable(String table, PGColumn[] columns) throws DuplicateTableException, NullParameterException;
+	void createTable(String name, PGColumn[] columns) throws DuplicateTableException, SQLException;
 	/**
 	 * Drops a table from the database.
 	 * @param table name of table to drop
+	 * @throws NullTableException if no table of the specified name exists
+	 * @throws SQLException if specified parameters lead to invalid statement execution
 	 */
-	void dropTable(String table) throws NullTableException;
+	void dropTable(String table) throws NullTableException, SQLException;
 	
 	/**
 	 * @param table name of table to search for

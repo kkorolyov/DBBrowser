@@ -4,11 +4,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 import dev.kkorolyov.dbbrowser.browser.DBLogger;
-import dev.kkorolyov.dbbrowser.connection.PGColumn;
 import dev.kkorolyov.dbbrowser.connection.DBConnection;
+import dev.kkorolyov.dbbrowser.connection.PGColumn;
 import dev.kkorolyov.dbbrowser.connection.TableConnection;
 import dev.kkorolyov.dbbrowser.exceptions.DuplicateTableException;
-import dev.kkorolyov.dbbrowser.exceptions.NullParameterException;
 import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
 import dev.kkorolyov.dbbrowser.strings.Strings;
 
@@ -98,7 +97,7 @@ public class SimpleDBConnection implements DBConnection {
 					s.setBoolean(i + 1, (boolean) parameters[i]);
 			}
 		}
-		ResultSet rs = s.executeQuery();
+		ResultSet rs = s.execute() ? s.getResultSet() : null;	// ResultSet if returns one, null if otherwise
 		return rs;
 	}
 	
@@ -119,20 +118,15 @@ public class SimpleDBConnection implements DBConnection {
 	}
 	
 	@Override
-	public void createTable(String table, PGColumn[] columns) throws DuplicateTableException, NullParameterException {
-		if (containsTable(table))
-			throw new DuplicateTableException(DB, table);
-		if (table == null || (columns == null || columns.length <= 0))
-			throw new NullParameterException(new String[]{"table", "columns"});
+	public void createTable(String name, PGColumn[] columns) throws DuplicateTableException, SQLException {
+		if (containsTable(name))
+			throw new DuplicateTableException(DB, name);
 		
-		try {
-			execute(buildCreateTableStatement(table, columns));
-		} catch (SQLException e) {
-			log.exceptionSevere(e);
-		}
+		execute(buildCreateTableStatement(name, columns));
 	}
-	private String buildCreateTableStatement(String table, PGColumn[] columns) {
-		String createTableStatement = "CREATE TABLE " + table + " (";
+	private String buildCreateTableStatement(String name, PGColumn[] columns) {
+		String createTableStatement = "CREATE TABLE " + name + " (";	// Initial part of create statement
+		
 		for (int i = 0; i < columns.length - 1; i++) {	// Build all but last column names + types
 			createTableStatement += columns[i].getName()+ " " + columns[i].getTypeName() + ", ";
 		}
@@ -141,8 +135,12 @@ public class SimpleDBConnection implements DBConnection {
 	}
 	
 	@Override
-	public void dropTable(String table) {
-		// TODO
+	public void dropTable(String table) throws NullTableException, SQLException {
+		if (!containsTable(table))	// No such table to drop
+			throw new NullTableException(DB, table);
+		
+		String dropTableStatement = "DROP TABLE " + table;
+		execute(dropTableStatement);
 	}
 	
 	@Override

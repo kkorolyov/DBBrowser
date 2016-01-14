@@ -4,6 +4,7 @@ package dev.kkorolyov.dbbrowser.connection;
  * Describes the name and type of a postgres database column.
  */
 // TODO Loose-couple types
+// TODO Use factory for different database table column types
 public class PGColumn {	
 	private String name;
 	private Type type;
