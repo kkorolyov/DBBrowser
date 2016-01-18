@@ -7,25 +7,43 @@ import java.util.LinkedList;
 import java.util.List;
 
 import dev.kkorolyov.dbbrowser.browser.DBLogger;
+import dev.kkorolyov.dbbrowser.column.PGColumn;
 import dev.kkorolyov.dbbrowser.connection.DBConnection;
-import dev.kkorolyov.dbbrowser.connection.PGColumn;
 import dev.kkorolyov.dbbrowser.connection.TableConnection;
 import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
 
 /**
  * A simple {@code TableConnection} implementation.
+ * Uses a {@code DBConnection} to execute statements formatted for its table.
  * @see TableConnection
  * @see DBConnection
  */
 public class SimpleTableConnection implements TableConnection {
 	private static final DBLogger log = DBLogger.getLogger(SimpleTableConnection.class.getName());
 	
+	private static final String tableMarker = "<TABLE>", columnsMarker = "<COLUMNS>", criteriaMarker = "<CRITERIA>", valuesMarker = "<VALUES>";	// To easily replace statement segments in functions
+	
+	private static final String wildcard = "*";	// Selects all columns
+	
+	/* 
+	 * Statements without set table name, same for all tables 
+	 */
+	private static final String selectStatementStatic = "SELECT " + columnsMarker + " FROM " + tableMarker;	// No criteria
+	private static final String selectStatementCriteriaStatic = selectStatementStatic + " WHERE " + criteriaMarker;	// With criteria
+	private static final String insertStatementStatic = "INSERT INTO " + tableMarker + " VALUES " + valuesMarker;
+
 	private DBConnection conn;
 	private String tableName;
 	private List<Statement> openStatements = new LinkedList<>();
 
-	private final String metaDataStatement = "SELECT * FROM " + tableName;	// Metadata statement for this table
+	/*
+	 * Statements with this table's name
+	 */
+	private final String selectStatementBase, selectStatementCriteriaBase;
+	private final String insertStatementBase;
 	
+	private final String metaDataStatement;
+
 	/**
 	 * Opens a new connection to a specified table on a database.
 	 * @param conn database connection
@@ -38,6 +56,15 @@ public class SimpleTableConnection implements TableConnection {
 		
 		this.conn = conn;
 		this.tableName = tableName;
+		
+		/*
+		 * Common statements substituted with table name, ready for use in functions
+		 */
+		selectStatementBase = selectStatementStatic.replaceFirst(tableMarker, tableName);
+		selectStatementCriteriaBase = selectStatementCriteriaStatic.replaceFirst(tableMarker, tableName);
+		insertStatementBase = insertStatementStatic.replaceFirst(tableMarker, tableName);
+		
+		metaDataStatement = selectStatementBase.replaceFirst(columnsMarker, wildcard);	// "Select all" to get metadata
 	}
 	
 	@Override
@@ -56,47 +83,65 @@ public class SimpleTableConnection implements TableConnection {
 	}
 	@Override
 	public ResultSet select(String[] columns, PGColumn[] criteria) throws SQLException {
-		String selectStatement = "SELECT ";	// Initial select statement
+		String selectStatement = null;
 		Object[] selectParameters = null;	// Parameters to use in execute call
-
-		selectStatement += buildSelectColumns(columns);	// Add columns to statement
-		
-		selectStatement += " FROM " + tableName;	// Add table to statement
-
-		if (criteria != null && criteria.length > 0) {
-			selectStatement += " " + buildSelectCriteriaMarkers(criteria);	// Add criteria to statement
+				
+		if (criteria == null || criteria.length > 0) {
+			selectStatement = selectStatementBase.replaceFirst(columnsMarker, buildSelectColumns(columns));	// Set columns
+		}
+		else {
+			selectStatement = selectStatementCriteriaBase.replaceFirst(columnsMarker, buildSelectColumns(columns));	// Set columns
+			selectStatement.replaceFirst(criteriaMarker, buildSelectCriteriaMarkers(criteria));	// Set criteria (markers)
 			
 			selectParameters = new Object[criteria.length];
 			for (int i = 0; i < selectParameters.length; i++) {
 				selectParameters[i] = criteria[i].getValue();	// Build parameters to use in execute call
 			}
 		}
-		
-		return conn.execute(selectStatement, selectParameters);
+		return conn.execute(selectStatement, selectParameters);	// Execute marked statement with substituted parameters
 	}
-	private String buildSelectColumns(String[] columns) {
-		String selectColumns = "";
-		String wildcard = "*";
+	private static String buildSelectColumns(String[] columns) {
+		StringBuilder selectColumns = new StringBuilder();
+		String delimeter = ",";
 		
-		if (columns[0].equals(wildcard))
-			return wildcard;
-		
-		for (int i = 0; i < columns.length - 1; i++)
-			selectColumns += columns[i] + ", ";
-		selectColumns += columns[columns.length - 1];	// Add final column without a ", "
-		
-		return selectColumns;
-	}
-	private String buildSelectCriteriaMarkers(PGColumn[] criteria) {
-		String selectCriteria = "WHERE ";
-		
-		selectCriteria += criteria[0].getName() + "=?";	// Mark for a PreparedStatement to set values later
-		if (criteria.length > 1) {
-			for (int i = 1; i < criteria.length; i++) {
-				selectCriteria += " AND " + criteria[i].getName() + "=?";	// Mark
-			}
+		for (int i = 0; i < columns.length; i++) {
+			if (columns[i].equals(wildcard))
+				return wildcard;	// If any column is a wildcard, use a wildcard for statement
+			
+			selectColumns.append(columns[i]).append(delimeter);	// Append "<column>," to delimit columns
 		}
-		return selectCriteria;
+		selectColumns.replace(selectColumns.length() - delimeter.length(), selectColumns.length(), "");	// Remove final delimiter
+		
+		return selectColumns.toString();
+	}
+	private static String buildSelectCriteriaMarkers(PGColumn[] criteria) {
+		StringBuilder selectCriteria = new StringBuilder();
+		String marker = "=?", delimeter = " AND ";
+		
+		for (int i = 0; i < criteria.length; i++) {
+			selectCriteria.append(criteria[i].getName()).append(marker).append(delimeter);	// Append "<criteria>=? AND " to delimit criteria
+		}
+		selectCriteria.replace(selectCriteria.length() - delimeter.length(), selectCriteria.length(), "");	// Remove final delimiter
+		
+		return selectCriteria.toString();
+	}
+	
+	@Override
+	public void insert(Object[] values) throws SQLException {
+		String insertStatement = insertStatementBase.replaceFirst(valuesMarker, buildInsertValuesMarkers(values.length));	// Set values (markers)
+		
+		conn.execute(insertStatement, values);
+	}
+	private static String buildInsertValuesMarkers(int numMarkers) {
+		StringBuilder insertValues = new StringBuilder("(");	// Values declared within parentheses
+		String marker = "?", delimeter = ",";
+		
+		for (int i = 0; i < numMarkers; i++) {
+			insertValues.append(marker).append(delimeter);	// Append "?," to delimit values
+		}
+		insertValues.replace(insertValues.length() - delimeter.length(), insertValues.length(), ")");	// Replace final delimiter with closing parenthesis
+		
+		return insertValues.toString();
 	}
 	
 	@Override

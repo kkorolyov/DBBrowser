@@ -4,8 +4,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import dev.kkorolyov.dbbrowser.browser.DBLogger;
+import dev.kkorolyov.dbbrowser.column.PGColumn;
 import dev.kkorolyov.dbbrowser.connection.DBConnection;
-import dev.kkorolyov.dbbrowser.connection.PGColumn;
 import dev.kkorolyov.dbbrowser.connection.TableConnection;
 import dev.kkorolyov.dbbrowser.exceptions.DuplicateTableException;
 import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
@@ -42,7 +42,7 @@ public class SimpleDBConnection implements DBConnection {
 	private static String formatURL(String host, String db) {
 		return jdbcHeader + "//" + host + "/" + db;
 	}
-	private void initDriver() {
+	private static void initDriver() {
 		try {
 			Class.forName(jdbcDriverClassName);
 		} catch (ClassNotFoundException e) {

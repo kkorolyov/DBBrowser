@@ -11,11 +11,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import dev.kkorolyov.dbbrowser.column.PGColumn;
 import dev.kkorolyov.dbbrowser.connection.DBConnection;
-import dev.kkorolyov.dbbrowser.connection.PGColumn;
 import dev.kkorolyov.dbbrowser.exceptions.DuplicateTableException;
 import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
 
+@SuppressWarnings("javadoc")
 public class SimpleDBConnectionTest {
 	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB", TEST_TABLE = "TEST_TABLE";
 	

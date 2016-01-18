@@ -4,6 +4,8 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
+import dev.kkorolyov.dbbrowser.column.PGColumn;
+
 /**
  * Opens a connection to a single table on a database and provides an interface for table-oriented SQL statement execution.
  */
@@ -15,16 +17,14 @@ public interface TableConnection {
 	void close();
 	
 	/**
-	 * Executes a SELECT statement on the table.
-	 * @param columns column(s) to return; if {@code columns[0]} = "*", will return all columns
-	 * @return results meeting the specified columns
-	 * @throws SQLException if specified parameters result in an invalid statement
+	 * Executes a SELECT statement without any criteria.
+	 * @see #select(String[], PGColumn[])
 	 */
 	ResultSet select(String[] columns) throws SQLException;
 	/**
-	 * Executes a SELECT statement with additional criteria on the table.
-	 * @param columns column(s) to return; if {@code columns[0]} = '*', will return all columns
-	 * @param criteria specified as columns with certain values
+	 * Executes a SELECT statement with additional criteria.
+	 * @param columns column(s) to return; if any column = '*', will return all columns
+	 * @param criteria specified as columns with certain values; if {@code null} or empty, will return all rows
 	 * @return results meeting the specified columns and criteria
 	 * @throws SQLException if specified parameters result in an invalid statement
 	 */
@@ -32,8 +32,8 @@ public interface TableConnection {
 	
 	/**
 	 * Inserts a row into the table.
-	 * @param values column values in order of column appearance
-	 * @throws SQLException
+	 * @param values column values in order of column appearance; number and types of values must be equal to the number and types of columns 
+	 * @throws SQLException if specified values result in an invalid statement
 	 */
 	void insert(Object[] values) throws SQLException;
 	

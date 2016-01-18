@@ -1,7 +1,5 @@
 package dev.kkorolyov.dbbrowser.connection.concrete;
 
-import static org.junit.Assert.*;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -12,6 +10,7 @@ import org.junit.Test;
 import dev.kkorolyov.dbbrowser.connection.TableConnection;
 import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
 
+@SuppressWarnings("javadoc")
 public class SimpleTableConnectionTest {
 	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB", TEST_TABLE = "TEST_TABLE";
 
@@ -29,8 +28,11 @@ public class SimpleTableConnectionTest {
 
 	@Test
 	public void testSelect() throws SQLException {
-		ResultSet rs = conn.select(new String[]{"*"});
 		
-		
+	}
+	
+	@Test
+	public void testInsert() throws SQLException {
+		conn.insert(new Object[]{5, "Thing", true});
 	}
 }

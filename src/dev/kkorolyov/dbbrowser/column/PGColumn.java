@@ -1,4 +1,4 @@
-package dev.kkorolyov.dbbrowser.connection;
+package dev.kkorolyov.dbbrowser.column;
 
 /**
  * Describes the name and type of a postgres database column.
@@ -49,7 +49,7 @@ public class PGColumn {
 	
 	/**
 	 * Sets the column's value.
-	 * Necessary in order to use this column as a criterion in a SELECT statement.
+	 * Necessary in order to use this column as a criterion in a statement.
 	 * @param value
 	 */
 	public void setValue(Object value) {
