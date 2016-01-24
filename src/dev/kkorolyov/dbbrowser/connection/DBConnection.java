@@ -26,20 +26,31 @@ public interface DBConnection {
 	void close();
 	
 	/**
-	 * Executes a complete SQL statement.
-	 * @param statement statement to execute
-	 * @return results from statement execution, or {@code null} if the statement does not return results
-	 * @throws SQLException if attempting to execute an invalid statement
+	 * Executes a complete SQL statement without additional parameters.
+	 * @see #execute(String, Object[])
 	 */
 	ResultSet execute(String statement) throws SQLException;
 	/**
-	 * Executes a partial SQL statement with parameters declared separately.
+	 * Executes a partial SQL statement with object parameters.
 	 * @param baseStatement statement without parameters, with {@code ?} denoting an area where a parameter should be substituted in
-	 * @param parameters parameters to use, will be substituted into the base statement in the order of appearance, if {@code null}, will execute only the base statement
+	 * @param parameters parameters to use, will be substituted into the base statement in the order of appearance, if this array is empty or {@code null}, only the base statement is executed
 	 * @return results from statement execution, or {@code null} if the statement does not return results
 	 * @throws SQLException if attempting to execute an invalid statement
 	 */
 	ResultSet execute(String baseStatement, Object[] parameters) throws SQLException;
+	
+	/**
+	 * Executes a complete SQL update statement without additional parameters.
+	 * @see #update(String, Object[])
+	 */
+	int update(String statement) throws SQLException;
+	/**
+	 * Executes a partial SQL update statement with object parameters.
+	 * @param baseStatement statement without parameters, with {@code ?} denoting an area where a parameter should be substituted in
+	 * @param parameters parameters to use, will be substituted into the base statement in the order of appearance, if this array is empty or {@code null}, only the base statement is executed
+	 * @return number of affected rows, or {@code null} if the statement does not return number of affected rows
+	 */
+	int update(String baseStatement, Object[] parameters);
 	
 	/**
 	 * Closes all opened statements.

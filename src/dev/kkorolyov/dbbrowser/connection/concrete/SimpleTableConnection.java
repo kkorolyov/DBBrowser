@@ -28,7 +28,7 @@ public class SimpleTableConnection implements TableConnection {
 	/* 
 	 * Statements without set table name, same for all tables 
 	 */
-	private static final String selectStatementStatic = "SELECT " + columnsMarker + " FROM " + tableMarker;	// No criteria
+	private static final String selectStatementStatic = "SELECT " + columnsMarker + " FROM " + tableMarker;	// No criteria	TODO StatementBuilder class?
 	private static final String selectStatementCriteriaStatic = selectStatementStatic + " WHERE " + criteriaMarker;	// With criteria
 	private static final String insertStatementStatic = "INSERT INTO " + tableMarker + " VALUES " + valuesMarker;
 
@@ -143,6 +143,8 @@ public class SimpleTableConnection implements TableConnection {
 		
 		return insertValues.toString();
 	}
+	
+	
 	
 	@Override
 	public void flush() {

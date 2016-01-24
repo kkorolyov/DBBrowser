@@ -108,6 +108,15 @@ public class SimpleDBConnection implements DBConnection {
 	}
 	
 	@Override
+	public int update(String statement) throws SQLException {
+		
+	}
+	@Override
+	public int update(String baseStatement, Object[] parameters) throws SQLException {
+		
+	}
+	
+	@Override
 	public void flush() {
 		int closedStatements = 0;	// Count closed statements for debugging
 		for (Statement openStatement : openStatements) {
@@ -131,7 +140,7 @@ public class SimpleDBConnection implements DBConnection {
 		execute(buildCreateTableStatement(name, columns));
 	}
 	private String buildCreateTableStatement(String name, PGColumn[] columns) {
-		String createTableStatement = "CREATE TABLE " + name + " (";	// Initial part of create statement
+		String createTableStatement = "CREATE TABLE " + name + " (";	// Initial part of create statement TODO Move to StatementBuilder
 		
 		for (int i = 0; i < columns.length - 1; i++) {	// Build all but last column names + types
 			createTableStatement += columns[i].getName()+ " " + columns[i].getTypeName() + ", ";
