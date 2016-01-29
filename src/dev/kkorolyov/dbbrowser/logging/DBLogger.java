@@ -1,4 +1,4 @@
-package dev.kkorolyov.dbbrowser.browser;
+package dev.kkorolyov.dbbrowser.logging;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -76,7 +76,7 @@ public class DBLogger {
 	}
 	
 	/**
-	 * Logs an info message if info logging enabled.
+	 * Logs an info message if info logging is enabled.
 	 * @param message message to log
 	 */
 	public void info(String message) {
@@ -85,7 +85,7 @@ public class DBLogger {
 		}
 	}
 	/**
-	 * Logs a debug message if info logging enabled.
+	 * Logs a debug message if debug logging is enabled.
 	 * @param message message to log
 	 */
 	public void debug(String message) {

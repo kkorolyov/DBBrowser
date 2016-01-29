@@ -5,27 +5,28 @@ package dev.kkorolyov.dbbrowser.column;
  */
 // TODO Loose-couple types
 // TODO Use factory for different database table column types
-public class PGColumn {	
+public class PGColumn {		// TODO Make generic value
 	private String name;
 	private Type type;
 	private Object value;
 	
 	/**
 	 * Creates a column of the specified name and type.
-	 * @param name column name
-	 * @param type column type from
-	 * <ul>
-	 * <li> {@code Column.TypeMapping.BOOLEAN}
-	 * <li> {@code Column.TypeMapping.CHAR}
-	 * <li> {@code Column.TypeMapping.DOUBLE}
-	 * <li> {@code Column.TypeMapping.FLOAT}
-	 * <li> {@code Column.TypeMapping.INTEGER}
-	 * <li> {@code Column.TypeMapping.VARCHAR}
-	 * </ul>
+	 * @see #PGColumn(String, Type, Object)
 	 */
 	public PGColumn(String name, Type type) {
+		this(name, type, null);
+	}
+	/**
+	 * Creates a column of the specified name, type, and value.
+	 * @param name column name
+	 * @param type column type from {@code PGColumn.Type}
+	 * @param value object of a type matching the {@code Type} specified
+	 */
+	public PGColumn(String name, Type type, Object value) {
 		this.name = name;
 		this.type = type;
+		this.value = value;
 	}
 	
 	/** @return column name */
@@ -35,11 +36,11 @@ public class PGColumn {
 	
 	/** @return column type code from {@code java.sql.Types} */
 	public int getType() {
-		return type.typeCode;
+		return type.getTypeCode();
 	}
 	/** @return column type common name */
 	public String getTypeName() {
-		return type.typeName;
+		return type.getTypeName();
 	}
 	
 	/** @return column value */
@@ -52,7 +53,7 @@ public class PGColumn {
 	 * Necessary in order to use this column as a criterion in a statement.
 	 * @param value
 	 */
-	public void setValue(Object value) {
+	public void setValue(Object value) {	// TODO Type check
 		this.value = value;
 	}
 	
@@ -60,11 +61,23 @@ public class PGColumn {
 	 * Used to specify a database column's datatype.
 	 */
 	public enum Type {
+		/** The 'boolean' equivalent. */
 		BOOLEAN(java.sql.Types.BOOLEAN, "BOOLEAN"),
-		CHAR(java.sql.Types.CHAR, "CHAR"),
-		DOUBLE(java.sql.Types.DOUBLE, "DOUBLE PRECISION"),
-		REAL(java.sql.Types.REAL, "REAL"),
+		
+		/** The 'short' equivalent. */
+		SMALLINT(java.sql.Types.SMALLINT, "SMALLINT"),
+		/** The 'int' equivalent. */
 		INTEGER(java.sql.Types.INTEGER, "INTEGER"),
+		/** The 'long' equivalent. */
+		BIGINT(java.sql.Types.BIGINT, "BIGINT"),
+		/** The 'float' equivalent. */
+		REAL(java.sql.Types.REAL, "REAL"),
+		/** The 'double' equivalent. */
+		DOUBLE(java.sql.Types.DOUBLE, "DOUBLE PRECISION"),
+		
+		/** The 'char' equivalent. */
+		CHAR(java.sql.Types.CHAR, "CHAR"),
+		/** The 'String' equivalent. */
 		VARCHAR(java.sql.Types.VARCHAR, "VARCHAR");
 		
 		private int typeCode;
@@ -73,6 +86,13 @@ public class PGColumn {
 		private Type(int typeCode, String typeName) {
 			this.typeCode = typeCode;
 			this.typeName = typeName;
+		}
+		
+		int getTypeCode() {
+			return typeCode;
+		}
+		String getTypeName() {
+			return typeName;
 		}
 	}
 }

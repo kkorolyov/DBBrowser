@@ -23,7 +23,7 @@ public interface TableConnection {
 	ResultSet select(String[] columns) throws SQLException;
 	/**
 	 * Executes a SELECT statement with additional criteria.
-	 * @param columns column(s) to return; if any column = '*', will return all columns
+	 * @param columns column(s) to return; if any column = "*", will return all columns
 	 * @param criteria specified as columns with certain values; if {@code null} or empty, will return all rows
 	 * @return results meeting the specified columns and criteria
 	 * @throws SQLException if specified parameters result in an invalid statement

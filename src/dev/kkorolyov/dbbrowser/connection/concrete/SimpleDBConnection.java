@@ -3,12 +3,12 @@ import java.sql.*;
 import java.util.LinkedList;
 import java.util.List;
 
-import dev.kkorolyov.dbbrowser.browser.DBLogger;
 import dev.kkorolyov.dbbrowser.column.PGColumn;
 import dev.kkorolyov.dbbrowser.connection.DBConnection;
 import dev.kkorolyov.dbbrowser.connection.TableConnection;
 import dev.kkorolyov.dbbrowser.exceptions.DuplicateTableException;
 import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
+import dev.kkorolyov.dbbrowser.logging.DBLogger;
 import dev.kkorolyov.dbbrowser.strings.Strings;
 
 /**
@@ -109,11 +109,13 @@ public class SimpleDBConnection implements DBConnection {
 	
 	@Override
 	public int update(String statement) throws SQLException {
-		
+		return 0;
+		// TODO
 	}
 	@Override
 	public int update(String baseStatement, Object[] parameters) throws SQLException {
-		
+		return 0;
+		// TODO
 	}
 	
 	@Override
@@ -133,11 +135,19 @@ public class SimpleDBConnection implements DBConnection {
 	}
 	
 	@Override
-	public void createTable(String name, PGColumn[] columns) throws DuplicateTableException, SQLException {
+	public TableConnection createTable(String name, PGColumn[] columns) throws DuplicateTableException, SQLException {
 		if (containsTable(name))
 			throw new DuplicateTableException(DB, name);
 		
 		execute(buildCreateTableStatement(name, columns));
+		
+		TableConnection newTable = null;
+		try {
+			newTable = new SimpleTableConnection(this, name);
+		} catch (NullTableException e) {	// Should not be a null table
+			log.exceptionWarning(e);
+		}
+		return newTable;
 	}
 	private String buildCreateTableStatement(String name, PGColumn[] columns) {
 		String createTableStatement = "CREATE TABLE " + name + " (";	// Initial part of create statement TODO Move to StatementBuilder

@@ -6,11 +6,12 @@ import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
 
-import dev.kkorolyov.dbbrowser.browser.DBLogger;
 import dev.kkorolyov.dbbrowser.column.PGColumn;
 import dev.kkorolyov.dbbrowser.connection.DBConnection;
 import dev.kkorolyov.dbbrowser.connection.TableConnection;
 import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
+import dev.kkorolyov.dbbrowser.logging.DBLogger;
+import dev.kkorolyov.dbbrowser.statement.StatementBuilder;
 
 /**
  * A simple {@code TableConnection} implementation.
@@ -83,22 +84,15 @@ public class SimpleTableConnection implements TableConnection {
 	}
 	@Override
 	public ResultSet select(String[] columns, PGColumn[] criteria) throws SQLException {
-		String selectStatement = null;
 		Object[] selectParameters = null;	// Parameters to use in execute call
 				
-		if (criteria == null || criteria.length > 0) {
-			selectStatement = selectStatementBase.replaceFirst(columnsMarker, buildSelectColumns(columns));	// Set columns
-		}
-		else {
-			selectStatement = selectStatementCriteriaBase.replaceFirst(columnsMarker, buildSelectColumns(columns));	// Set columns
-			selectStatement.replaceFirst(criteriaMarker, buildSelectCriteriaMarkers(criteria));	// Set criteria (markers)
-			
+		if (criteria != null && criteria.length > 0) {
 			selectParameters = new Object[criteria.length];
 			for (int i = 0; i < selectParameters.length; i++) {
 				selectParameters[i] = criteria[i].getValue();	// Build parameters to use in execute call
-			}
+			}		
 		}
-		return conn.execute(selectStatement, selectParameters);	// Execute marked statement with substituted parameters
+		return conn.execute(StatementBuilder.buildSelect(tableName, columns, criteria), selectParameters);	// Execute marked statement with substituted parameters
 	}
 	private static String buildSelectColumns(String[] columns) {
 		StringBuilder selectColumns = new StringBuilder();
@@ -152,7 +146,7 @@ public class SimpleTableConnection implements TableConnection {
 	}
 	
 	@Override
-	public ResultSetMetaData getMetaData() {
+	public ResultSetMetaData getMetaData() {	// TODO executeVolatile(), closes statement immediately before return
 		ResultSetMetaData rsmd = null;
 		try {
 			rsmd = conn.execute(metaDataStatement).getMetaData();
