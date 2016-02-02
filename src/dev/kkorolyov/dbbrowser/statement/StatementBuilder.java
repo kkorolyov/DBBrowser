@@ -12,7 +12,7 @@ public class StatementBuilder {
 	private static final String selectStatement = "SELECT " + Marker.columns + " FROM " + Marker.table;	// No criteria
 	private static final String criteriaAddOn = " WHERE " + Marker.criteria;	// Criteria addon for SELECT
 	private static final String insertStatement = "INSERT INTO " + Marker.table + " VALUES " + Marker.values;
-	
+		
 	/**
 	 * Builds a SELECT statement with additional criteria.
 	 * @param table table to call statement on
@@ -32,11 +32,16 @@ public class StatementBuilder {
 			statement = statement.replaceFirst(Marker.criteria, buildSelectCriteriaMarkers(criteria));	// Set criteria '?'s
 		}
 		log.debug(	"Built SELECT statement:"
-							+ "\t" + statement);
+							+ "\n\t" + statement);
 		
 		return statement;
 	}
 	private static String buildSelectColumns(String[] columns) {
+		if (columns == null || columns.length <= 0) {
+			log.debug("No columns to add, returning wildcard '" + Marker.wildcard + "'");
+			return Marker.wildcard;
+		}
+		
 		log.debug("Adding " + String.valueOf(columns.length) + " columns to SELECT statement");
 		
 		StringBuilder selectColumns = new StringBuilder();
@@ -77,12 +82,14 @@ public class StatementBuilder {
 	public static String buildInsert(String table, int numValues) {
 		log.debug("Building INSERT statement");
 		
-		String insert = insertStatement.replaceFirst(Marker.values, buildInsertValuesMarkers(numValues));	// Set values markers
+		String statement = insertStatement.replaceFirst(Marker.table, table);	// Set table
+		
+		statement = statement.replaceFirst(Marker.values, buildInsertValuesMarkers(numValues));	// Set values markers
 		
 		log.debug(	"Built INSERT statement:"
-							+ "\t" + insert);
+							+ "\n\t" + statement);
 		
-		return insert;
+		return statement;
 	}
 	private static String buildInsertValuesMarkers(int numMarkers) {
 		log.debug("Adding " + String.valueOf(numMarkers) + " value markers to INSERT statement");

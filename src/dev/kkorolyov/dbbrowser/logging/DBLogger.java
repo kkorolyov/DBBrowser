@@ -90,7 +90,7 @@ public class DBLogger {
 	 */
 	public void debug(String message) {
 		if (debugEnabled) {
-			logger.log(Level.FINE, message);
+			logger.log(Level.INFO, message);
 		}
 	}
 	
@@ -128,13 +128,13 @@ public class DBLogger {
 	 * Enables info logging.
 	 */
 	public void enableInfo() {
-		debugEnabled = true;
+		infoEnabled = true;
 	}
 	/**
 	 * Disables info logging.
 	 */
 	public void disableInfo() {
-		debugEnabled = false;
+		infoEnabled = false;
 	}
 	
 	/**

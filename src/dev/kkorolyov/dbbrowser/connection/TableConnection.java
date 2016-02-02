@@ -13,6 +13,7 @@ public interface TableConnection {
 	
 	/**
 	 * Closes the connection and releases all resources.
+	 * Has no effect if called on a closed connection.
 	 */
 	void close();
 	

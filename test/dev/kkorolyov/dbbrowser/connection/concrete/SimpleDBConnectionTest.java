@@ -59,7 +59,7 @@ public class SimpleDBConnectionTest {
 	}
 
 	@Test
-	public void testExecute() throws SQLException {
+	public void testExecute() throws SQLException {	// TODO Less-dependent test
 		String testString = "SELECT * FROM " + TEST_TABLE;
 		ResultSet rs = conn.execute(testString);
 		rs.next();	// Move to row 1
@@ -69,7 +69,7 @@ public class SimpleDBConnectionTest {
 		assertEquals(TEST_BOOLEAN_VAL, rs.getBoolean(TEST_BOOLEAN_COL_NUM));
 	}
 	@Test
-	public void testExecuteParams() throws SQLException {
+	public void testExecuteParams() throws SQLException {	// TODO Less-dependent test
 		String testString = "SELECT * FROM " + TEST_TABLE + " WHERE " + TEST_INT_COL_NAME + " = ? AND " + TEST_STRING_COL_NAME + " = ? AND " + TEST_BOOLEAN_COL_NAME + " = ?";
 		ResultSet rs = conn.execute(testString, new Object[]{TEST_INT_VAL, TEST_STRING_VAL, TEST_BOOLEAN_VAL});
 		rs.next();	// Move to row 1
