@@ -1,10 +1,10 @@
-package dev.kkorolyov.dbbrowser.connection;
+package dev.kkorolyov.ezdb.connection;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
-import dev.kkorolyov.dbbrowser.column.PGColumn;
+import dev.kkorolyov.ezdb.column.PGColumn;
 
 /**
  * Opens a connection to a single table on a database and provides an interface for table-oriented SQL statement execution.

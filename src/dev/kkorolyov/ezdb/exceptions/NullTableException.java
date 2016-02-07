@@ -1,4 +1,4 @@
-package dev.kkorolyov.dbbrowser.exceptions;
+package dev.kkorolyov.ezdb.exceptions;
 
 public class NullTableException extends Exception {
 	private static final long serialVersionUID = -8282433808355407065L;

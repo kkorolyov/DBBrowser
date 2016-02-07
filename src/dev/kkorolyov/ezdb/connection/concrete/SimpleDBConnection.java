@@ -1,15 +1,15 @@
-package dev.kkorolyov.dbbrowser.connection.concrete;
+package dev.kkorolyov.ezdb.connection.concrete;
 import java.sql.*;
 import java.util.LinkedList;
 import java.util.List;
 
-import dev.kkorolyov.dbbrowser.column.PGColumn;
-import dev.kkorolyov.dbbrowser.connection.DBConnection;
-import dev.kkorolyov.dbbrowser.connection.TableConnection;
-import dev.kkorolyov.dbbrowser.exceptions.DuplicateTableException;
-import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
-import dev.kkorolyov.dbbrowser.logging.DBLogger;
-import dev.kkorolyov.dbbrowser.strings.Strings;
+import dev.kkorolyov.ezdb.column.PGColumn;
+import dev.kkorolyov.ezdb.connection.DBConnection;
+import dev.kkorolyov.ezdb.connection.TableConnection;
+import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
+import dev.kkorolyov.ezdb.exceptions.NullTableException;
+import dev.kkorolyov.ezdb.logging.DBLogger;
+import dev.kkorolyov.ezdb.strings.Strings;
 
 /**
  * A simple {@code DBConnection} implementation.

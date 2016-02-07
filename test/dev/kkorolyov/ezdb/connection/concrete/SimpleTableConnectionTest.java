@@ -1,4 +1,4 @@
-package dev.kkorolyov.dbbrowser.connection.concrete;
+package dev.kkorolyov.ezdb.connection.concrete;
 
 import static org.junit.Assert.assertEquals;
 
@@ -9,12 +9,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import dev.kkorolyov.dbbrowser.column.PGColumn;
-import dev.kkorolyov.dbbrowser.connection.DBConnection;
-import dev.kkorolyov.dbbrowser.connection.TableConnection;
-import dev.kkorolyov.dbbrowser.exceptions.DuplicateTableException;
-import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
-import dev.kkorolyov.dbbrowser.logging.DBLogger;
+import dev.kkorolyov.ezdb.column.PGColumn;
+import dev.kkorolyov.ezdb.connection.DBConnection;
+import dev.kkorolyov.ezdb.connection.TableConnection;
+import dev.kkorolyov.ezdb.connection.concrete.SimpleDBConnection;
+import dev.kkorolyov.ezdb.connection.concrete.SimpleTableConnection;
+import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
+import dev.kkorolyov.ezdb.exceptions.NullTableException;
+import dev.kkorolyov.ezdb.logging.DBLogger;
 
 @SuppressWarnings("javadoc")
 public class SimpleTableConnectionTest {

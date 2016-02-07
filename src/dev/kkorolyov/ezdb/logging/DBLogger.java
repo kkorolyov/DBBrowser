@@ -1,4 +1,4 @@
-package dev.kkorolyov.dbbrowser.logging;
+package dev.kkorolyov.ezdb.logging;
 
 import java.util.HashMap;
 import java.util.Map;

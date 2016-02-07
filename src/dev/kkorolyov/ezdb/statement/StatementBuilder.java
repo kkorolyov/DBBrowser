@@ -1,7 +1,7 @@
-package dev.kkorolyov.dbbrowser.statement;
+package dev.kkorolyov.ezdb.statement;
 
-import dev.kkorolyov.dbbrowser.column.PGColumn;
-import dev.kkorolyov.dbbrowser.logging.DBLogger;
+import dev.kkorolyov.ezdb.column.PGColumn;
+import dev.kkorolyov.ezdb.logging.DBLogger;
 
 /**
  * Single class for all custom statement formatting.

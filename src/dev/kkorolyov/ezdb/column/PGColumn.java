@@ -1,4 +1,4 @@
-package dev.kkorolyov.dbbrowser.column;
+package dev.kkorolyov.ezdb.column;
 
 /**
  * Describes the name and type of a postgres database column.

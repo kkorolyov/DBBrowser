@@ -1,11 +1,11 @@
-package dev.kkorolyov.dbbrowser.connection;
+package dev.kkorolyov.ezdb.connection;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import dev.kkorolyov.dbbrowser.column.PGColumn;
-import dev.kkorolyov.dbbrowser.exceptions.DuplicateTableException;
-import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
+import dev.kkorolyov.ezdb.column.PGColumn;
+import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
+import dev.kkorolyov.ezdb.exceptions.NullTableException;
 
 /**
  * Opens a connection to a single database and allows for SQL statement execution.

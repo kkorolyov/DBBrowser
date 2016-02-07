@@ -1,14 +1,14 @@
-package dev.kkorolyov.dbbrowser.connection.concrete;
+package dev.kkorolyov.ezdb.connection.concrete;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
-import dev.kkorolyov.dbbrowser.column.PGColumn;
-import dev.kkorolyov.dbbrowser.connection.DBConnection;
-import dev.kkorolyov.dbbrowser.connection.TableConnection;
-import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
-import dev.kkorolyov.dbbrowser.logging.DBLogger;
-import dev.kkorolyov.dbbrowser.statement.StatementBuilder;
+import dev.kkorolyov.ezdb.column.PGColumn;
+import dev.kkorolyov.ezdb.connection.DBConnection;
+import dev.kkorolyov.ezdb.connection.TableConnection;
+import dev.kkorolyov.ezdb.exceptions.NullTableException;
+import dev.kkorolyov.ezdb.logging.DBLogger;
+import dev.kkorolyov.ezdb.statement.StatementBuilder;
 
 /**
  * A simple {@code TableConnection} implementation.
