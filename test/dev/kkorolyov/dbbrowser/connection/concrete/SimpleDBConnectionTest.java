@@ -1,10 +1,8 @@
 package dev.kkorolyov.dbbrowser.connection.concrete;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import org.junit.After;
@@ -18,40 +16,32 @@ import dev.kkorolyov.dbbrowser.exceptions.NullTableException;
 
 @SuppressWarnings("javadoc")
 public class SimpleDBConnectionTest {
-	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB", TEST_TABLE = "TEST_TABLE";
-	
-	private static final int TEST_INT_COL_NUM = 1, TEST_STRING_COL_NUM = 2, TEST_BOOLEAN_COL_NUM = 3;
-	private static final String TEST_INT_COL_NAME = "TEST_INT", TEST_STRING_COL_NAME = "TEST_STRING", TEST_BOOLEAN_COL_NAME = "TEST_BOOLEAN";
-	
-	private static final String VALIDITY_STATEMENT = "SELECT";	// Will work as long as connection is open and valid
-
-	private static final int TEST_INT_VAL = 0;
-	private static final String TEST_STRING_VAL = "0";
-	private static final boolean TEST_BOOLEAN_VAL = false;
+	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB";
 	
 	private DBConnection conn;
 	
 	@Before
-	public void setUp() throws SQLException {
+	public void setUp() throws SQLException, DuplicateTableException, NullTableException {		
 		conn = new SimpleDBConnection(TEST_HOST, TEST_DB);	// Use a fresh connection for each test
 	}
 	@After
-	public void tearDown() {
+	public void tearDown() throws NullTableException, SQLException {	
 		conn.close();	// Make sure all resources release after each test
+		conn = null;
 	}
 	
 	@Test
 	public void testClose() throws SQLException {
+		String validityStatement = "SELECT";	// Will work as long as connection is open and valid
 		try {
-			conn.execute(VALIDITY_STATEMENT);
+			conn.execute(validityStatement);	// Connection is open
 		} catch (SQLException e) {
 			fail("Statement execution failed");
 		}
-		
 		conn.close();
 		
 		try {
-			conn.execute(VALIDITY_STATEMENT);
+			conn.execute(validityStatement);
 		} catch (NullPointerException e) {	// Should not be able to hit SQLException if resource access nullified
 			return;
 		}
@@ -59,24 +49,12 @@ public class SimpleDBConnectionTest {
 	}
 
 	@Test
-	public void testExecute() throws SQLException {	// TODO Less-dependent test
-		String testString = "SELECT * FROM " + TEST_TABLE;
-		ResultSet rs = conn.execute(testString);
-		rs.next();	// Move to row 1
-		
-		assertEquals(TEST_INT_VAL, rs.getInt(TEST_INT_COL_NUM));
-		assertEquals(TEST_STRING_VAL, rs.getString(TEST_STRING_COL_NUM));
-		assertEquals(TEST_BOOLEAN_VAL, rs.getBoolean(TEST_BOOLEAN_COL_NUM));
+	public void testExecute() {
+		fail("Unimplemented");
 	}
 	@Test
-	public void testExecuteParams() throws SQLException {	// TODO Less-dependent test
-		String testString = "SELECT * FROM " + TEST_TABLE + " WHERE " + TEST_INT_COL_NAME + " = ? AND " + TEST_STRING_COL_NAME + " = ? AND " + TEST_BOOLEAN_COL_NAME + " = ?";
-		ResultSet rs = conn.execute(testString, new Object[]{TEST_INT_VAL, TEST_STRING_VAL, TEST_BOOLEAN_VAL});
-		rs.next();	// Move to row 1
-		
-		assertEquals(TEST_INT_VAL, rs.getInt(TEST_INT_COL_NUM));
-		assertEquals(TEST_STRING_VAL, rs.getString(TEST_STRING_COL_NUM));
-		assertEquals(TEST_BOOLEAN_VAL, rs.getBoolean(TEST_BOOLEAN_COL_NUM));
+	public void testExecuteParams() {
+		fail("Unimplemented");
 	}
 	
 	@Test
@@ -113,15 +91,20 @@ public class SimpleDBConnectionTest {
 	}
 	
 	@Test
-	public void testContainsTable() {
-		assertTrue(conn.containsTable(TEST_TABLE));
-		assertTrue(!conn.containsTable("NOT_A_TABLE"));
+	public void testContainsTable() throws DuplicateTableException, SQLException, NullTableException {
+		String testTable = "TEST_TABLE_CONTAINS";
+		
+		assertTrue(!conn.containsTable(testTable));
+		conn.createTable(testTable, new PGColumn[]{new PGColumn("TEST_COLUMN", PGColumn.Type.BOOLEAN)});
+		assertTrue(conn.containsTable(testTable));
+		
+		conn.dropTable(testTable);
 	}
 	
 	@Test
-	public void testGetTables() {	// TODO Better assertion
-		String[] testTables = conn.getTables();
-		assertEquals(1, testTables.length);
-		assertTrue(TEST_TABLE.equalsIgnoreCase(testTables[0]));
+	public void testGetTables() {
+		for (String table : conn.getTables()) {
+			System.out.println(table);
+		}
 	}
 }

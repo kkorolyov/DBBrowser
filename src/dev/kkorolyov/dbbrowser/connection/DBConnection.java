@@ -25,11 +25,14 @@ public interface DBConnection {
 	 */
 	void close();
 	
+	/** @return {@code true} if the connection is closed */
+	boolean isClosed();
+	
 	/**
 	 * Executes a complete SQL statement without additional parameters.
 	 * @see #execute(String, Object[])
 	 */
-	ResultSet execute(String statement) throws SQLException;
+	ResultSet execute(String statement) throws SQLException;	// TODO Return a proprietary results collection
 	/**
 	 * Executes a partial SQL statement with object parameters.
 	 * @param baseStatement statement without parameters, with {@code ?} denoting an area where a parameter should be substituted in

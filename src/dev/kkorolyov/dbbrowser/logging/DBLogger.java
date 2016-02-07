@@ -27,14 +27,14 @@ public class DBLogger {
 	}
 	
 	/**
-	 * Enables info and debug logging for all loggers.
+	 * Enables info and debug logging for all {@code DBLogger} instances.
 	 */
 	public static void enableAll() {
 		for (DBLogger instance : instances.values())
 			instance.enable();
 	}
 	/**
-	 * Disables info and debug logging for all loggers.
+	 * Disables info and debug logging for all {@code DBLogger} instances.
 	 */
 	public static void disableAll() {
 		for (DBLogger instance : instances.values())
@@ -42,14 +42,14 @@ public class DBLogger {
 	}
 	
 	/**
-	 * Enables info logging for all loggers.
+	 * Enables info logging for all {@code DBLogger} instances.
 	 */
 	public static void enableInfoAll() {
 		for (DBLogger instance : instances.values())
 			instance.enableInfo();
 	}
 	/**
-	 * Disables info logging for all loggers.
+	 * Disables info logging for all {@code DBLogger} instances.
 	 */
 	public static void disableInfoAll() {
 		for (DBLogger instance : instances.values())
@@ -57,14 +57,14 @@ public class DBLogger {
 	}
 	
 	/**
-	 * Enables debug logging for all loggers.
+	 * Enables debug logging for all {@code DBLogger} instances.
 	 */
 	public static void enableDebugAll() {
 		for (DBLogger instance : instances.values())
 			instance.enableDebug();
 	}
 	/**
-	 * Disables debug logging for all loggers.
+	 * Disables debug logging for all {@code DBLogger} instances.
 	 */
 	public static void disableDebugAll() {
 		for (DBLogger instance : instances.values())

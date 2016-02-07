@@ -15,7 +15,7 @@ import dev.kkorolyov.dbbrowser.strings.Strings;
  * A simple {@code DBConnection} implementation.
  * @see DBConnection
  */
-public class SimpleDBConnection implements DBConnection {
+public class SimpleDBConnection implements DBConnection {	// TODO ClosedException
 	private static final DBLogger log = DBLogger.getLogger(SimpleDBConnection.class.getName());
 
 	private static final String jdbcDriverClassName = "org.postgresql.Driver";
@@ -64,7 +64,7 @@ public class SimpleDBConnection implements DBConnection {
 	
 	@Override
 	public void close() {
-		if (conn == null && openStatements == null)	// Already closed
+		if (isClosed())	// Already closed
 			return;
 		
 		try {
@@ -76,6 +76,13 @@ public class SimpleDBConnection implements DBConnection {
 		openStatements = null;
 		
 		log.debug("Closed " + getClass().getSimpleName() + " at URL: " + URL);
+	}
+	
+	@Override
+	public boolean isClosed() {
+		if (conn == null && openStatements == null)
+			return true;
+		return false;
 	}
 	
 	@Override
@@ -161,8 +168,8 @@ public class SimpleDBConnection implements DBConnection {
 		}
 		return newTable;
 	}
-	private String buildCreateTableStatement(String name, PGColumn[] columns) {
-		String createTableStatement = "CREATE TABLE " + name + " (";	// Initial part of create statement TODO Move to StatementBuilder
+	private String buildCreateTableStatement(String name, PGColumn[] columns) {	// TODO Move to StatementBuilder
+		String createTableStatement = "CREATE TABLE " + name + " (";	// Initial part of create statement
 		
 		for (int i = 0; i < columns.length - 1; i++) {	// Build all but last column names + types
 			createTableStatement += columns[i].getName()+ " " + columns[i].getTypeName() + ", ";
