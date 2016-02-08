@@ -5,6 +5,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
 import dev.kkorolyov.ezdb.column.Column;
+import dev.kkorolyov.ezdb.column.RowEntry;
 
 /**
  * Opens a connection to a single table on a database and provides an interface for table-oriented SQL statement execution.
@@ -17,9 +18,12 @@ public interface TableConnection {
 	 */
 	void close();
 	
+	/** @return {@code true} if the connection is closed */
+	boolean isClosed();
+	
 	/**
 	 * Executes a SELECT statement without any criteria.
-	 * @see #select(String[], Column[])
+	 * @see #select(String[], RowEntry[])
 	 */
 	ResultSet select(String[] columns) throws SQLException;
 	/**
@@ -29,7 +33,7 @@ public interface TableConnection {
 	 * @return results meeting the specified columns and criteria
 	 * @throws SQLException if specified parameters result in an invalid statement
 	 */
-	ResultSet select(String[] columns, Column[] criteria) throws SQLException;
+	ResultSet select(String[] columns, RowEntry[] criteria) throws SQLException;
 	
 	/**
 	 * Inserts a row into the table.

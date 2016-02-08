@@ -10,10 +10,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import dev.kkorolyov.ezdb.column.Column;
+import dev.kkorolyov.ezdb.column.SQLType;
 import dev.kkorolyov.ezdb.connection.DBConnection;
 import dev.kkorolyov.ezdb.connection.TableConnection;
-import dev.kkorolyov.ezdb.connection.concrete.SimpleDBConnection;
-import dev.kkorolyov.ezdb.connection.concrete.SimpleTableConnection;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
 import dev.kkorolyov.ezdb.logging.DBLogger;
@@ -34,9 +33,9 @@ public class SimpleTableConnectionTest {	// TODO Better tests
 			int testInt = (int) Math.random() * 100;	// Random int 0-99
 			String testString = "TEST_STRING";
 			
-			Column[] columns = {new Column(testColumnNames[0], Column.Type.BOOLEAN, testBoolean),
-																new Column(testColumnNames[1], Column.Type.INTEGER, testInt),
-																new Column(testColumnNames[2], Column.Type.VARCHAR, testString)};		
+			Column[] columns = {new Column(testColumnNames[0], SQLType.BOOLEAN),
+																new Column(testColumnNames[1], SQLType.INTEGER),
+																new Column(testColumnNames[2], SQLType.VARCHAR)};		
 			
 			dbConn.createTable(TEST_TABLE, columns);
 		}

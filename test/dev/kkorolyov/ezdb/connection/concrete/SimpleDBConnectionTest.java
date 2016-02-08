@@ -10,8 +10,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import dev.kkorolyov.ezdb.column.Column;
+import dev.kkorolyov.ezdb.column.SQLType;
 import dev.kkorolyov.ezdb.connection.DBConnection;
-import dev.kkorolyov.ezdb.connection.concrete.SimpleDBConnection;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
 
@@ -65,7 +65,7 @@ public class SimpleDBConnectionTest {
 		if (conn.containsTable(testTable))	// Clear stale test table from a previous run, if exists
 			conn.dropTable(testTable);
 		
-		Column.Type[] typeValues = Column.Type.values();
+		SQLType[] typeValues = SQLType.values();
 		Column[] testColumns = new Column[typeValues.length];	// Test all column types
 		for (int i = 0; i < testColumns.length; i++) {
 			testColumns[i] = new Column("TEST_COLUMN_" + i, typeValues[i]);
@@ -84,7 +84,7 @@ public class SimpleDBConnectionTest {
 		if (conn.containsTable(testTable))	// Clear stale test table from a previous run, if exists
 			conn.dropTable(testTable);
 		
-		conn.createTable(testTable, new Column[]{new Column("TEST_COLUMN", Column.Type.BOOLEAN)});
+		conn.createTable(testTable, new Column[]{new Column("TEST_COLUMN", SQLType.BOOLEAN)});
 		
 		assertTrue(conn.containsTable(testTable));
 		conn.dropTable(testTable);
@@ -96,7 +96,7 @@ public class SimpleDBConnectionTest {
 		String testTable = "TEST_TABLE_CONTAINS";
 		
 		assertTrue(!conn.containsTable(testTable));
-		conn.createTable(testTable, new Column[]{new Column("TEST_COLUMN", Column.Type.BOOLEAN)});
+		conn.createTable(testTable, new Column[]{new Column("TEST_COLUMN", SQLType.BOOLEAN)});
 		assertTrue(conn.containsTable(testTable));
 		
 		conn.dropTable(testTable);

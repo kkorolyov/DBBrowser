@@ -4,6 +4,8 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
 import dev.kkorolyov.ezdb.column.Column;
+import dev.kkorolyov.ezdb.column.RowEntry;
+import dev.kkorolyov.ezdb.column.SQLType;
 import dev.kkorolyov.ezdb.connection.DBConnection;
 import dev.kkorolyov.ezdb.connection.TableConnection;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
@@ -16,7 +18,7 @@ import dev.kkorolyov.ezdb.statement.StatementBuilder;
  * @see TableConnection
  * @see DBConnection
  */
-public class SimpleTableConnection implements TableConnection {
+public class SimpleTableConnection implements TableConnection {	// TODO Return if isClosed() for every method
 	private static final DBLogger log = DBLogger.getLogger(SimpleTableConnection.class.getName());
 
 	private DBConnection conn;
@@ -37,12 +39,12 @@ public class SimpleTableConnection implements TableConnection {
 		this.conn = conn;
 		this.tableName = tableName;		
 		
-		metaDataStatement = StatementBuilder.buildSelect(tableName, null, null);
+		metaDataStatement = StatementBuilder.buildSelect(tableName, null, null);	// Metadata statement = "SELECT * FROM <table>"
 	}
 	
 	@Override
 	public void close() {
-		if (conn == null)	// Already closed
+		if (isClosed())	// Already closed
 			return;
 		
 		conn.close();
@@ -50,11 +52,16 @@ public class SimpleTableConnection implements TableConnection {
 	}
 	
 	@Override
+	public boolean isClosed() {
+		return (conn == null);
+	}
+	
+	@Override
 	public ResultSet select(String[] columns) throws SQLException {
 		return select(columns, null);
 	}
 	@Override
-	public ResultSet select(String[] columns, Column[] criteria) throws SQLException {
+	public ResultSet select(String[] columns, RowEntry[] criteria) throws SQLException {
 		Object[] selectParameters = null;	// Parameters to use in execute call
 				
 		if (criteria != null && criteria.length > 0) {
@@ -63,7 +70,15 @@ public class SimpleTableConnection implements TableConnection {
 				selectParameters[i] = criteria[i].getValue();	// Build parameters to use in execute call
 			}		
 		}
-		return conn.execute(StatementBuilder.buildSelect(tableName, columns, criteria), selectParameters);	// Execute marked statement with substituted parameters
+		return conn.execute(StatementBuilder.buildSelect(tableName, columns, extractColumns(criteria)), selectParameters);	// Execute marked statement with substituted parameters
+	}
+	private static Column[] extractColumns(RowEntry[] rowEntries) {
+		Column[] columns = new Column[rowEntries.length];
+		
+		for (int i = 0; i < columns.length; i++) {
+			columns[i] = rowEntries[i].getColumn();
+		}
+		return columns;
 	}
 	
 	@Override
@@ -87,7 +102,7 @@ public class SimpleTableConnection implements TableConnection {
 	}
 	
 	@Override
-	public ResultSetMetaData getMetaData() {	// TODO executeVolatile(), closes statement immediately before return
+	public ResultSetMetaData getMetaData() {	// TODO executeVolatile() in DBConnection, closes statement immediately before return
 		ResultSetMetaData rsmd = null;
 		try {
 			rsmd = conn.execute(metaDataStatement).getMetaData();
@@ -119,28 +134,13 @@ public class SimpleTableConnection implements TableConnection {
 		
 		for (int i = 0; i < columns.length; i++) {	// Build columns
 			try {
-				String columnName = rsmd.getColumnName(i + 1);	// RSMD column names start from 1
-				Column.Type columnType = null;
+				String columnName = rsmd.getColumnName(i + 1);	// RSMD columns start from 1
+				int columnTypeCode = rsmd.getColumnType(i + 1);
+				SQLType columnType = null;
 				
-				switch (rsmd.getColumnType(i + 1)) {	// Set correct column type
-				case (java.sql.Types.BOOLEAN):
-					columnType = Column.Type.BOOLEAN;
-					break;
-				case (java.sql.Types.CHAR):
-					columnType = Column.Type.CHAR;
-					break;
-				case (java.sql.Types.DOUBLE):
-					columnType = Column.Type.DOUBLE;
-					break;
-				case (java.sql.Types.INTEGER):
-					columnType = Column.Type.INTEGER;
-					break;
-				case (java.sql.Types.REAL):
-					columnType = Column.Type.REAL;
-					break;
-				case (java.sql.Types.VARCHAR):
-					columnType = Column.Type.VARCHAR;
-					break;
+				for (SQLType type : SQLType.values()) {	// Set appropriate column type
+					if (type.getTypeCode() == columnTypeCode)
+						columnType = type;
 				}
 				columns[i] = new Column(columnName, columnType);
 			} catch (SQLException e) {

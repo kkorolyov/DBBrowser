@@ -43,11 +43,6 @@ public interface DBConnection {
 	ResultSet execute(String baseStatement, Object[] parameters) throws SQLException;
 	
 	/**
-	 * Executes a complete SQL update statement without additional parameters.
-	 * @see #update(String, Object[])
-	 */
-	int update(String statement) throws SQLException;	// TODO May be useless
-	/**
 	 * Executes a partial SQL update statement with object parameters.
 	 * @param baseStatement statement without parameters, with {@code ?} denoting an area where a parameter should be substituted in
 	 * @param parameters parameters to use, will be substituted into the base statement in the order of appearance, if this array is empty or {@code null}, only the base statement is executed

@@ -9,13 +9,14 @@ import dev.kkorolyov.ezdb.connection.TableConnection;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
 import dev.kkorolyov.ezdb.logging.DBLogger;
+import dev.kkorolyov.ezdb.statement.StatementBuilder;
 import dev.kkorolyov.ezdb.strings.Strings;
 
 /**
  * A simple {@code DBConnection} implementation.
  * @see DBConnection
  */
-public class SimpleDBConnection implements DBConnection {	// TODO ClosedException
+public class SimpleDBConnection implements DBConnection {	// TODO Return if isClosed() on every method
 	private static final DBLogger log = DBLogger.getLogger(SimpleDBConnection.class.getName());
 
 	private static final String jdbcDriverClassName = "org.postgresql.Driver";
@@ -80,9 +81,7 @@ public class SimpleDBConnection implements DBConnection {	// TODO ClosedExceptio
 	
 	@Override
 	public boolean isClosed() {
-		if (conn == null && openStatements == null)
-			return true;
-		return false;
+		return (conn == null && openStatements == null);
 	}
 	
 	@Override
@@ -97,10 +96,6 @@ public class SimpleDBConnection implements DBConnection {	// TODO ClosedExceptio
 		return rs;
 	}
 	
-	@Override
-	public int update(String statement) throws SQLException {	// TODO May be useless
-		return update(statement, null);
-	}
 	@Override
 	public int update(String baseStatement, Object[] parameters) throws SQLException {
 		PreparedStatement s = setupStatement(baseStatement, parameters);
@@ -158,24 +153,15 @@ public class SimpleDBConnection implements DBConnection {	// TODO ClosedExceptio
 		if (containsTable(name))
 			throw new DuplicateTableException(DB, name);
 		
-		execute(buildCreateTableStatement(name, columns));
+		execute(StatementBuilder.buildCreate(name, columns));
 		
 		TableConnection newTable = null;
 		try {
 			newTable = new SimpleTableConnection(this, name);
-		} catch (NullTableException e) {	// Should not be a null table
-			log.exceptionWarning(e);
+		} catch (NullTableException e) {	// Should not be a null table, just created it
+			log.exceptionSevere(e);
 		}
 		return newTable;
-	}
-	private String buildCreateTableStatement(String name, Column[] columns) {	// TODO Move to StatementBuilder
-		String createTableStatement = "CREATE TABLE " + name + " (";	// Initial part of create statement
-		
-		for (int i = 0; i < columns.length - 1; i++) {	// Build all but last column names + types
-			createTableStatement += columns[i].getName()+ " " + columns[i].getTypeName() + ", ";
-		}
-		createTableStatement += columns[columns.length - 1].getName() + " " + columns[columns.length - 1].getTypeName() + ")";	// End columns
-		return createTableStatement;
 	}
 	
 	@Override
@@ -183,8 +169,7 @@ public class SimpleDBConnection implements DBConnection {	// TODO ClosedExceptio
 		if (!containsTable(table))	// No such table to drop
 			throw new NullTableException(DB, table);
 		
-		String dropTableStatement = "DROP TABLE " + table;
-		execute(dropTableStatement);
+		execute(StatementBuilder.buildDrop(table));
 	}
 	
 	@Override
