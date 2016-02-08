@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
-import dev.kkorolyov.ezdb.column.PGColumn;
+import dev.kkorolyov.ezdb.column.Column;
 
 /**
  * Opens a connection to a single table on a database and provides an interface for table-oriented SQL statement execution.
@@ -19,7 +19,7 @@ public interface TableConnection {
 	
 	/**
 	 * Executes a SELECT statement without any criteria.
-	 * @see #select(String[], PGColumn[])
+	 * @see #select(String[], Column[])
 	 */
 	ResultSet select(String[] columns) throws SQLException;
 	/**
@@ -29,14 +29,31 @@ public interface TableConnection {
 	 * @return results meeting the specified columns and criteria
 	 * @throws SQLException if specified parameters result in an invalid statement
 	 */
-	ResultSet select(String[] columns, PGColumn[] criteria) throws SQLException;
+	ResultSet select(String[] columns, Column[] criteria) throws SQLException;
 	
 	/**
 	 * Inserts a row into the table.
-	 * @param values column values in order of column appearance; number and types of values must be equal to the number and types of columns 
+	 * @param values columns to insert, specified as a name+value pair
+	 * @return number of inserted rows
 	 * @throws SQLException if specified values result in an invalid statement
 	 */
-	void insert(Object[] values) throws SQLException;
+	int insert(Column[] values) throws SQLException;
+	
+	/**
+	 * Deletes rows matching the specified criteria.
+	 * @param criteria specified as columns with certain values
+	 * @return number of deleted rows
+	 * @throws SQLException if specified values result in an invalid statement
+	 */
+	int delete(Column[] criteria) throws SQLException;
+	
+	/**
+	 * Updates columns to new values.
+	 * @param criteria criteria to match
+	 * @return number of updated rows
+	 * @throws SQLException
+	 */
+	int update(Column[] criteria) throws SQLException;
 	
 	/**
 	 * Closes all open statements.
@@ -60,7 +77,7 @@ public interface TableConnection {
 	/**
 	 * @return all table columns
 	 */
-	PGColumn[] getColumns();
+	Column[] getColumns();
 	
 	/**
 	 * @return total number of columns in this table

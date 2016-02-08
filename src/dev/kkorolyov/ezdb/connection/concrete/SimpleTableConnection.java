@@ -3,7 +3,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
-import dev.kkorolyov.ezdb.column.PGColumn;
+import dev.kkorolyov.ezdb.column.Column;
 import dev.kkorolyov.ezdb.connection.DBConnection;
 import dev.kkorolyov.ezdb.connection.TableConnection;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
@@ -54,7 +54,7 @@ public class SimpleTableConnection implements TableConnection {
 		return select(columns, null);
 	}
 	@Override
-	public ResultSet select(String[] columns, PGColumn[] criteria) throws SQLException {
+	public ResultSet select(String[] columns, Column[] criteria) throws SQLException {
 		Object[] selectParameters = null;	// Parameters to use in execute call
 				
 		if (criteria != null && criteria.length > 0) {
@@ -67,9 +67,19 @@ public class SimpleTableConnection implements TableConnection {
 	}
 	
 	@Override
-	public void insert(Object[] values) throws SQLException {		
-		conn.execute(StatementBuilder.buildInsert(tableName, values.length), values);
+	public int insert(Column[] values) throws SQLException {		
+		return conn.update(StatementBuilder.buildInsert(tableName, values.length), values);
 	}
+	
+	@Override
+	public int delete(Column[] criteria) throws SQLException {
+		return 0;	// TODO
+	};
+	
+	@Override
+	public int update(Column[] criteria) throws SQLException {
+		return 0;	// TODO
+	};
 	
 	@Override
 	public void flush() {
@@ -97,7 +107,7 @@ public class SimpleTableConnection implements TableConnection {
 	}
 	
 	@Override
-	public PGColumn[] getColumns() {	// TODO Reorganize into try
+	public Column[] getColumns() {	// TODO Reorganize into try
 		ResultSetMetaData rsmd = getMetaData();
 		int columnCount = 0;
 		try {
@@ -105,34 +115,34 @@ public class SimpleTableConnection implements TableConnection {
 		} catch (SQLException e) {
 			log.exceptionSevere(e);
 		}
-		PGColumn[] columns = new PGColumn[columnCount];
+		Column[] columns = new Column[columnCount];
 		
 		for (int i = 0; i < columns.length; i++) {	// Build columns
 			try {
 				String columnName = rsmd.getColumnName(i + 1);	// RSMD column names start from 1
-				PGColumn.Type columnType = null;
+				Column.Type columnType = null;
 				
 				switch (rsmd.getColumnType(i + 1)) {	// Set correct column type
 				case (java.sql.Types.BOOLEAN):
-					columnType = PGColumn.Type.BOOLEAN;
+					columnType = Column.Type.BOOLEAN;
 					break;
 				case (java.sql.Types.CHAR):
-					columnType = PGColumn.Type.CHAR;
+					columnType = Column.Type.CHAR;
 					break;
 				case (java.sql.Types.DOUBLE):
-					columnType = PGColumn.Type.DOUBLE;
+					columnType = Column.Type.DOUBLE;
 					break;
 				case (java.sql.Types.INTEGER):
-					columnType = PGColumn.Type.INTEGER;
+					columnType = Column.Type.INTEGER;
 					break;
 				case (java.sql.Types.REAL):
-					columnType = PGColumn.Type.REAL;
+					columnType = Column.Type.REAL;
 					break;
 				case (java.sql.Types.VARCHAR):
-					columnType = PGColumn.Type.VARCHAR;
+					columnType = Column.Type.VARCHAR;
 					break;
 				}
-				columns[i] = new PGColumn(columnName, columnType);
+				columns[i] = new Column(columnName, columnType);
 			} catch (SQLException e) {
 				log.exceptionSevere(e);
 			}

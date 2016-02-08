@@ -9,7 +9,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import dev.kkorolyov.ezdb.column.PGColumn;
+import dev.kkorolyov.ezdb.column.Column;
 import dev.kkorolyov.ezdb.connection.DBConnection;
 import dev.kkorolyov.ezdb.connection.TableConnection;
 import dev.kkorolyov.ezdb.connection.concrete.SimpleDBConnection;
@@ -19,7 +19,7 @@ import dev.kkorolyov.ezdb.exceptions.NullTableException;
 import dev.kkorolyov.ezdb.logging.DBLogger;
 
 @SuppressWarnings("javadoc")
-public class SimpleTableConnectionTest {
+public class SimpleTableConnectionTest {	// TODO Better tests
 	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB", TEST_TABLE = "TEST_TABLE";
 
 	private static DBConnection dbConn;
@@ -34,9 +34,9 @@ public class SimpleTableConnectionTest {
 			int testInt = (int) Math.random() * 100;	// Random int 0-99
 			String testString = "TEST_STRING";
 			
-			PGColumn[] columns = {new PGColumn(testColumnNames[0], PGColumn.Type.BOOLEAN, testBoolean),
-																new PGColumn(testColumnNames[1], PGColumn.Type.INTEGER, testInt),
-																new PGColumn(testColumnNames[2], PGColumn.Type.VARCHAR, testString)};		
+			Column[] columns = {new Column(testColumnNames[0], Column.Type.BOOLEAN, testBoolean),
+																new Column(testColumnNames[1], Column.Type.INTEGER, testInt),
+																new Column(testColumnNames[2], Column.Type.VARCHAR, testString)};		
 			
 			dbConn.createTable(TEST_TABLE, columns);
 		}
@@ -57,9 +57,9 @@ public class SimpleTableConnectionTest {
 		int testInt = (int) Math.random() * 100;	// Random int 0-99
 		String testString = "TEST_STRING";
 		
-		PGColumn[] testColumns = {new PGColumn(testColumnNames[0], PGColumn.Type.BOOLEAN, testBoolean),
-															new PGColumn(testColumnNames[1], PGColumn.Type.INTEGER, testInt),
-															new PGColumn(testColumnNames[2], PGColumn.Type.VARCHAR, testString)};		
+		Column[] testColumns = {new Column(testColumnNames[0], Column.Type.BOOLEAN, testBoolean),
+															new Column(testColumnNames[1], Column.Type.INTEGER, testInt),
+															new Column(testColumnNames[2], Column.Type.VARCHAR, testString)};		
 		
 		DBConnection dbConn = new SimpleDBConnection(TEST_HOST, TEST_DB);
 		dbConn.dropTable(TEST_TABLE);
@@ -83,6 +83,6 @@ public class SimpleTableConnectionTest {
 	
 	@Test
 	public void testInsert() throws SQLException {
-		conn.insert(new Object[]{true, 5, "Thing"});
+		//System.out.println(conn.insert(new Object[]{true, 5, "Thing"}));
 	}
 }

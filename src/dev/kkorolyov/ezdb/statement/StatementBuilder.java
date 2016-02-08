@@ -1,6 +1,6 @@
 package dev.kkorolyov.ezdb.statement;
 
-import dev.kkorolyov.ezdb.column.PGColumn;
+import dev.kkorolyov.ezdb.column.Column;
 import dev.kkorolyov.ezdb.logging.DBLogger;
 
 /**
@@ -20,7 +20,7 @@ public class StatementBuilder {
 	 * @param criteria specified as columns with certain values, added in the order specified; if {@code null} or empty, will not add any criteria
 	 * @return formatted SELECT statement
 	 */
-	public static String buildSelect(String table, String[] columns, PGColumn[] criteria) {
+	public static String buildSelect(String table, String[] columns, Column[] criteria) {
 		log.debug("Building SELECT statement");
 		
 		String statement = selectStatement.replaceFirst(Marker.table, table);	// Set table
@@ -59,7 +59,7 @@ public class StatementBuilder {
 		
 		return selectColumns.toString();
 	}
-	private static String buildSelectCriteriaMarkers(PGColumn[] criteria) {
+	private static String buildSelectCriteriaMarkers(Column[] criteria) {
 		log.debug("Adding " + String.valueOf(criteria.length) + " criterion markers to SELECT statement");
 		
 		StringBuilder selectCriteria = new StringBuilder();

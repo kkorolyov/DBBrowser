@@ -9,7 +9,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import dev.kkorolyov.ezdb.column.PGColumn;
+import dev.kkorolyov.ezdb.column.Column;
 import dev.kkorolyov.ezdb.connection.DBConnection;
 import dev.kkorolyov.ezdb.connection.concrete.SimpleDBConnection;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
@@ -65,10 +65,10 @@ public class SimpleDBConnectionTest {
 		if (conn.containsTable(testTable))	// Clear stale test table from a previous run, if exists
 			conn.dropTable(testTable);
 		
-		PGColumn.Type[] typeValues = PGColumn.Type.values();
-		PGColumn[] testColumns = new PGColumn[typeValues.length];	// Test all column types
+		Column.Type[] typeValues = Column.Type.values();
+		Column[] testColumns = new Column[typeValues.length];	// Test all column types
 		for (int i = 0; i < testColumns.length; i++) {
-			testColumns[i] = new PGColumn("TEST_COLUMN_" + i, typeValues[i]);
+			testColumns[i] = new Column("TEST_COLUMN_" + i, typeValues[i]);
 		}
 		
 		assertTrue(!conn.containsTable(testTable));
@@ -84,7 +84,7 @@ public class SimpleDBConnectionTest {
 		if (conn.containsTable(testTable))	// Clear stale test table from a previous run, if exists
 			conn.dropTable(testTable);
 		
-		conn.createTable(testTable, new PGColumn[]{new PGColumn("TEST_COLUMN", PGColumn.Type.BOOLEAN)});
+		conn.createTable(testTable, new Column[]{new Column("TEST_COLUMN", Column.Type.BOOLEAN)});
 		
 		assertTrue(conn.containsTable(testTable));
 		conn.dropTable(testTable);
@@ -96,7 +96,7 @@ public class SimpleDBConnectionTest {
 		String testTable = "TEST_TABLE_CONTAINS";
 		
 		assertTrue(!conn.containsTable(testTable));
-		conn.createTable(testTable, new PGColumn[]{new PGColumn("TEST_COLUMN", PGColumn.Type.BOOLEAN)});
+		conn.createTable(testTable, new Column[]{new Column("TEST_COLUMN", Column.Type.BOOLEAN)});
 		assertTrue(conn.containsTable(testTable));
 		
 		conn.dropTable(testTable);

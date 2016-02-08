@@ -3,7 +3,7 @@ import java.sql.*;
 import java.util.LinkedList;
 import java.util.List;
 
-import dev.kkorolyov.ezdb.column.PGColumn;
+import dev.kkorolyov.ezdb.column.Column;
 import dev.kkorolyov.ezdb.connection.DBConnection;
 import dev.kkorolyov.ezdb.connection.TableConnection;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
@@ -105,7 +105,7 @@ public class SimpleDBConnection implements DBConnection {	// TODO ClosedExceptio
 	public int update(String baseStatement, Object[] parameters) throws SQLException {
 		PreparedStatement s = setupStatement(baseStatement, parameters);
 		
-		int updated = s.execute() ? s.getUpdateCount() : 0;	// UpdateCount if returns, 0 if otherwise
+		int updated = !s.execute() ? s.getUpdateCount() : 0;	// If false, returns an update count instead of result set
 		return updated;
 	}
 	
@@ -154,7 +154,7 @@ public class SimpleDBConnection implements DBConnection {	// TODO ClosedExceptio
 	}
 	
 	@Override
-	public TableConnection createTable(String name, PGColumn[] columns) throws DuplicateTableException, SQLException {
+	public TableConnection createTable(String name, Column[] columns) throws DuplicateTableException, SQLException {
 		if (containsTable(name))
 			throw new DuplicateTableException(DB, name);
 		
@@ -168,7 +168,7 @@ public class SimpleDBConnection implements DBConnection {	// TODO ClosedExceptio
 		}
 		return newTable;
 	}
-	private String buildCreateTableStatement(String name, PGColumn[] columns) {	// TODO Move to StatementBuilder
+	private String buildCreateTableStatement(String name, Column[] columns) {	// TODO Move to StatementBuilder
 		String createTableStatement = "CREATE TABLE " + name + " (";	// Initial part of create statement
 		
 		for (int i = 0; i < columns.length - 1; i++) {	// Build all but last column names + types

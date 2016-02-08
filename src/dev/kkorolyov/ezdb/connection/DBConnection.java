@@ -3,7 +3,7 @@ package dev.kkorolyov.ezdb.connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import dev.kkorolyov.ezdb.column.PGColumn;
+import dev.kkorolyov.ezdb.column.Column;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
 
@@ -46,12 +46,12 @@ public interface DBConnection {
 	 * Executes a complete SQL update statement without additional parameters.
 	 * @see #update(String, Object[])
 	 */
-	int update(String statement) throws SQLException;
+	int update(String statement) throws SQLException;	// TODO May be useless
 	/**
 	 * Executes a partial SQL update statement with object parameters.
 	 * @param baseStatement statement without parameters, with {@code ?} denoting an area where a parameter should be substituted in
 	 * @param parameters parameters to use, will be substituted into the base statement in the order of appearance, if this array is empty or {@code null}, only the base statement is executed
-	 * @return number of affected rows, or {@code null} if the statement does not return number of affected rows
+	 * @return number of affected rows
 	 * @throws SQLException if the executed statement is invalid
 	 */
 	int update(String baseStatement, Object[] parameters) throws SQLException;
@@ -69,7 +69,7 @@ public interface DBConnection {
 	 * @throws SQLException if specified parameters lead to an invalid statement execution
 	 * @return connection to the recently-created table
 	 */
-	TableConnection createTable(String name, PGColumn[] columns) throws DuplicateTableException, SQLException;
+	TableConnection createTable(String name, Column[] columns) throws DuplicateTableException, SQLException;
 	/**
 	 * Drops a table from the database.
 	 * @param table name of table to drop

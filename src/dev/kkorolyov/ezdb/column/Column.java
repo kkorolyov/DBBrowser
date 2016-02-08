@@ -1,20 +1,20 @@
 package dev.kkorolyov.ezdb.column;
 
 /**
- * Describes the name and type of a postgres database column.
+ * Describes the name, type, and (optional) value of a column in a SQL database table row.
  */
 // TODO Loose-couple types
 // TODO Use factory for different database table column types
-public class PGColumn {		// TODO Make generic value
+public class Column {
 	private String name;
 	private Type type;
 	private Object value;
 	
 	/**
 	 * Creates a column of the specified name and type.
-	 * @see #PGColumn(String, Type, Object)
+	 * @see #Column(String, Type, Object)
 	 */
-	public PGColumn(String name, Type type) {
+	public Column(String name, Type type) {
 		this(name, type, null);
 	}
 	/**
@@ -23,7 +23,7 @@ public class PGColumn {		// TODO Make generic value
 	 * @param type column type from {@code PGColumn.Type}
 	 * @param value object of a type matching the {@code Type} specified
 	 */
-	public PGColumn(String name, Type type, Object value) {
+	public Column(String name, Type type, Object value) {
 		this.name = name;
 		this.type = type;
 		this.value = value;
@@ -51,7 +51,7 @@ public class PGColumn {		// TODO Make generic value
 	/**
 	 * Sets the column's value.
 	 * Necessary in order to use this column as a criterion in a statement.
-	 * @param value
+	 * @param value value to set
 	 */
 	public void setValue(Object value) {	// TODO Type check
 		this.value = value;
