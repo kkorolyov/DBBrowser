@@ -57,28 +57,45 @@ public class SimpleTableConnection implements TableConnection {	// TODO Return i
 	}
 	
 	@Override
-	public ResultSet select(String[] columns) throws SQLException {
+	public ResultSet select(Column[] columns) throws SQLException {
 		return select(columns, null);
 	}
 	@Override
-	public ResultSet select(String[] columns, RowEntry[] criteria) throws SQLException {
-		Object[] selectParameters = null;	// Parameters to use in execute call
-				
-		if (criteria != null && criteria.length > 0) {
-			selectParameters = new Object[criteria.length];
-			for (int i = 0; i < selectParameters.length; i++) {
-				selectParameters[i] = criteria[i].getValue();	// Build parameters to use in execute call
+	public ResultSet select(Column[] columns, RowEntry[] criteria) throws SQLException {
+		return conn.execute(StatementBuilder.buildSelect(tableName, columns, criteria), extractValues(criteria));	// Execute marked statement with substituted parameters
+	}
+	private static String[] extractNames(Column[] columns) {
+		String[] names = null;	// Parameters to use in execute call
+		
+		if (columns != null && columns.length > 0) {
+			names = new String[columns.length];
+			for (int i = 0; i < names.length; i++) {
+				names[i] = columns[i].getName();	// Build parameters to use in execute call
 			}		
 		}
-		return conn.execute(StatementBuilder.buildSelect(tableName, columns, extractColumns(criteria)), selectParameters);	// Execute marked statement with substituted parameters
+		return names;
 	}
-	private static Column[] extractColumns(RowEntry[] rowEntries) {
-		Column[] columns = new Column[rowEntries.length];
+	private static String[] extractNames(RowEntry[] entries) {
+		String[] names = null;	// Parameters to use in execute call
 		
-		for (int i = 0; i < columns.length; i++) {
-			columns[i] = rowEntries[i].getColumn();
+		if (entries != null && entries.length > 0) {
+			names = new String[entries.length];
+			for (int i = 0; i < names.length; i++) {
+				names[i] = entries[i].getColumn().getName();	// Build parameters to use in execute call
+			}		
 		}
-		return columns;
+		return names;
+	}
+	private static Object[] extractValues(RowEntry[] entries) {
+		Object[] values = null;	// Parameters to use in execute call
+		
+		if (entries != null && entries.length > 0) {
+			values = new Object[entries.length];
+			for (int i = 0; i < values.length; i++) {
+				values[i] = entries[i].getValue();	// Build parameters to use in execute call
+			}		
+		}
+		return values;
 	}
 	
 	@Override

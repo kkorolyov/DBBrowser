@@ -1,6 +1,7 @@
 package dev.kkorolyov.ezdb.statement;
 
 import dev.kkorolyov.ezdb.construct.Column;
+import dev.kkorolyov.ezdb.construct.RowEntry;
 import dev.kkorolyov.ezdb.logging.DebugLogger;
 
 /**
@@ -68,7 +69,7 @@ public class StatementBuilder {
 	 * @param criteria specified as columns with certain values, added in the order specified; if {@code null} or empty, will not add any criteria
 	 * @return formatted SELECT statement
 	 */
-	public static String buildSelect(String table, String[] columns, Column[] criteria) {
+	public static String buildSelect(String table, Column[] columns, RowEntry[] criteria) {
 		log.debug("Building SELECT statement");
 		
 		String statement = selectStatement.replaceFirst(Marker.table, table);	// Set table
@@ -84,7 +85,7 @@ public class StatementBuilder {
 		
 		return statement;
 	}
-	private static String buildSelectColumns(String[] columns) {
+	private static String buildSelectColumns(Column[] columns) {
 		if (columns == null || columns.length <= 0) {
 			log.debug("No columns to add, returning wildcard '" + wildcard + "'");
 			return wildcard;
@@ -96,25 +97,27 @@ public class StatementBuilder {
 		String delimeter = ",";
 		
 		for (int i = 0; i < columns.length; i++) {
-			if (columns[i].equals(wildcard)) {
+			String columnName = columns[i].getName();
+			
+			if (columnName.equals(wildcard)) {
 				log.debug("Found wildcard '" + columns[i] + "', returning");
 
 				return wildcard;	// If any column is a wildcard, use a wildcard for statement
 			}
-			selectColumns.append(columns[i]).append(delimeter);	// Append "<column>," to delimit columns
+			selectColumns.append(columns[i].getName()).append(delimeter);	// Append "<column>," to delimit columns
 		}
 		replaceFinalDelimeter(selectColumns, delimeter, "");	// Remove final delimiter
 		
 		return selectColumns.toString();
 	}
-	private static String buildSelectCriteriaMarkers(Column[] criteria) {
+	private static String buildSelectCriteriaMarkers(RowEntry[] criteria) {
 		log.debug("Adding " + String.valueOf(criteria.length) + " criterion markers to SELECT statement");
 		
 		StringBuilder selectCriteria = new StringBuilder();
 		String marker = "=?", delimeter = " AND ";
 		
 		for (int i = 0; i < criteria.length; i++) {
-			selectCriteria.append(criteria[i].getName()).append(marker).append(delimeter);	// Append "<criteria>=? AND " to delimit criteria
+			selectCriteria.append(criteria[i].getColumn().getName()).append(marker).append(delimeter);	// Append "<criteria>=? AND " to delimit criteria
 		}
 		replaceFinalDelimeter(selectCriteria, delimeter, "");	// Remove final delimiter
 		

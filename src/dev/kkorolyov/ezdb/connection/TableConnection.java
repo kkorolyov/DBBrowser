@@ -23,17 +23,17 @@ public interface TableConnection {
 	
 	/**
 	 * Executes a SELECT statement without any criteria.
-	 * @see #select(String[], RowEntry[])
+	 * @see #select(Column[], RowEntry[])
 	 */
-	ResultSet select(String[] columns) throws SQLException;
+	ResultSet select(Column[] columns) throws SQLException;
 	/**
 	 * Executes a SELECT statement with additional criteria.
-	 * @param columns column(s) to return; if any column = "*", will return all columns
+	 * @param columns column(s) to return; if any column name = "*", will return all columns
 	 * @param criteria specified as columns with certain values; if {@code null} or empty, will return all rows
 	 * @return results meeting the specified columns and criteria
 	 * @throws SQLException if specified parameters result in an invalid statement
 	 */
-	ResultSet select(String[] columns, RowEntry[] criteria) throws SQLException;
+	ResultSet select(Column[] columns, RowEntry[] criteria) throws SQLException;
 	
 	/**
 	 * Inserts a row into the table.
