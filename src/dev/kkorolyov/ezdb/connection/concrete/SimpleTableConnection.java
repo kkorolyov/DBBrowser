@@ -3,25 +3,25 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
-import dev.kkorolyov.ezdb.column.Column;
-import dev.kkorolyov.ezdb.column.RowEntry;
-import dev.kkorolyov.ezdb.column.SQLType;
-import dev.kkorolyov.ezdb.connection.DBConnection;
+import dev.kkorolyov.ezdb.connection.DatabaseConnection;
 import dev.kkorolyov.ezdb.connection.TableConnection;
+import dev.kkorolyov.ezdb.construct.Column;
+import dev.kkorolyov.ezdb.construct.RowEntry;
+import dev.kkorolyov.ezdb.construct.SqlType;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
-import dev.kkorolyov.ezdb.logging.DBLogger;
+import dev.kkorolyov.ezdb.logging.DebugLogger;
 import dev.kkorolyov.ezdb.statement.StatementBuilder;
 
 /**
  * A simple {@code TableConnection} implementation.
  * Uses a {@code DBConnection} to execute statements formatted for its table.
  * @see TableConnection
- * @see DBConnection
+ * @see DatabaseConnection
  */
 public class SimpleTableConnection implements TableConnection {	// TODO Return if isClosed() for every method
-	private static final DBLogger log = DBLogger.getLogger(SimpleTableConnection.class.getName());
+	private static final DebugLogger log = DebugLogger.getLogger(SimpleTableConnection.class.getName());
 
-	private DBConnection conn;
+	private DatabaseConnection conn;
 	private String tableName;
 	
 	private final String metaDataStatement;
@@ -32,7 +32,7 @@ public class SimpleTableConnection implements TableConnection {	// TODO Return i
 	 * @param tableName name of table to connect to
 	 * @throws NullTableException if such a table does not exist on the specified database
 	 */
-	public SimpleTableConnection(DBConnection conn, String tableName) throws NullTableException {		
+	public SimpleTableConnection(DatabaseConnection conn, String tableName) throws NullTableException {		
 		if (!conn.containsTable(tableName))
 			throw new NullTableException(conn.getDBName(), tableName);
 		
@@ -136,9 +136,9 @@ public class SimpleTableConnection implements TableConnection {	// TODO Return i
 			try {
 				String columnName = rsmd.getColumnName(i + 1);	// RSMD columns start from 1
 				int columnTypeCode = rsmd.getColumnType(i + 1);
-				SQLType columnType = null;
+				SqlType columnType = null;
 				
-				for (SQLType type : SQLType.values()) {	// Set appropriate column type
+				for (SqlType type : SqlType.values()) {	// Set appropriate column type
 					if (type.getTypeCode() == columnTypeCode)
 						columnType = type;
 				}

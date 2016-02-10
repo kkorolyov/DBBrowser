@@ -4,8 +4,8 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
-import dev.kkorolyov.ezdb.column.Column;
-import dev.kkorolyov.ezdb.column.RowEntry;
+import dev.kkorolyov.ezdb.construct.Column;
+import dev.kkorolyov.ezdb.construct.RowEntry;
 
 /**
  * Opens a connection to a single table on a database and provides an interface for table-oriented SQL statement execution.

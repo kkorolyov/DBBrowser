@@ -1,4 +1,4 @@
-package dev.kkorolyov.ezdb.column;
+package dev.kkorolyov.ezdb.construct;
 
 /**
  * A representation of a column in a SQL database.
@@ -6,14 +6,14 @@ package dev.kkorolyov.ezdb.column;
  */
 public class Column {
 	private String name;
-	private SQLType type;
+	private SqlType type;
 	
 	/**
 	 * Creates a column of the specified name and type.
 	 * @param name column name
 	 * @param type column type
 	 */
-	public Column(String name, SQLType type) {
+	public Column(String name, SqlType type) {
 		this.name = name;
 		this.type = type;
 	}
@@ -23,7 +23,7 @@ public class Column {
 		return name;
 	}
 	/** @return column type */
-	public SQLType getType() {
+	public SqlType getType() {
 		return type;
 	}
 }

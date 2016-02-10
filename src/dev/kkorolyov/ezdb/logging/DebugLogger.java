@@ -8,8 +8,8 @@ import java.util.logging.Logger;
 /**
  * Provides a centralized logging interface for DBBrowser classes.
  */
-public class DBLogger {
-	private static final Map<String, DBLogger> instances = new HashMap<>();
+public class DebugLogger {
+	private static final Map<String, DebugLogger> instances = new HashMap<>();
 	
 	private Logger logger;
 	private boolean infoEnabled = false, debugEnabled = false;
@@ -19,10 +19,10 @@ public class DBLogger {
 	 * @param name logger name
 	 * @return logger corresponding to name
 	 */
-	public static DBLogger getLogger(String name) {
-		DBLogger instance;
+	public static DebugLogger getLogger(String name) {
+		DebugLogger instance;
 		while ((instance = instances.get(name)) == null)
-			instances.put(name, new DBLogger(name));
+			instances.put(name, new DebugLogger(name));
 		return instance;
 	}
 	
@@ -30,14 +30,14 @@ public class DBLogger {
 	 * Enables info and debug logging for all {@code DBLogger} instances.
 	 */
 	public static void enableAll() {
-		for (DBLogger instance : instances.values())
+		for (DebugLogger instance : instances.values())
 			instance.enable();
 	}
 	/**
 	 * Disables info and debug logging for all {@code DBLogger} instances.
 	 */
 	public static void disableAll() {
-		for (DBLogger instance : instances.values())
+		for (DebugLogger instance : instances.values())
 			instance.disable();
 	}
 	
@@ -45,14 +45,14 @@ public class DBLogger {
 	 * Enables info logging for all {@code DBLogger} instances.
 	 */
 	public static void enableInfoAll() {
-		for (DBLogger instance : instances.values())
+		for (DebugLogger instance : instances.values())
 			instance.enableInfo();
 	}
 	/**
 	 * Disables info logging for all {@code DBLogger} instances.
 	 */
 	public static void disableInfoAll() {
-		for (DBLogger instance : instances.values())
+		for (DebugLogger instance : instances.values())
 			instance.disableInfo();
 	}
 	
@@ -60,18 +60,18 @@ public class DBLogger {
 	 * Enables debug logging for all {@code DBLogger} instances.
 	 */
 	public static void enableDebugAll() {
-		for (DBLogger instance : instances.values())
+		for (DebugLogger instance : instances.values())
 			instance.enableDebug();
 	}
 	/**
 	 * Disables debug logging for all {@code DBLogger} instances.
 	 */
 	public static void disableDebugAll() {
-		for (DBLogger instance : instances.values())
+		for (DebugLogger instance : instances.values())
 			instance.disableDebug();
 	}
 	
-	private DBLogger(String name) {
+	private DebugLogger(String name) {
 		logger = Logger.getLogger(name);
 	}
 	

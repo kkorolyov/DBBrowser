@@ -1,13 +1,13 @@
 package dev.kkorolyov.ezdb.statement;
 
-import dev.kkorolyov.ezdb.column.Column;
-import dev.kkorolyov.ezdb.logging.DBLogger;
+import dev.kkorolyov.ezdb.construct.Column;
+import dev.kkorolyov.ezdb.logging.DebugLogger;
 
 /**
  * Provides methods for constructing strings for use in SQL statements.
  */
 public class StatementBuilder {
-	private static final DBLogger log = DBLogger.getLogger(StatementBuilder.class.getName());
+	private static final DebugLogger log = DebugLogger.getLogger(StatementBuilder.class.getName());
 	
 	private static final String createStatement = "CREATE TABLE " + Marker.table + " " + Marker.columns;
 	private static final String dropStatement = "DROP TABLE " + Marker.table;

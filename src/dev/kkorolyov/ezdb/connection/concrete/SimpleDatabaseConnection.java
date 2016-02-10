@@ -3,21 +3,21 @@ import java.sql.*;
 import java.util.LinkedList;
 import java.util.List;
 
-import dev.kkorolyov.ezdb.column.Column;
-import dev.kkorolyov.ezdb.connection.DBConnection;
+import dev.kkorolyov.ezdb.connection.DatabaseConnection;
 import dev.kkorolyov.ezdb.connection.TableConnection;
+import dev.kkorolyov.ezdb.construct.Column;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
-import dev.kkorolyov.ezdb.logging.DBLogger;
+import dev.kkorolyov.ezdb.logging.DebugLogger;
 import dev.kkorolyov.ezdb.statement.StatementBuilder;
 import dev.kkorolyov.ezdb.strings.Strings;
 
 /**
  * A simple {@code DBConnection} implementation.
- * @see DBConnection
+ * @see DatabaseConnection
  */
-public class SimpleDBConnection implements DBConnection {	// TODO Return if isClosed() on every method
-	private static final DBLogger log = DBLogger.getLogger(SimpleDBConnection.class.getName());
+public class SimpleDatabaseConnection implements DatabaseConnection {	// TODO Return if isClosed() on every method
+	private static final DebugLogger log = DebugLogger.getLogger(SimpleDatabaseConnection.class.getName());
 
 	private static final String jdbcDriverClassName = "org.postgresql.Driver";
 	private static final String jdbcHeader = "jdbc:postgresql:";
@@ -32,7 +32,7 @@ public class SimpleDBConnection implements DBConnection {	// TODO Return if isCl
 	 * @param db name of database to connect to
 	 * @throws SQLException if the URL is faulty or {@code null}
 	 */
-	public SimpleDBConnection(String host, String db) throws SQLException {
+	public SimpleDatabaseConnection(String host, String db) throws SQLException {
 		URL = formatURL(host, db);
 		DB = db;
 		initDriver();

@@ -1,4 +1,4 @@
-package dev.kkorolyov.ezdb.column;
+package dev.kkorolyov.ezdb.construct;
 
 import dev.kkorolyov.ezdb.exceptions.MismatchedTypeException;
 

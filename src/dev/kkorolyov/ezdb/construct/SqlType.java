@@ -1,10 +1,10 @@
-package dev.kkorolyov.ezdb.column;
+package dev.kkorolyov.ezdb.construct;
 
 /**
  * A representation of a SQL datatype.
  * Composed of a typecode and String representation of the type.
  */
-public enum SQLType {
+public enum SqlType {
 	/** The 'boolean' equivalent. */
 	BOOLEAN("BOOLEAN", java.sql.Types.BOOLEAN, Boolean.class),
 	
@@ -28,7 +28,7 @@ public enum SQLType {
 	private int typeCode;
 	private Class<? extends Object> typeClass;
 	
-	private SQLType(String typeName, int typeCode, Class<? extends Object> typeClass) {
+	private SqlType(String typeName, int typeCode, Class<? extends Object> typeClass) {
 		this.typeName = typeName;
 		this.typeCode = typeCode;
 		this.typeClass = typeClass;

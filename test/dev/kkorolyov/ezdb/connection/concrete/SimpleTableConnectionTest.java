@@ -9,39 +9,39 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import dev.kkorolyov.ezdb.column.Column;
-import dev.kkorolyov.ezdb.column.SQLType;
-import dev.kkorolyov.ezdb.connection.DBConnection;
+import dev.kkorolyov.ezdb.connection.DatabaseConnection;
 import dev.kkorolyov.ezdb.connection.TableConnection;
+import dev.kkorolyov.ezdb.construct.Column;
+import dev.kkorolyov.ezdb.construct.SqlType;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
-import dev.kkorolyov.ezdb.logging.DBLogger;
+import dev.kkorolyov.ezdb.logging.DebugLogger;
 
 @SuppressWarnings("javadoc")
 public class SimpleTableConnectionTest {	// TODO Better tests
 	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB", TEST_TABLE = "TEST_TABLE";
 
-	private static DBConnection dbConn;
+	private static DatabaseConnection dbConn;
 	private TableConnection conn;
 	
 	@Before
 	public void setUp() throws NullTableException, SQLException, DuplicateTableException{
-		dbConn = new SimpleDBConnection(TEST_HOST, TEST_DB);
+		dbConn = new SimpleDatabaseConnection(TEST_HOST, TEST_DB);
 		if (!dbConn.containsTable(TEST_TABLE)) {
 			String[] testColumnNames = {"BOOLEAN", "INTEGER", "VARCHAR"};
 			boolean testBoolean = (Math.random() < .5) ? false : true;	// Random boolean
 			int testInt = (int) Math.random() * 100;	// Random int 0-99
 			String testString = "TEST_STRING";
 			
-			Column[] columns = {new Column(testColumnNames[0], SQLType.BOOLEAN),
-																new Column(testColumnNames[1], SQLType.INTEGER),
-																new Column(testColumnNames[2], SQLType.VARCHAR)};		
+			Column[] columns = {new Column(testColumnNames[0], SqlType.BOOLEAN),
+																new Column(testColumnNames[1], SqlType.INTEGER),
+																new Column(testColumnNames[2], SqlType.VARCHAR)};		
 			
 			dbConn.createTable(TEST_TABLE, columns);
 		}
 		conn = new SimpleTableConnection(dbConn, TEST_TABLE);
 		
-		DBLogger.enableAll();
+		DebugLogger.enableAll();
 	}
 
 	@After
@@ -60,7 +60,7 @@ public class SimpleTableConnectionTest {	// TODO Better tests
 															new Column(testColumnNames[1], Column.Type.INTEGER, testInt),
 															new Column(testColumnNames[2], Column.Type.VARCHAR, testString)};		
 		
-		DBConnection dbConn = new SimpleDBConnection(TEST_HOST, TEST_DB);
+		DatabaseConnection dbConn = new SimpleDatabaseConnection(TEST_HOST, TEST_DB);
 		dbConn.dropTable(TEST_TABLE);
 		conn = dbConn.createTable(TEST_TABLE, testColumns);
 		

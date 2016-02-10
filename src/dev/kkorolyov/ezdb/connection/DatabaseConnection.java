@@ -3,14 +3,14 @@ package dev.kkorolyov.ezdb.connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import dev.kkorolyov.ezdb.column.Column;
+import dev.kkorolyov.ezdb.construct.Column;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
 
 /**
  * Opens a connection to a single database and allows for SQL statement execution.
  */
-public interface DBConnection {
+public interface DatabaseConnection {
 	
 	/**
 	 * Connects to a table on this database, if it exists.

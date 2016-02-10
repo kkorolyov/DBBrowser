@@ -9,21 +9,21 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import dev.kkorolyov.ezdb.column.Column;
-import dev.kkorolyov.ezdb.column.SQLType;
-import dev.kkorolyov.ezdb.connection.DBConnection;
+import dev.kkorolyov.ezdb.connection.DatabaseConnection;
+import dev.kkorolyov.ezdb.construct.Column;
+import dev.kkorolyov.ezdb.construct.SqlType;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
 
 @SuppressWarnings("javadoc")
-public class SimpleDBConnectionTest {
+public class SimpleDatabaseConnectionTest {
 	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB";
 	
-	private DBConnection conn;
+	private DatabaseConnection conn;
 	
 	@Before
 	public void setUp() throws SQLException, DuplicateTableException, NullTableException {		
-		conn = new SimpleDBConnection(TEST_HOST, TEST_DB);	// Use a fresh connection for each test
+		conn = new SimpleDatabaseConnection(TEST_HOST, TEST_DB);	// Use a fresh connection for each test
 	}
 	@After
 	public void tearDown() throws NullTableException, SQLException {	
@@ -65,7 +65,7 @@ public class SimpleDBConnectionTest {
 		if (conn.containsTable(testTable))	// Clear stale test table from a previous run, if exists
 			conn.dropTable(testTable);
 		
-		SQLType[] typeValues = SQLType.values();
+		SqlType[] typeValues = SqlType.values();
 		Column[] testColumns = new Column[typeValues.length];	// Test all column types
 		for (int i = 0; i < testColumns.length; i++) {
 			testColumns[i] = new Column("TEST_COLUMN_" + i, typeValues[i]);
@@ -84,7 +84,7 @@ public class SimpleDBConnectionTest {
 		if (conn.containsTable(testTable))	// Clear stale test table from a previous run, if exists
 			conn.dropTable(testTable);
 		
-		conn.createTable(testTable, new Column[]{new Column("TEST_COLUMN", SQLType.BOOLEAN)});
+		conn.createTable(testTable, new Column[]{new Column("TEST_COLUMN", SqlType.BOOLEAN)});
 		
 		assertTrue(conn.containsTable(testTable));
 		conn.dropTable(testTable);
@@ -96,7 +96,7 @@ public class SimpleDBConnectionTest {
 		String testTable = "TEST_TABLE_CONTAINS";
 		
 		assertTrue(!conn.containsTable(testTable));
-		conn.createTable(testTable, new Column[]{new Column("TEST_COLUMN", SQLType.BOOLEAN)});
+		conn.createTable(testTable, new Column[]{new Column("TEST_COLUMN", SqlType.BOOLEAN)});
 		assertTrue(conn.containsTable(testTable));
 		
 		conn.dropTable(testTable);
