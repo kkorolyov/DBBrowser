@@ -2,24 +2,72 @@ package dev.kkorolyov.ezdb.construct;
 
 import static org.junit.Assert.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.Test;
+
+import dev.kkorolyov.ezdb.exceptions.MismatchedTypeException;
 
 @SuppressWarnings("javadoc")
 public class RowEntryTest {
-
+	private static final Map<SqlType, Object> matchedTypes = new HashMap<>();
+	
+	static {	// Load matching types
+		matchedTypes.put(SqlType.BOOLEAN, false);
+		
+		matchedTypes.put(SqlType.SMALLINT, (short) 0);
+		matchedTypes.put(SqlType.INTEGER, 0);
+		matchedTypes.put(SqlType.BIGINT, (long) 0);
+		matchedTypes.put(SqlType.REAL, (float) 0.0);
+		matchedTypes.put(SqlType.DOUBLE, 0.0);
+		
+		matchedTypes.put(SqlType.CHAR, 'A');
+		matchedTypes.put(SqlType.VARCHAR, "String");
+		
+		assert (matchedTypes.size() == SqlType.values().length);
+	}
+	
 	@Test
-	public void testRowEntry() {
-		fail("Not yet implemented");
+	public void testConstructorMatchedType() throws MismatchedTypeException {
+		for (SqlType type : SqlType.values())
+			new RowEntry(new Column(type.getTypeName(), type), matchedTypes.get(type));
+	}
+	@Test
+	public void testConstructorMismatchedType() {
+		SqlType[] testTypes = SqlType.values();
+		
+		for (int i = 0; i < testTypes.length; i++) {
+			SqlType testType = testTypes[i];
+			Object testValue = i < testTypes.length / 2 ? matchedTypes.get(testTypes[i + 1]) : matchedTypes.get(testTypes[i - 1]);	// Avoid out of bounds exceptions
+			
+			try {
+				new RowEntry(new Column(testType.getTypeName(), testType), testValue);
+			} catch (MismatchedTypeException e) {
+				continue;
+			}
+			fail("Did not throw a " + MismatchedTypeException.class.getSimpleName());
+		}
 	}
 
 	@Test
-	public void testGetColumn() {
-		fail("Not yet implemented");
+	public void testGetColumn() throws MismatchedTypeException {
+		for (SqlType type : SqlType.values()) {
+			Column expectedColumn = new Column(type.getTypeName(), type);
+			Column actualColumn = new RowEntry(expectedColumn, matchedTypes.get(type)).getColumn();
+			
+			assertEquals(expectedColumn, actualColumn);
+		}
 	}
 
 	@Test
-	public void testGetValue() {
-		fail("Not yet implemented");
+	public void testGetValue() throws MismatchedTypeException {
+		for (SqlType type : SqlType.values()) {
+			Object expectedValue = matchedTypes.get(type);
+			Object actualValue = new RowEntry(new Column(type.getTypeName(), type), expectedValue).getValue();
+			
+			assertEquals(expectedValue, actualValue);
+		}
 	}
 
 }

@@ -32,8 +32,8 @@ public class RowEntry {
 	}
 	
 	private void setValue(Object value) throws MismatchedTypeException {
-		if (value.getClass() != column.getClass())
-			throw new MismatchedTypeException(column.getClass(), value.getClass());
+		if (value.getClass() != column.getType().getTypeClass())
+			throw new MismatchedTypeException(column.getType().getTypeClass(), value.getClass());
 		
 		this.value = value;
 	}
