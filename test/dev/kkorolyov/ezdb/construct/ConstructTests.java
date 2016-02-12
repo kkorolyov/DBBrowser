@@ -8,5 +8,5 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({ ColumnTest.class, RowEntryTest.class, SqlTypeTest.class })
 public class ConstructTests {
-
+	// Suite
 }
