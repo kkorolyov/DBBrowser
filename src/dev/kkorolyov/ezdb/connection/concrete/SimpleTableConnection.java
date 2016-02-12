@@ -8,6 +8,7 @@ import dev.kkorolyov.ezdb.connection.TableConnection;
 import dev.kkorolyov.ezdb.construct.Column;
 import dev.kkorolyov.ezdb.construct.RowEntry;
 import dev.kkorolyov.ezdb.construct.SqlType;
+import dev.kkorolyov.ezdb.exceptions.ClosedException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
 import dev.kkorolyov.ezdb.logging.DebugLogger;
 import dev.kkorolyov.ezdb.statement.StatementBuilder;
@@ -31,8 +32,9 @@ public class SimpleTableConnection implements TableConnection {	// TODO Return i
 	 * @param conn database connection
 	 * @param tableName name of table to connect to
 	 * @throws NullTableException if such a table does not exist on the specified database
+	 * @throws ClosedException if constructed from a closed database connection 
 	 */
-	public SimpleTableConnection(DatabaseConnection conn, String tableName) throws NullTableException {		
+	public SimpleTableConnection(DatabaseConnection conn, String tableName) throws NullTableException, ClosedException {		
 		if (!conn.containsTable(tableName))
 			throw new NullTableException(conn.getDBName(), tableName);
 		
@@ -57,49 +59,16 @@ public class SimpleTableConnection implements TableConnection {	// TODO Return i
 	}
 	
 	@Override
-	public ResultSet select(Column[] columns) throws SQLException {
+	public ResultSet select(Column[] columns) throws SQLException, ClosedException {
 		return select(columns, null);
 	}
 	@Override
-	public ResultSet select(Column[] columns, RowEntry[] criteria) throws SQLException {
-		return conn.execute(StatementBuilder.buildSelect(tableName, columns, criteria), extractValues(criteria));	// Execute marked statement with substituted parameters
-	}
-	private static String[] extractNames(Column[] columns) {
-		String[] names = null;	// Parameters to use in execute call
-		
-		if (columns != null && columns.length > 0) {
-			names = new String[columns.length];
-			for (int i = 0; i < names.length; i++) {
-				names[i] = columns[i].getName();	// Build parameters to use in execute call
-			}		
-		}
-		return names;
-	}
-	private static String[] extractNames(RowEntry[] entries) {
-		String[] names = null;	// Parameters to use in execute call
-		
-		if (entries != null && entries.length > 0) {
-			names = new String[entries.length];
-			for (int i = 0; i < names.length; i++) {
-				names[i] = entries[i].getColumn().getName();	// Build parameters to use in execute call
-			}		
-		}
-		return names;
-	}
-	private static Object[] extractValues(RowEntry[] entries) {
-		Object[] values = null;	// Parameters to use in execute call
-		
-		if (entries != null && entries.length > 0) {
-			values = new Object[entries.length];
-			for (int i = 0; i < values.length; i++) {
-				values[i] = entries[i].getValue();	// Build parameters to use in execute call
-			}		
-		}
-		return values;
+	public ResultSet select(Column[] columns, RowEntry[] criteria) throws SQLException, ClosedException {
+		return conn.execute(StatementBuilder.buildSelect(tableName, columns, criteria), criteria);	// Execute marked statement with substituted parameters
 	}
 	
 	@Override
-	public int insert(Column[] values) throws SQLException {		
+	public int insert(RowEntry[] values) throws SQLException, ClosedException {		
 		return conn.update(StatementBuilder.buildInsert(tableName, values.length), values);
 	}
 	
@@ -114,12 +83,12 @@ public class SimpleTableConnection implements TableConnection {	// TODO Return i
 	};
 	
 	@Override
-	public void flush() {
+	public void flush() throws ClosedException {
 		conn.flush();
 	}
 	
 	@Override
-	public ResultSetMetaData getMetaData() {	// TODO executeVolatile() in DBConnection, closes statement immediately before return
+	public ResultSetMetaData getMetaData() throws ClosedException {	// TODO executeVolatile() in DBConnection, closes statement immediately before return
 		ResultSetMetaData rsmd = null;
 		try {
 			rsmd = conn.execute(metaDataStatement).getMetaData();
@@ -139,7 +108,7 @@ public class SimpleTableConnection implements TableConnection {	// TODO Return i
 	}
 	
 	@Override
-	public Column[] getColumns() {	// TODO Reorganize into try
+	public Column[] getColumns() throws ClosedException {	// TODO Reorganize into try
 		ResultSetMetaData rsmd = getMetaData();
 		int columnCount = 0;
 		try {
@@ -168,7 +137,7 @@ public class SimpleTableConnection implements TableConnection {	// TODO Return i
 	}
 	
 	@Override
-	public int getNumColumns() {
+	public int getNumColumns() throws ClosedException {
 		int numColumns = 0;
 		try {
 			numColumns = getMetaData().getColumnCount();
@@ -181,7 +150,7 @@ public class SimpleTableConnection implements TableConnection {	// TODO Return i
 	 * May take a while for large tables.
 	 */
 	@Override
-	public int getNumRows() {
+	public int getNumRows() throws ClosedException {
 		int numRows = 0;
 		try {
 			ResultSet rs = conn.execute(metaDataStatement);

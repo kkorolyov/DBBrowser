@@ -6,6 +6,8 @@ import java.util.List;
 import dev.kkorolyov.ezdb.connection.DatabaseConnection;
 import dev.kkorolyov.ezdb.connection.TableConnection;
 import dev.kkorolyov.ezdb.construct.Column;
+import dev.kkorolyov.ezdb.construct.RowEntry;
+import dev.kkorolyov.ezdb.exceptions.ClosedException;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
 import dev.kkorolyov.ezdb.logging.DebugLogger;
@@ -16,7 +18,7 @@ import dev.kkorolyov.ezdb.strings.Strings;
  * A simple {@code DBConnection} implementation.
  * @see DatabaseConnection
  */
-public class SimpleDatabaseConnection implements DatabaseConnection {	// TODO Return if isClosed() on every method
+public class SimpleDatabaseConnection implements DatabaseConnection {
 	private static final DebugLogger log = DebugLogger.getLogger(SimpleDatabaseConnection.class.getName());
 
 	private static final String jdbcDriverClassName = "org.postgresql.Driver";
@@ -55,7 +57,9 @@ public class SimpleDatabaseConnection implements DatabaseConnection {	// TODO Re
 	}
 	
 	@Override
-	public TableConnection connect(String table) {
+	public TableConnection connect(String table) throws ClosedException {
+		testClosed();
+		
 		try {
 			return new SimpleTableConnection(this, table);
 		} catch (NullTableException e) {
@@ -85,11 +89,13 @@ public class SimpleDatabaseConnection implements DatabaseConnection {	// TODO Re
 	}
 	
 	@Override
-	public ResultSet execute(String statement) throws SQLException {
-		return execute(statement, (Object[]) null);
+	public ResultSet execute(String statement) throws SQLException, ClosedException {
+		return execute(statement, (RowEntry[]) null);
 	}
 	@Override
-	public ResultSet execute(String baseStatement, Object[] parameters) throws SQLException {
+	public ResultSet execute(String baseStatement, RowEntry[] parameters) throws SQLException, ClosedException {
+		testClosed();
+		
 		PreparedStatement s = setupStatement(baseStatement, parameters);
 		
 		ResultSet rs = s.execute() ? s.getResultSet() : null;	// ResultSet if returns one, null if otherwise
@@ -97,14 +103,16 @@ public class SimpleDatabaseConnection implements DatabaseConnection {	// TODO Re
 	}
 	
 	@Override
-	public int update(String baseStatement, Object[] parameters) throws SQLException {
+	public int update(String baseStatement, RowEntry[] parameters) throws SQLException, ClosedException {
+		testClosed();
+		
 		PreparedStatement s = setupStatement(baseStatement, parameters);
 		
 		int updated = !s.execute() ? s.getUpdateCount() : 0;	// If false, returns an update count instead of result set
 		return updated;
 	}
 	
-	private PreparedStatement setupStatement(String baseStatement, Object[] parameters) throws SQLException {
+	private PreparedStatement setupStatement(String baseStatement, RowEntry[] parameters) throws SQLException {
 		PreparedStatement statement = conn.prepareStatement(baseStatement);
 		openStatements.add(statement);	// Add to flushable list
 		
@@ -112,28 +120,32 @@ public class SimpleDatabaseConnection implements DatabaseConnection {	// TODO Re
 		
 		return statement;
 	}
-	private static PreparedStatement buildParameters(PreparedStatement statement, Object[] parameters) throws SQLException {	// Inserts appropriate type into statement
+	private static PreparedStatement buildParameters(PreparedStatement statement, RowEntry[] parameters) throws SQLException {	// Inserts appropriate type into statement
 		if (parameters != null && parameters.length > 0) {
 			for (int i = 0; i < parameters.length; i++) {	// Prepare with appropriate types
-				if (parameters[i] instanceof Boolean)
-					statement.setBoolean(i + 1, (boolean) parameters[i]);
-				else if (parameters[i] instanceof Character)
-					statement.setString(i + 1, String.valueOf((char) parameters[i]));
-				else if (parameters[i] instanceof Double)
-					statement.setDouble(i + 1, (double) parameters[i]);
-				else if (parameters[i] instanceof Float)
-					statement.setFloat(i + 1, (float) parameters[i]);
-				else if (parameters[i] instanceof Integer)
-					statement.setInt(i + 1, (int) parameters[i]);
-				else if (parameters[i] instanceof String)
-					statement.setString(i + 1, (String) parameters[i]);
+				Object currentParameter = parameters[i].getValue();
+				
+				if (currentParameter instanceof Boolean)
+					statement.setBoolean(i + 1, (boolean) currentParameter);
+				else if (currentParameter instanceof Character)
+					statement.setString(i + 1, String.valueOf((char) currentParameter));
+				else if (currentParameter instanceof Double)
+					statement.setDouble(i + 1, (double) currentParameter);
+				else if (currentParameter instanceof Float)
+					statement.setFloat(i + 1, (float) currentParameter);
+				else if (currentParameter instanceof Integer)
+					statement.setInt(i + 1, (int) currentParameter);
+				else if (currentParameter instanceof String)
+					statement.setString(i + 1, (String) currentParameter);
 			}
 		}
 		return statement;
 	}
 	
 	@Override
-	public void flush() {
+	public void flush() throws ClosedException {
+		testClosed();
+		
 		int closedStatements = 0;	// Count closed statements for debugging
 		for (Statement openStatement : openStatements) {
 			try {
@@ -149,7 +161,9 @@ public class SimpleDatabaseConnection implements DatabaseConnection {	// TODO Re
 	}
 	
 	@Override
-	public TableConnection createTable(String name, Column[] columns) throws DuplicateTableException, SQLException {
+	public TableConnection createTable(String name, Column[] columns) throws DuplicateTableException, SQLException, ClosedException {
+		testClosed();
+		
 		if (containsTable(name))
 			throw new DuplicateTableException(DB, name);
 		
@@ -165,7 +179,9 @@ public class SimpleDatabaseConnection implements DatabaseConnection {	// TODO Re
 	}
 	
 	@Override
-	public void dropTable(String table) throws NullTableException, SQLException {
+	public void dropTable(String table) throws NullTableException, SQLException, ClosedException {
+		testClosed();
+		
 		if (!containsTable(table))	// No such table to drop
 			throw new NullTableException(DB, table);
 		
@@ -173,7 +189,9 @@ public class SimpleDatabaseConnection implements DatabaseConnection {	// TODO Re
 	}
 	
 	@Override
-	public boolean containsTable(String table) {
+	public boolean containsTable(String table) throws ClosedException {
+		testClosed();
+		
 		boolean contains = false;
 		
 		for (String dbTable : getTables()) {
@@ -186,7 +204,9 @@ public class SimpleDatabaseConnection implements DatabaseConnection {	// TODO Re
 	}
 	
 	@Override
-	public String[] getTables() {
+	public String[] getTables() throws ClosedException {
+		testClosed();
+		
 		List<String> tables = new LinkedList<>();
 		try {
 			ResultSet tableSet = conn.getMetaData().getTables(null, null, "%", new String[]{"TABLE"});
@@ -203,5 +223,10 @@ public class SimpleDatabaseConnection implements DatabaseConnection {	// TODO Re
 	@Override
 	public String getDBName() {
 		return DB;
+	}
+	
+	private void testClosed() throws ClosedException {
+		if (isClosed())
+			throw new ClosedException();
 	}
 }

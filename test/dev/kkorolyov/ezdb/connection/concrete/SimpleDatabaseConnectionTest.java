@@ -12,6 +12,7 @@ import org.junit.Test;
 import dev.kkorolyov.ezdb.connection.DatabaseConnection;
 import dev.kkorolyov.ezdb.construct.Column;
 import dev.kkorolyov.ezdb.construct.SqlType;
+import dev.kkorolyov.ezdb.exceptions.ClosedException;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
 
@@ -32,7 +33,7 @@ public class SimpleDatabaseConnectionTest {
 	}
 	
 	@Test
-	public void testClose() throws SQLException {
+	public void testClose() throws SQLException, ClosedException {
 		String validityStatement = "SELECT";	// Will work as long as connection is open and valid
 		try {
 			conn.execute(validityStatement);	// Connection is open
@@ -43,7 +44,7 @@ public class SimpleDatabaseConnectionTest {
 		
 		try {
 			conn.execute(validityStatement);
-		} catch (NullPointerException e) {	// Should not be able to hit SQLException if resource access nullified
+		} catch (ClosedException e) {
 			return;
 		}
 		fail("Resources failed to nullify");
@@ -59,7 +60,7 @@ public class SimpleDatabaseConnectionTest {
 	}
 	
 	@Test
-	public void testCreateTable() throws DuplicateTableException, NullTableException, SQLException {
+	public void testCreateTable() throws DuplicateTableException, NullTableException, SQLException, ClosedException {
 		String testTable = "TEST_TABLE_CREATE";
 		
 		if (conn.containsTable(testTable))	// Clear stale test table from a previous run, if exists
@@ -78,7 +79,7 @@ public class SimpleDatabaseConnectionTest {
 		conn.dropTable(testTable);	// Cleanup
 	}
 	@Test
-	public void testDropTable() throws DuplicateTableException, NullTableException, SQLException {
+	public void testDropTable() throws DuplicateTableException, NullTableException, SQLException, ClosedException {
 		String testTable = "TEST_TABLE_DROP";
 		
 		if (conn.containsTable(testTable))	// Clear stale test table from a previous run, if exists
@@ -92,8 +93,10 @@ public class SimpleDatabaseConnectionTest {
 	}
 	
 	@Test
-	public void testContainsTable() throws DuplicateTableException, SQLException, NullTableException {
+	public void testContainsTable() throws DuplicateTableException, SQLException, NullTableException, ClosedException {
 		String testTable = "TEST_TABLE_CONTAINS";
+		
+		conn.dropTable(testTable);
 		
 		assertTrue(!conn.containsTable(testTable));
 		conn.createTable(testTable, new Column[]{new Column("TEST_COLUMN", SqlType.BOOLEAN)});
@@ -103,7 +106,7 @@ public class SimpleDatabaseConnectionTest {
 	}
 	
 	@Test
-	public void testGetTables() {
+	public void testGetTables() throws ClosedException {
 		for (String table : conn.getTables()) {
 			System.out.println(table);
 		}

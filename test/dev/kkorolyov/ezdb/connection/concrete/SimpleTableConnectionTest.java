@@ -56,10 +56,6 @@ public class SimpleTableConnectionTest {	// TODO Better tests
 		int testInt = (int) Math.random() * 100;	// Random int 0-99
 		String testString = "TEST_STRING";
 		
-		Column[] testColumns = {new Column(testColumnNames[0], Column.Type.BOOLEAN, testBoolean),
-															new Column(testColumnNames[1], Column.Type.INTEGER, testInt),
-															new Column(testColumnNames[2], Column.Type.VARCHAR, testString)};		
-		
 		DatabaseConnection dbConn = new SimpleDatabaseConnection(TEST_HOST, TEST_DB);
 		dbConn.dropTable(TEST_TABLE);
 		conn = dbConn.createTable(TEST_TABLE, testColumns);
