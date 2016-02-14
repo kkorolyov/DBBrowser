@@ -7,6 +7,7 @@ public class MismatchedTypeException extends Exception {
 	private static final long serialVersionUID = 5247178864977750536L;
 
 	/**
+	 * Constructs an instance of this exception.
 	 * @param expected expected type
 	 * @param actual actual input type
 	 */

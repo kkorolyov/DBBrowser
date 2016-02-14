@@ -68,8 +68,8 @@ public class SimpleTableConnection implements TableConnection {	// TODO Return i
 	}
 	
 	@Override
-	public int insert(RowEntry[] values) throws SQLException, ClosedException {		
-		return conn.update(StatementBuilder.buildInsert(tableName, values.length), values);
+	public int insert(RowEntry[] entries) throws SQLException, ClosedException {		
+		return conn.update(StatementBuilder.buildInsert(tableName, entries), entries);
 	}
 	
 	@Override

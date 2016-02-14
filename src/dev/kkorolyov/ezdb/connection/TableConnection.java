@@ -23,13 +23,13 @@ public interface TableConnection {
 	boolean isClosed();
 	
 	/**
-	 * Executes a SELECT statement without any criteria.
+	 * Executes a SELECT statement without any constraining criteria.
 	 * @see #select(Column[], RowEntry[])
 	 */
 	ResultSet select(Column[] columns) throws SQLException, ClosedException;
 	/**
-	 * Executes a SELECT statement with additional criteria.
-	 * @param columns column(s) to return; if any column name = "*", will return all columns
+	 * Executes a SELECT statement constrained by the specified criteria.
+	 * @param columns column(s) to return; if {@code null}, empty, or any column name = "*", will return all columns
 	 * @param criteria specified as columns with certain values; if {@code null} or empty, will return all rows
 	 * @return results meeting the specified columns and criteria
 	 * @throws SQLException if specified parameters result in an invalid statement
@@ -38,13 +38,13 @@ public interface TableConnection {
 	ResultSet select(Column[] columns, RowEntry[] criteria) throws SQLException, ClosedException;
 	
 	/**
-	 * Inserts a row into the table.
-	 * @param values values to insert
+	 * Inserts a row of entries into the table.
+	 * @param entries entries to insert
 	 * @return number of inserted rows
 	 * @throws SQLException if specified values result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	int insert(RowEntry[] values) throws SQLException, ClosedException;
+	int insert(RowEntry[] entries) throws SQLException, ClosedException;
 	
 	/**
 	 * Deletes rows matching the specified criteria.

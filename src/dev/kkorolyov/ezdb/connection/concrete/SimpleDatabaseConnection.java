@@ -208,8 +208,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection {
 		testClosed();
 		
 		List<String> tables = new LinkedList<>();
-		try {
-			ResultSet tableSet = conn.getMetaData().getTables(null, null, "%", new String[]{"TABLE"});
+		try (ResultSet tableSet = conn.getMetaData().getTables(null, null, "%", new String[]{"TABLE"})) {
 			while (tableSet.next()) {
 				tables.add(tableSet.getString(3));
 			}
