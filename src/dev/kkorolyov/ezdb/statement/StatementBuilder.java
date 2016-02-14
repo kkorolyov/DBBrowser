@@ -15,7 +15,7 @@ public class StatementBuilder {
 	
 	private static final String	selectStatement = "SELECT " + Marker.columns + " FROM " + Marker.table,
 															criteriaAddOn = " WHERE " + Marker.criteria;	// Appended to SELECT when criteria specified
-	private static final String insertStatement = "INSERT INTO " + Marker.table + " VALUES " + Marker.values;
+	private static final String insertStatement = "INSERT INTO " + Marker.table + " " + Marker.columns + " VALUES " + Marker.values;
 	
 	private static final String wildcard = "*";
 	
@@ -127,33 +127,39 @@ public class StatementBuilder {
 	/**
 	 * Builds an INSERT statement.
 	 * @param table table to call statement on
-	 * @param numValues number of value markers to add
+	 * @param entries entries to add
 	 * @return formatted INSERT statement
 	 */
-	public static String buildInsert(String table, int numValues) {
+	public static String buildInsert(String table, RowEntry[] entries) {
 		log.debug("Building INSERT statement");
 		
 		String statement = insertStatement.replaceFirst(Marker.table, table);	// Set table
 		
-		statement = statement.replaceFirst(Marker.values, buildtInsertValuesMarkers(numValues));	// Set values markers
+		String[] columnsValues = buildInsertColumnsValues(entries);
+		
+		statement = statement.replaceFirst(Marker.columns, columnsValues[0]);	// Set column names
+		statement = statement.replaceFirst(Marker.values, columnsValues[1]);	// Set values markers
 		
 		log.debug(	"Built INSERT statement:"
 							+ "\n\t" + statement);
 		
 		return statement;
 	}
-	private static String buildtInsertValuesMarkers(int numMarkers) {
-		log.debug("Adding " + String.valueOf(numMarkers) + " value markers to INSERT statement");
+	private static String[] buildInsertColumnsValues(RowEntry[] entries) {
+		log.debug("Adding " + String.valueOf(entries.length) + " values to INSERT statement");
 		
-		StringBuilder insertValues = new StringBuilder("(");	// Values declared within parentheses
+		StringBuilder insertColumns = new StringBuilder("("), insertValues = new StringBuilder("(");	// Columns, values declared within parentheses
+
 		String marker = "?", delimeter = ",";
 		
-		for (int i = 0; i < numMarkers; i++) {
+		for (int i = 0; i < entries.length; i++) {
+			insertColumns.append(entries[i].getColumn().getName()).append(delimeter);	// Append "<column>," to delimit columns
 			insertValues.append(marker).append(delimeter);	// Append "?," to delimit values
 		}
+		replaceFinalDelimeter(insertColumns, delimeter, ")");	// Replace final delimiter with closing parenthesis
 		replaceFinalDelimeter(insertValues, delimeter, ")");	// Replace final delimiter with closing parenthesis
 		
-		return insertValues.toString();
+		return new String[]{insertColumns.toString(), insertValues.toString()};
 	}
 	
 	private static void replaceFinalDelimeter(StringBuilder built, String delimeter, String replaceWith) {

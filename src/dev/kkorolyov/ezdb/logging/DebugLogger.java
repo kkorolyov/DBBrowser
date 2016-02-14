@@ -9,6 +9,9 @@ import java.util.logging.Logger;
  * Provides a centralized logging interface for DBBrowser classes.
  */
 public class DebugLogger {
+	@SuppressWarnings("javadoc")
+	public static final Level INFO_LEVEL = Level.INFO, DEBUG_LEVEL = Level.INFO, WARNING_LEVEL = Level.WARNING, SEVERE_LEVEL = Level.SEVERE;
+	
 	private static final Map<String, DebugLogger> instances = new HashMap<>();
 	
 	private Logger logger;
@@ -81,7 +84,7 @@ public class DebugLogger {
 	 */
 	public void info(String message) {
 		if (infoEnabled) {
-			logger.log(Level.INFO, message);
+			logger.log(INFO_LEVEL, message);
 		}
 	}
 	/**
@@ -90,7 +93,7 @@ public class DebugLogger {
 	 */
 	public void debug(String message) {
 		if (debugEnabled) {
-			logger.log(Level.INFO, message);
+			logger.log(DEBUG_LEVEL, message);
 		}
 	}
 	
@@ -99,14 +102,14 @@ public class DebugLogger {
 	 * @param e warning exception to log
 	 */
 	public void exceptionWarning(Exception e) {
-		logger.log(Level.WARNING, e.getMessage(), e);
+		logger.log(WARNING_LEVEL, e.getMessage(), e);
 	}
 	/**
 	 * Logs a severe exception.
 	 * @param e severe exception to log
 	 */
 	public void exceptionSevere(Exception e) {
-		logger.log(Level.SEVERE, e.getMessage(), e);
+		logger.log(SEVERE_LEVEL, e.getMessage(), e);
 	}
 	
 	/**

@@ -1,7 +1,6 @@
 package dev.kkorolyov.ezdb.statement;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,10 +11,15 @@ import dev.kkorolyov.ezdb.construct.Column;
 import dev.kkorolyov.ezdb.construct.RowEntry;
 import dev.kkorolyov.ezdb.construct.SqlType;
 import dev.kkorolyov.ezdb.exceptions.MismatchedTypeException;
+import dev.kkorolyov.ezdb.logging.DebugLogger;
 
 @SuppressWarnings("javadoc")
 public class StatementBuilderTest {
 
+	{
+		DebugLogger.enableAll();
+	}
+	
 	@Test
 	public void testBuildCreate() {
 		String testTable = "Test Table";
@@ -98,8 +102,27 @@ public class StatementBuilderTest {
 	}
 	
 	@Test
-	public void testBuildInsert() {
-		fail("Not yet implemented");
+	public void testBuildInsert() throws MismatchedTypeException {
+		String testTable = "Test Table";
+		RowEntry[] testEntries = buildAllCriteria();
+		
+		String columnsMarker = "<COLUMNS>", valuesMarker = "<VALUES>";
+		String expectedStatment = insertSelectColumnsValues("INSERT INTO " + testTable + " " + columnsMarker + " VALUES " + valuesMarker, columnsMarker, valuesMarker, testEntries);
+		String actualStatement = StatementBuilder.buildInsert(testTable, testEntries);
+		
+		assertEquals(expectedStatment, actualStatement);
+	}
+	private static String insertSelectColumnsValues(String baseStatement, String columnsMarker, String valuesMarker, RowEntry[] entries) {
+		StringBuilder columnsString = new StringBuilder("("), valuesString = new StringBuilder("(");
+		
+		for (int i = 0; i < entries.length - 1; i++) {
+			columnsString.append(entries[i].getColumn().getName() + ",");
+			valuesString.append("?,");
+		}
+		columnsString.append(entries[entries.length - 1].getColumn().getName() + ")");
+		valuesString.append("?)");
+		
+		return baseStatement.replaceFirst(columnsMarker, columnsString.toString()).replaceFirst(valuesMarker, valuesString.toString());
 	}
 	
 	private static Column[] buildAllColumns() {
