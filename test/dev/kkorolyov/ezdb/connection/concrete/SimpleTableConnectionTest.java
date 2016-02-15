@@ -13,20 +13,21 @@ import dev.kkorolyov.ezdb.connection.DatabaseConnection;
 import dev.kkorolyov.ezdb.connection.TableConnection;
 import dev.kkorolyov.ezdb.construct.Column;
 import dev.kkorolyov.ezdb.construct.SqlType;
+import dev.kkorolyov.ezdb.exceptions.ClosedException;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
 import dev.kkorolyov.ezdb.logging.DebugLogger;
 
 @SuppressWarnings("javadoc")
 public class SimpleTableConnectionTest {	// TODO Better tests
-	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB", TEST_TABLE = "TEST_TABLE";
+	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB", TEST_USER = "postgres", TEST_PASSWORD = "", TEST_TABLE = "TEST_TABLE";
 
 	private static DatabaseConnection dbConn;
 	private TableConnection conn;
 	
 	@Before
-	public void setUp() throws NullTableException, SQLException, DuplicateTableException{
-		dbConn = new SimpleDatabaseConnection(TEST_HOST, TEST_DB);
+	public void setUp() throws NullTableException, SQLException, DuplicateTableException, ClosedException{
+		dbConn = new SimpleDatabaseConnection(TEST_HOST, TEST_DB, TEST_USER, TEST_PASSWORD);
 		if (!dbConn.containsTable(TEST_TABLE)) {
 			String[] testColumnNames = {"BOOLEAN", "INTEGER", "VARCHAR"};
 			boolean testBoolean = (Math.random() < .5) ? false : true;	// Random boolean

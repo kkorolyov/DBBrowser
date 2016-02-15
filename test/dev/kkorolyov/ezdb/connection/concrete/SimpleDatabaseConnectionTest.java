@@ -18,13 +18,13 @@ import dev.kkorolyov.ezdb.exceptions.NullTableException;
 
 @SuppressWarnings("javadoc")
 public class SimpleDatabaseConnectionTest {
-	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB";
+	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB", TEST_USER = "postgres", TEST_PASSWORD = "";
 	
 	private DatabaseConnection conn;
 	
 	@Before
 	public void setUp() throws SQLException, DuplicateTableException, NullTableException {		
-		conn = new SimpleDatabaseConnection(TEST_HOST, TEST_DB);	// Use a fresh connection for each test
+		conn = new SimpleDatabaseConnection(TEST_HOST, TEST_DB, TEST_USER, TEST_PASSWORD);	// Use a fresh connection for each test
 	}
 	@After
 	public void tearDown() throws NullTableException, SQLException {	

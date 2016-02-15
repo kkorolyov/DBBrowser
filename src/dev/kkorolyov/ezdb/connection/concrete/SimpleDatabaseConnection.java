@@ -12,35 +12,36 @@ import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
 import dev.kkorolyov.ezdb.logging.DebugLogger;
 import dev.kkorolyov.ezdb.statement.StatementBuilder;
-import dev.kkorolyov.ezdb.strings.Strings;
 
 /**
  * A simple {@code DBConnection} implementation.
+ * This object will automatically release all resources upon exiting a {@code try-with-resources} block;
  * @see DatabaseConnection
  */
-public class SimpleDatabaseConnection implements DatabaseConnection {
+public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseable {
 	private static final DebugLogger log = DebugLogger.getLogger(SimpleDatabaseConnection.class.getName());
 
 	private static final String jdbcDriverClassName = "org.postgresql.Driver";
 	private static final String jdbcHeader = "jdbc:postgresql:";
 		
-	private String URL, DB;
+	private final String url, database;
 	private Connection conn;
 	private List<Statement> openStatements = new LinkedList<>();
 	
 	/**
 	 * Opens a new connection to the specified host and database residing on it.
 	 * @param host IP or hostname of host containing database
-	 * @param db name of database to connect to
+	 * @param database name of database to connect to
 	 * @throws SQLException if the URL is faulty or {@code null}
 	 */
-	public SimpleDatabaseConnection(String host, String db) throws SQLException {
-		URL = formatURL(host, db);
-		DB = db;
+	public SimpleDatabaseConnection(String host, String database, String user, String password) throws SQLException {
+		url = formatURL(host, database);
+		this.database = database;
+		
 		initDriver();
-		initConnection();
+		conn = DriverManager.getConnection(url, user, password);
 			
-		log.debug("Successfully initialized " + getClass().getSimpleName() + " for database at: " + URL);
+		log.debug("Successfully initialized " + getClass().getSimpleName() + " for database at: " + url);
 	}
 	private static String formatURL(String host, String db) {
 		return jdbcHeader + "//" + host + "/" + db;
@@ -51,9 +52,6 @@ public class SimpleDatabaseConnection implements DatabaseConnection {
 		} catch (ClassNotFoundException e) {
 			log.exceptionSevere(e);
 		}
-	}
-	private void initConnection() throws SQLException {
-		conn = DriverManager.getConnection(URL, Strings.USER, Strings.PASSWORD);
 	}
 	
 	@Override
@@ -80,7 +78,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection {
 		conn = null;
 		openStatements = null;
 		
-		log.debug("Closed " + getClass().getSimpleName() + " at URL: " + URL);
+		log.debug("Closed " + getClass().getSimpleName() + " at URL: " + url);
 	}
 	
 	@Override
@@ -165,7 +163,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection {
 		testClosed();
 		
 		if (containsTable(name))
-			throw new DuplicateTableException(DB, name);
+			throw new DuplicateTableException(database, name);
 		
 		execute(StatementBuilder.buildCreate(name, columns));
 		
@@ -183,7 +181,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection {
 		testClosed();
 		
 		if (!containsTable(table))	// No such table to drop
-			throw new NullTableException(DB, table);
+			throw new NullTableException(database, table);
 		
 		execute(StatementBuilder.buildDrop(table));
 	}
@@ -221,7 +219,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection {
 	
 	@Override
 	public String getDBName() {
-		return DB;
+		return database;
 	}
 	
 	private void testClosed() throws ClosedException {

@@ -16,10 +16,11 @@ import dev.kkorolyov.ezdb.statement.StatementBuilder;
 /**
  * A simple {@code TableConnection} implementation.
  * Uses a {@code DBConnection} to execute statements formatted for its table.
+ * This object will automatically release all resources upon exiting a {@code try-with-resources} block;
  * @see TableConnection
  * @see DatabaseConnection
  */
-public class SimpleTableConnection implements TableConnection {	// TODO Return if isClosed() for every method
+public class SimpleTableConnection implements TableConnection, AutoCloseable {
 	private static final DebugLogger log = DebugLogger.getLogger(SimpleTableConnection.class.getName());
 
 	private DatabaseConnection conn;
