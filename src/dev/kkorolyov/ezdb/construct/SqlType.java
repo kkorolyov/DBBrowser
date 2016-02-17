@@ -34,6 +34,19 @@ public enum SqlType {
 		this.typeClass = typeClass;
 	}
 	
+	/**
+	 * Returns the {@code SqlType} for a specified type code.
+	 * @param typeCode type code from {@link java.sql.Types}
+	 * @return appropriate {@code SqlType} or {@code null} if not found
+	 */
+	public static SqlType get(int typeCode) {
+		for (SqlType type : SqlType.values()) {
+			if (type.getTypeCode() == typeCode)
+				return type;
+		}
+		return null;
+	}
+	
 	/** @return {@code String} representation of the type */
 	public String getTypeName() {
 		return typeName;

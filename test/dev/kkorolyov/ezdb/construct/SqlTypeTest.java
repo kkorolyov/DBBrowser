@@ -8,54 +8,80 @@ import dev.kkorolyov.ezdb.construct.SqlType;
 
 @SuppressWarnings("javadoc")
 public class SqlTypeTest {
+	private static final SqlType[] sqlTypes = {	SqlType.BOOLEAN,
+																							SqlType.SMALLINT,
+																							SqlType.INTEGER,
+																							SqlType.BIGINT,
+																							SqlType.REAL,
+																							SqlType.DOUBLE,
+																							SqlType.CHAR,
+																							SqlType.VARCHAR};
+	
+	private static final String[] names = {	"BOOLEAN",
+																					"SMALLINT",
+																					"INTEGER",
+																					"BIGINT",
+																					"REAL",
+																					"DOUBLE PRECISION",
+																					"CHAR",
+																					"VARCHAR"};
+	
+	private static final int[] typeCodes = {java.sql.Types.BOOLEAN,
+																			java.sql.Types.SMALLINT,
+																			java.sql.Types.INTEGER,
+																			java.sql.Types.BIGINT,
+																			java.sql.Types.REAL,
+																			java.sql.Types.DOUBLE,
+																			java.sql.Types.CHAR,
+																			java.sql.Types.VARCHAR};
+	
+	private static final Class<?>[] classes = {	Boolean.class,
+																							Short.class,
+																							Integer.class,
+																							Long.class,
+																							Float.class,
+																							Double.class,
+																							Character.class,
+																							String.class};
 
 	@Test
-	public void testGetTypeName() {
-		String[][] testNames = {{"BOOLEAN",						SqlType.BOOLEAN.getTypeName()},
-														{"SMALLINT",					SqlType.SMALLINT.getTypeName()},
-														{"INTEGER", 					SqlType.INTEGER.getTypeName()},
-														{"BIGINT", 						SqlType.BIGINT.getTypeName()},
-														{"REAL", 							SqlType.REAL.getTypeName()},
-														{"DOUBLE PRECISION",	SqlType.DOUBLE.getTypeName()},
-														{"CHAR", 							SqlType.CHAR.getTypeName()},
-														{"VARCHAR",						SqlType.VARCHAR.getTypeName()}};
+	public void testGetTypeName() {		
+		isTestingAll();
 		
-		testProperties(testNames);
+		for (int i = 0; i < sqlTypes.length; i++)
+			assertEquals(names[i], sqlTypes[i].getTypeName());
 	}
 
 	@Test
 	public void testGetTypeCode() {
-		Integer[][] testTypes = {	{java.sql.Types.BOOLEAN, 	SqlType.BOOLEAN.getTypeCode()},
-															{java.sql.Types.SMALLINT, SqlType.SMALLINT.getTypeCode()},
-															{java.sql.Types.INTEGER, 	SqlType.INTEGER.getTypeCode()},
-															{java.sql.Types.BIGINT, 	SqlType.BIGINT.getTypeCode()},
-															{java.sql.Types.REAL, 		SqlType.REAL.getTypeCode()},
-															{java.sql.Types.DOUBLE, 	SqlType.DOUBLE.getTypeCode()},
-															{java.sql.Types.CHAR, 		SqlType.CHAR.getTypeCode()},
-															{java.sql.Types.VARCHAR, 	SqlType.VARCHAR.getTypeCode()}};
-
-		testProperties(testTypes);
+		isTestingAll();
+		
+		for (int i = 0; i < sqlTypes.length; i++)
+			assertEquals(typeCodes[i], sqlTypes[i].getTypeCode());
 	}
 
 	@Test
 	public void testGetTypeClass() {
-		Class<?>[][] testClasses = {{Boolean.class, 	SqlType.BOOLEAN.getTypeClass()},
-																{Short.class, 		SqlType.SMALLINT.getTypeClass()},
-																{Integer.class,		SqlType.INTEGER.getTypeClass()},
-																{Long.class, 			SqlType.BIGINT.getTypeClass()},
-																{Float.class, 		SqlType.REAL.getTypeClass()},
-																{Double.class, 		SqlType.DOUBLE.getTypeClass()},
-																{Character.class, SqlType.CHAR.getTypeClass()},
-																{String.class, 		SqlType.VARCHAR.getTypeClass()}};
-
-		testProperties(testClasses);
+		isTestingAll();
+		
+		for (int i = 0; i < sqlTypes.length; i++)
+			assertEquals(classes[i], sqlTypes[i].getTypeClass());
+	}
+	
+	@Test
+	public void testGet() {
+		isTestingAll();
+		
+		for (int i = 0; i < sqlTypes.length; i++) {
+			int testTypeCode = typeCodes[i];
+			SqlType testType = SqlType.get(testTypeCode);
+			
+			assertEquals(sqlTypes[i], testType);
+		}
 	}
 
-	private static void testProperties(Object[][] expectedActualPairs) {
-		if (expectedActualPairs.length < SqlType.values().length)
-			fail("Tests are not written for " + (SqlType.values().length - expectedActualPairs.length) + " types");
-		
-		for (Object[] testPair : expectedActualPairs)
-			assertEquals(testPair[0], testPair[1]);
+	private static void isTestingAll() {
+		if (sqlTypes.length < SqlType.values().length)
+			fail("Tests are not written for " + (SqlType.values().length - sqlTypes.length) + " types");
 	}
 }
