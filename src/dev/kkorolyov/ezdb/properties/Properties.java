@@ -45,6 +45,8 @@ public class Properties {
 	 * Clears all current properties and loads the hard-coded defaults.
 	 */
 	public static void loadDefaults() {
+		properties.clear();
+		
 		properties.put(HOST, DEFAULT_HOST);
 		properties.put(USER, DEFAULT_USER);
 		properties.put(PASSWORD, DEFAULT_PASSWORD);
