@@ -10,7 +10,7 @@ import java.util.logging.Logger;
  */
 public class DebugLogger {
 	@SuppressWarnings("javadoc")
-	public static final Level INFO_LEVEL = Level.INFO, DEBUG_LEVEL = Level.INFO, WARNING_LEVEL = Level.WARNING, SEVERE_LEVEL = Level.SEVERE;
+	public static final Level INFO_LEVEL = Level.INFO, DEBUG_LEVEL = Level.FINE, WARNING_LEVEL = Level.WARNING, SEVERE_LEVEL = Level.SEVERE;
 	
 	private static final Map<String, DebugLogger> instances = new HashMap<>();
 	
@@ -27,6 +27,9 @@ public class DebugLogger {
 		while ((instance = instances.get(name)) == null)
 			instances.put(name, new DebugLogger(name));
 		return instance;
+	}
+	private DebugLogger(String name) {
+		logger = Logger.getLogger(name);
 	}
 	
 	/**
@@ -72,10 +75,6 @@ public class DebugLogger {
 	public static void disableDebugAll() {
 		for (DebugLogger instance : instances.values())
 			instance.disableDebug();
-	}
-	
-	private DebugLogger(String name) {
-		logger = Logger.getLogger(name);
 	}
 	
 	/**
