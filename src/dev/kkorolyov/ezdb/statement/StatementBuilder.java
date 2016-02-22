@@ -16,6 +16,8 @@ public class StatementBuilder {
 	private static final String	selectStatement = "SELECT " + Marker.columns + " FROM " + Marker.table,
 															criteriaAddOn = " WHERE " + Marker.criteria;	// Appended to SELECT when criteria specified
 	private static final String insertStatement = "INSERT INTO " + Marker.table + " " + Marker.columns + " VALUES " + Marker.values;
+	private static final String deleteStatement = "DELETE FROM " + Marker.table + " WHERE " + Marker.criteria;
+	private static final String updateStatement = "UPDATE " + Marker.table + " SET " + Marker.columns + " " + Marker.values + " WHERE " + Marker.criteria;
 	
 	private static final String wildcard = "*";
 	
@@ -64,9 +66,9 @@ public class StatementBuilder {
 	
 	/**
 	 * Builds a SELECT statement.
-	 * @param table table to call statement on
-	 * @param columns column(s) to return; if {@code null}, empty, or any column = "*", will use a wildcard for result columns
-	 * @param criteria specified as columns with certain values, added in the order specified; if {@code null} or empty, will not add any criteria
+	 * @param table table to select from
+	 * @param columns columns to return; if {@code null}, empty, or any column == "*", all columns are returned
+	 * @param criteria criteria to match when selecting columns; if {@code null} or empty, no criteria is used
 	 * @return formatted SELECT statement
 	 */
 	public static String buildSelect(String table, Column[] columns, RowEntry[] criteria) {
@@ -111,7 +113,7 @@ public class StatementBuilder {
 		return selectColumns.toString();
 	}
 	private static String buildSelectCriteriaMarkers(RowEntry[] criteria) {
-		log.debug("Adding " + String.valueOf(criteria.length) + " criterion markers to SELECT statement");
+		log.debug("Adding " + String.valueOf(criteria.length) + " criterion markers to SELECT statement");	// TODO Used for delete, update as well, extract into more generic method
 		
 		StringBuilder selectCriteria = new StringBuilder();
 		String marker = "=?", delimeter = " AND ";
@@ -126,7 +128,7 @@ public class StatementBuilder {
 	
 	/**
 	 * Builds an INSERT statement.
-	 * @param table table to call statement on
+	 * @param table table to insert into
 	 * @param entries entries to add
 	 * @return formatted INSERT statement
 	 */
@@ -145,7 +147,7 @@ public class StatementBuilder {
 		
 		return statement;
 	}
-	private static String[] buildInsertColumnsValues(RowEntry[] entries) {
+	private static String[] buildInsertColumnsValues(RowEntry[] entries) {	// TODO Used for update as well, extract into more generic method
 		log.debug("Adding " + String.valueOf(entries.length) + " values to INSERT statement");
 		
 		StringBuilder insertColumns = new StringBuilder("("), insertValues = new StringBuilder("(");	// Columns, values declared within parentheses
@@ -162,13 +164,54 @@ public class StatementBuilder {
 		return new String[]{insertColumns.toString(), insertValues.toString()};
 	}
 	
+	/**
+	 * Builds a DELETE statement.
+	 * @param table table to delete rows from
+	 * @param criteria criteria to match when deleting rows; if {@code null} or empty, no criteria is used
+	 * @return formatted DELETE statement
+	 */
+	public static String buildDelete(String table, RowEntry[] criteria) {
+		log.debug("Building DELETE statement");
+		
+		String statement = deleteStatement.replace(Marker.table, table);
+		
+		statement = statement.replaceFirst(Marker.criteria, buildSelectCriteriaMarkers(criteria));	// Set criteria markers
+		
+		log.debug("Built DELETE statement:"
+						+ "\n\t" + statement);
+		
+		return statement;
+	}
+	
+	/**
+	 * Builds an UPDATE statement.
+	 * @param table table to update
+	 * @param newEntries new entries to use
+	 * @param criteria criteria to match when updating entries; if {@code null} or empty, no criteria is used
+	 * @return formatted UPDATE statement
+	 */
+	public static String buildUpdate(String table, RowEntry[] newEntries, RowEntry[] criteria) {
+		log.debug("Building UPDATE statement");
+		
+		String statement = updateStatement.replaceFirst(Marker.table, table);
+		
+		String[] columnsValues = buildInsertColumnsValues(newEntries);
+		
+		statement = statement.replaceFirst(Marker.columns, columnsValues[0]);	// Set column names
+		statement = statement.replaceFirst(Marker.values, columnsValues[1]);	// Set values markers
+		statement = statement.replaceFirst(Marker.criteria, buildSelectCriteriaMarkers(criteria));	// Set criteria markers
+		
+		log.debug("Build UPDATE statement:"
+						+ "\n\t" + statement);
+		
+		return statement;
+	}
+	
 	private static void replaceFinalDelimeter(StringBuilder built, String delimeter, String replaceWith) {
 		built.replace(built.length() - delimeter.length(), built.length(), replaceWith);
 	}
 	
-	/**
-	 * Markers to easily replace stock statement properties.
-	 */
+	// Markers to easily replace stock statement properties.
 	private class Marker {
 		private static final String table = "<TABLE>", columns = "<COLUMNS>", criteria = "<CRITERIA>", values = "<VALUES>";	// To easily replace statement segments in functions
 	}

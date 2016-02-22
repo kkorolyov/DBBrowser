@@ -6,6 +6,7 @@ import java.util.List;
 import dev.kkorolyov.ezdb.connection.DatabaseConnection;
 import dev.kkorolyov.ezdb.connection.TableConnection;
 import dev.kkorolyov.ezdb.construct.Column;
+import dev.kkorolyov.ezdb.construct.Results;
 import dev.kkorolyov.ezdb.construct.RowEntry;
 import dev.kkorolyov.ezdb.exceptions.ClosedException;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
@@ -87,17 +88,17 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 	}
 	
 	@Override
-	public ResultSet execute(String statement) throws SQLException, ClosedException {
+	public Results execute(String statement) throws SQLException, ClosedException {
 		return execute(statement, (RowEntry[]) null);
 	}
 	@Override
-	public ResultSet execute(String baseStatement, RowEntry[] parameters) throws SQLException, ClosedException {
+	public Results execute(String baseStatement, RowEntry[] parameters) throws SQLException, ClosedException {
 		testClosed();
 		
 		PreparedStatement s = setupStatement(baseStatement, parameters);
 		
-		ResultSet rs = s.execute() ? s.getResultSet() : null;	// ResultSet if returns one, null if otherwise
-		return rs;
+		Results results = s.execute() ? new Results(s.getResultSet()) : null;	// New Results from ResultSet if returns one, null if otherwise
+		return results;
 	}
 	
 	@Override

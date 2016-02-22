@@ -6,7 +6,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
 @SuppressWarnings("javadoc")
 @RunWith(Suite.class)
-@SuiteClasses({ ColumnTest.class, RowEntryTest.class, SqlTypeTest.class })
+@SuiteClasses({ ColumnTest.class, ResultsTest.class, RowEntryTest.class, SqlTypeTest.class })
 public class ConstructTests {
 	// Suite
 }

@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import org.junit.*;
 
+@SuppressWarnings("javadoc")
 public class ResultsTest {
 
 	@BeforeClass

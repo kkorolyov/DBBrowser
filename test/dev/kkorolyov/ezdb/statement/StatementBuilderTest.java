@@ -125,6 +125,18 @@ public class StatementBuilderTest {
 		return baseStatement.replaceFirst(columnsMarker, columnsString.toString()).replaceFirst(valuesMarker, valuesString.toString());
 	}
 	
+	@Test
+	public void testBuildDelete() {
+		String testTable = "Test Table";
+		
+	}
+	
+	@Test
+	public void testBuildUpdate() {
+		String testTable = "Test Table";
+		
+	}
+	
 	private static Column[] buildAllColumns() {
 		SqlType[] allTypes = SqlType.values();
 		Column[] columns = new Column[allTypes.length];

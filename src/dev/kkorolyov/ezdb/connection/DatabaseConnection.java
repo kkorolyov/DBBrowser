@@ -1,9 +1,9 @@
 package dev.kkorolyov.ezdb.connection;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import dev.kkorolyov.ezdb.construct.Column;
+import dev.kkorolyov.ezdb.construct.Results;
 import dev.kkorolyov.ezdb.construct.RowEntry;
 import dev.kkorolyov.ezdb.exceptions.ClosedException;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
@@ -35,7 +35,7 @@ public interface DatabaseConnection {
 	 * Executes a complete SQL statement without additional parameters.
 	 * @see #execute(String, RowEntry[])
 	 */
-	ResultSet execute(String statement) throws SQLException, ClosedException;	// TODO Return a proprietary results collection
+	Results execute(String statement) throws SQLException, ClosedException;	// TODO Return a proprietary results collection
 	/**
 	 * Executes a partial SQL statement with parameters.
 	 * @param baseStatement statement without parameters, with {@code ?} denoting an area where a parameter should be substituted in
@@ -44,7 +44,7 @@ public interface DatabaseConnection {
 	 * @throws SQLException if the executed statement is invalid
 	 * @throws ClosedException if called on a closed connection
 	 */
-	ResultSet execute(String baseStatement, RowEntry[] parameters) throws SQLException, ClosedException;
+	Results execute(String baseStatement, RowEntry[] parameters) throws SQLException, ClosedException;
 	
 	/**
 	 * Executes a partial SQL update statement with parameters.

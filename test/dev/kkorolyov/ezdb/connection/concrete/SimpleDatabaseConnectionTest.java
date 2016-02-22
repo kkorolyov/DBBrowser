@@ -18,7 +18,7 @@ import dev.kkorolyov.ezdb.exceptions.NullTableException;
 
 @SuppressWarnings("javadoc")
 public class SimpleDatabaseConnectionTest {
-	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB", TEST_USER = "postgres", TEST_PASSWORD = "";
+	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB", TEST_USER = "postgres", TEST_PASSWORD = "", TEST_TABLE = "TEST_TABLE";
 	
 	private DatabaseConnection conn;
 	
@@ -29,7 +29,6 @@ public class SimpleDatabaseConnectionTest {
 	@After
 	public void tearDown() throws NullTableException, SQLException {	
 		conn.close();	// Make sure all resources release after each test
-		conn = null;
 	}
 	
 	@Test
@@ -45,64 +44,65 @@ public class SimpleDatabaseConnectionTest {
 		try {
 			conn.execute(validityStatement);
 		} catch (ClosedException e) {
-			return;
+			return;	// As expected
 		}
-		fail("Resources failed to nullify");
+		fail("Resources failed to close");
 	}
 
 	@Test
-	public void testExecute() {
-		fail("Unimplemented");
+	public void testExecute() throws SQLException, ClosedException {
+		String testStatement = "SELECT * FROM " + TEST_TABLE;
+		conn.execute(testStatement);
 	}
 	@Test
 	public void testExecuteParams() {
+		String testStatement = "SELECT"
 		fail("Unimplemented");
 	}
 	
 	@Test
 	public void testCreateTable() throws DuplicateTableException, NullTableException, SQLException, ClosedException {
-		String testTable = "TEST_TABLE_CREATE";
+		String testTableName = "TEST_TABLE_CREATE";
 		
-		if (conn.containsTable(testTable))	// Clear stale test table from a previous run, if exists
-			conn.dropTable(testTable);
+		if (conn.containsTable(testTableName))	// Clear stale test table from a previous run, if exists
+			conn.dropTable(testTableName);
 		
-		SqlType[] typeValues = SqlType.values();
-		Column[] testColumns = new Column[typeValues.length];	// Test all column types
-		for (int i = 0; i < testColumns.length; i++) {
-			testColumns[i] = new Column("TEST_COLUMN_" + i, typeValues[i]);
+		SqlType[] types = SqlType.values();
+		Column[] columns = new Column[types.length];	// Test all column types
+		for (int i = 0; i < columns.length; i++) {
+			columns[i] = new Column("TEST_COLUMN_" + types[i].getTypeName(), types[i]);
 		}
+		assertTrue(!conn.containsTable(testTableName));
+		conn.createTable(testTableName, columns);
+		assertTrue(conn.containsTable(testTableName));
 		
-		assertTrue(!conn.containsTable(testTable));
-		conn.createTable(testTable, testColumns);
-		assertTrue(conn.containsTable(testTable));
-		
-		conn.dropTable(testTable);	// Cleanup
+		conn.dropTable(testTableName);	// Cleanup
 	}
 	@Test
 	public void testDropTable() throws DuplicateTableException, NullTableException, SQLException, ClosedException {
-		String testTable = "TEST_TABLE_DROP";
+		String testTableName = "TEST_TABLE_DROP";
 		
-		if (conn.containsTable(testTable))	// Clear stale test table from a previous run, if exists
-			conn.dropTable(testTable);
+		if (conn.containsTable(testTableName))	// Clear stale test table from a previous run, if exists
+			conn.dropTable(testTableName);
 		
-		conn.createTable(testTable, new Column[]{new Column("TEST_COLUMN", SqlType.BOOLEAN)});
+		conn.createTable(testTableName, new Column[]{new Column("TEST_COLUMN", SqlType.BOOLEAN)});
 		
-		assertTrue(conn.containsTable(testTable));
-		conn.dropTable(testTable);
-		assertTrue(!conn.containsTable(testTable));
+		assertTrue(conn.containsTable(testTableName));
+		conn.dropTable(testTableName);
+		assertTrue(!conn.containsTable(testTableName));
 	}
 	
 	@Test
 	public void testContainsTable() throws DuplicateTableException, SQLException, NullTableException, ClosedException {
-		String testTable = "TEST_TABLE_CONTAINS";
+		String testTableName = "TEST_TABLE_CONTAINS";
 		
-		conn.dropTable(testTable);
+		conn.dropTable(testTableName);
 		
-		assertTrue(!conn.containsTable(testTable));
-		conn.createTable(testTable, new Column[]{new Column("TEST_COLUMN", SqlType.BOOLEAN)});
-		assertTrue(conn.containsTable(testTable));
+		assertTrue(!conn.containsTable(testTableName));
+		conn.createTable(testTableName, new Column[]{new Column("TEST_COLUMN", SqlType.BOOLEAN)});
+		assertTrue(conn.containsTable(testTableName));
 		
-		conn.dropTable(testTable);
+		conn.dropTable(testTableName);
 	}
 	
 	@Test

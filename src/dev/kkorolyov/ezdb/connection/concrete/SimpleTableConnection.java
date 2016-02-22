@@ -1,13 +1,12 @@
 package dev.kkorolyov.ezdb.connection.concrete;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
+import java.lang.reflect.Array;
 import java.sql.SQLException;
 
 import dev.kkorolyov.ezdb.connection.DatabaseConnection;
 import dev.kkorolyov.ezdb.connection.TableConnection;
 import dev.kkorolyov.ezdb.construct.Column;
+import dev.kkorolyov.ezdb.construct.Results;
 import dev.kkorolyov.ezdb.construct.RowEntry;
-import dev.kkorolyov.ezdb.construct.SqlType;
 import dev.kkorolyov.ezdb.exceptions.ClosedException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
 import dev.kkorolyov.ezdb.logging.DebugLogger;
@@ -60,11 +59,11 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 	}
 	
 	@Override
-	public ResultSet select(Column[] columns) throws SQLException, ClosedException {
+	public Results select(Column[] columns) throws SQLException, ClosedException {
 		return select(columns, null);
 	}
 	@Override
-	public ResultSet select(Column[] columns, RowEntry[] criteria) throws SQLException, ClosedException {
+	public Results select(Column[] columns, RowEntry[] criteria) throws SQLException, ClosedException {
 		return conn.execute(StatementBuilder.buildSelect(tableName, columns, criteria), criteria);	// Execute marked statement with substituted parameters
 	}
 	
@@ -74,29 +73,38 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 	}
 	
 	@Override
-	public int delete(Column[] criteria) throws SQLException {
-		return 0;	// TODO
-	};
+	public int delete(RowEntry[] criteria) throws SQLException, ClosedException {
+		return conn.update(StatementBuilder.buildDelete(tableName, criteria), criteria);
+	}
 	
 	@Override
-	public int update(Column[] criteria) throws SQLException {
-		return 0;	// TODO
-	};
+	public int update(RowEntry[] newEntries, RowEntry[] criteria) throws SQLException, ClosedException {
+		RowEntry[] combinedParameters = combineArrays(RowEntry.class, newEntries, criteria);
+		
+		return conn.update(StatementBuilder.buildUpdate(tableName, newEntries, criteria), combinedParameters);
+	}
+	@SafeVarargs
+	private static <T> T[] combineArrays(Class<T> finalClass, T[]... arrays) {
+		int totalLength = 0;
+		for (T[] array : arrays)	// Add lengths
+			totalLength += array.length;
+		
+		@SuppressWarnings("unchecked")
+		T[] combined = (T[]) Array.newInstance(finalClass, totalLength);	// Create empty combined array
+
+		int cursor = 0;
+		for (T[] array : arrays) {	// Fill combined array
+			for (T element : array) {
+				combined[cursor] = element;
+				cursor++;
+			}
+		}
+		return combined;
+	}
 	
 	@Override
 	public void flush() throws ClosedException {
 		conn.flush();
-	}
-	
-	@Override
-	public ResultSetMetaData getMetaData() throws ClosedException {	// TODO executeVolatile() in DBConnection, closes statement immediately before return
-		ResultSetMetaData rsmd = null;
-		try {
-			rsmd = conn.execute(metaDataStatement).getMetaData();
-		} catch (SQLException e) {
-			log.exceptionSevere(e);	// Metadata statement should not cause exception
-		}
-		return rsmd;
 	}
 	
 	@Override
@@ -109,30 +117,12 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 	}
 	
 	@Override
-	public Column[] getColumns() throws ClosedException {	// TODO Reorganize into try
-		ResultSetMetaData rsmd = getMetaData();
-		int columnCount = 0;
+	public Column[] getColumns() throws ClosedException {
+		Column[] columns = null;
 		try {
-			columnCount = rsmd.getColumnCount();
+			columns = conn.execute(metaDataStatement).getColumns();
 		} catch (SQLException e) {
 			log.exceptionSevere(e);
-		}
-		Column[] columns = new Column[columnCount];
-		
-		for (int i = 0; i < columns.length; i++) {	// Build columns
-			try {
-				String columnName = rsmd.getColumnName(i + 1);	// RSMD columns start from 1
-				int columnTypeCode = rsmd.getColumnType(i + 1);
-				SqlType columnType = null;
-				
-				for (SqlType type : SqlType.values()) {	// Set appropriate column type
-					if (type.getTypeCode() == columnTypeCode)
-						columnType = type;
-				}
-				columns[i] = new Column(columnName, columnType);
-			} catch (SQLException e) {
-				log.exceptionSevere(e);
-			}
 		}
 		return columns;
 	}
@@ -141,7 +131,7 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 	public int getNumColumns() throws ClosedException {
 		int numColumns = 0;
 		try {
-			numColumns = getMetaData().getColumnCount();
+			numColumns = conn.execute(metaDataStatement).getNumColumns();
 		} catch (SQLException e) {
 			log.exceptionSevere(e);
 		}
@@ -154,8 +144,8 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 	public int getNumRows() throws ClosedException {
 		int numRows = 0;
 		try {
-			ResultSet rs = conn.execute(metaDataStatement);
-			while (rs.next())	// Counts rows
+			Results rs = conn.execute(metaDataStatement);
+			while (rs.getNextRow() != null)	// Counts rows
 				numRows++;
 		} catch (SQLException e) {
 			log.exceptionSevere(e);
