@@ -6,7 +6,7 @@ package dev.kkorolyov.ezdb.construct;
  */
 public enum SqlType {
 	/** The 'boolean' equivalent. */
-	BOOLEAN("BOOLEAN", java.sql.Types.BOOLEAN, Boolean.class),
+	BOOLEAN("BOOLEAN", java.sql.Types.BIT, Boolean.class),	// Boolean is a bit in postgres
 	
 	/** The 'short' equivalent. */
 	SMALLINT("SMALLINT", java.sql.Types.SMALLINT, Short.class),
