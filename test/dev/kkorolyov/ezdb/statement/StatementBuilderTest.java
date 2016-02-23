@@ -17,7 +17,7 @@ import dev.kkorolyov.ezdb.logging.DebugLogger;
 public class StatementBuilderTest {
 
 	{
-		DebugLogger.enableAll();
+		DebugLogger.enableAll();	// Enable all loggers before testing
 	}
 	
 	@Test
@@ -126,15 +126,28 @@ public class StatementBuilderTest {
 	}
 	
 	@Test
-	public void testBuildDelete() {
+	public void testBuildDelete() throws MismatchedTypeException {
 		String testTable = "Test Table";
+		RowEntry[] criteria = buildAllCriteria();
 		
+		String criteriaMarker = "<CRITERIA>";
+		String expectedStatement = insertSelectCriteria("DELETE FROM " + testTable + " WHERE " + criteriaMarker, criteriaMarker, criteria);	// TODO Generalize insertSelectCriteria()
+		String actualStatement = StatementBuilder.buildDelete(testTable, criteria);
+		
+		assertEquals(expectedStatement, actualStatement);
 	}
 	
 	@Test
-	public void testBuildUpdate() {
+	public void testBuildUpdate() throws MismatchedTypeException {
 		String testTable = "Test Table";
+		RowEntry[] newEntries = buildAllCriteria();	// TODO Use different entries from criteria
+		RowEntry[] criteria = buildAllCriteria();
 		
+		String columnsMarker = "<COLUMNS>", valuesMarker = "<VALUES>", criteriaMarker = "<CRITERIA>";
+		String expectedStatement = insertSelectCriteria(insertSelectColumnsValues("UPDATE " + testTable + " SET " + columnsMarker + " " + valuesMarker + " WHERE " + criteriaMarker, columnsMarker, valuesMarker, newEntries), criteriaMarker, criteria);
+		String actualStatement = StatementBuilder.buildUpdate(testTable, newEntries, criteria);
+		
+		assertEquals(expectedStatement, actualStatement);
 	}
 	
 	private static Column[] buildAllColumns() {
