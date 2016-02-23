@@ -126,16 +126,24 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 				
 				if (currentParameter instanceof Boolean)
 					statement.setBoolean(i + 1, (boolean) currentParameter);
-				else if (currentParameter instanceof Character)
-					statement.setString(i + 1, String.valueOf((char) currentParameter));
-				else if (currentParameter instanceof Double)
-					statement.setDouble(i + 1, (double) currentParameter);
-				else if (currentParameter instanceof Float)
-					statement.setFloat(i + 1, (float) currentParameter);
+				
+				else if (currentParameter instanceof Short)
+					statement.setShort(i + 1, (short) currentParameter);
 				else if (currentParameter instanceof Integer)
 					statement.setInt(i + 1, (int) currentParameter);
+				else if (currentParameter instanceof Long)
+					statement.setLong(i + 1, (long) currentParameter);
+				else if (currentParameter instanceof Float)
+					statement.setFloat(i + 1, (float) currentParameter);
+				else if (currentParameter instanceof Double)
+					statement.setDouble(i + 1, (double) currentParameter);
+				
+				else if (currentParameter instanceof Character)
+					statement.setString(i + 1, String.valueOf((char) currentParameter));
 				else if (currentParameter instanceof String)
 					statement.setString(i + 1, (String) currentParameter);
+				
+				log.debug("Adding parameter " + i + ": " + currentParameter.toString());
 			}
 		}
 		return statement;
