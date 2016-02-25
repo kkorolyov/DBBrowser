@@ -1,10 +1,9 @@
 package dev.kkorolyov.ezdb.construct;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
-
-import dev.kkorolyov.ezdb.construct.SqlType;
 
 @SuppressWarnings("javadoc")
 public class SqlTypeTest {
@@ -26,7 +25,7 @@ public class SqlTypeTest {
 																					"CHAR",
 																					"VARCHAR"};
 	
-	private static final int[] typeCodes = {java.sql.Types.BOOLEAN,
+	private static final int[] typeCodes = {java.sql.Types.BIT,
 																			java.sql.Types.SMALLINT,
 																			java.sql.Types.INTEGER,
 																			java.sql.Types.BIGINT,

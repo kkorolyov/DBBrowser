@@ -21,7 +21,7 @@ import dev.kkorolyov.ezdb.logging.DebugLogger;
 
 @SuppressWarnings("javadoc")
 public class ResultsTest {
-	private static final String TEST_HOST = "192.168.47.3", TEST_DB = "TEST_DB", TEST_USER = "postgres", TEST_PASSWORD = "";
+	private static final String host = "192.168.47.3", database = "TEST_DB", TEST_USER = "postgres", TEST_PASSWORD = "";
 
 	private static String testTable = "RESULTS_TEST_TABLE";
 	private static DatabaseConnection databaseConn;
@@ -30,14 +30,14 @@ public class ResultsTest {
 	private Results results;
 
 	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		DebugLogger.enableAll();
-		
-		databaseConn = new SimpleDatabaseConnection(TEST_HOST, TEST_DB, TEST_USER, TEST_PASSWORD);
+	public static void setUpBeforeClass() throws Exception {		
+		databaseConn = new SimpleDatabaseConnection(host, database, TEST_USER, TEST_PASSWORD);
 		databaseConn.createTable(testTable, buildAllColumns());
 		
 		tableConn = new SimpleTableConnection(databaseConn, testTable);
 		tableConn.insert(buildAllEntries());
+		
+		DebugLogger.enableAll();
 	}
 
 	@AfterClass
