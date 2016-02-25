@@ -105,11 +105,17 @@ public class Properties {
 	 * @return property value
 	 */
 	public static String getValue(String key) {
+		if (properties.isEmpty())
+			init();
+		
 		return properties.get(key);
 	}
 	
 	/** @return key of every property */
 	public static Set<String> getAllKeys() {
+		if (properties.isEmpty())
+			init();
+		
 		return properties.keySet();
 	}
 	
@@ -120,6 +126,9 @@ public class Properties {
 	 * @param value value of property to add
 	 */
 	public static void addProperty(String key, String value) {
+		if (properties.isEmpty())
+			init();
+		
 		properties.put(key, value);
 	}
 }
