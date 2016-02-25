@@ -1,9 +1,10 @@
 package dev.kkorolyov.ezdb.connection.concrete;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
@@ -12,73 +13,118 @@ import org.junit.Test;
 import dev.kkorolyov.ezdb.connection.DatabaseConnection;
 import dev.kkorolyov.ezdb.connection.TableConnection;
 import dev.kkorolyov.ezdb.construct.Column;
+import dev.kkorolyov.ezdb.construct.Results;
+import dev.kkorolyov.ezdb.construct.RowEntry;
 import dev.kkorolyov.ezdb.construct.SqlType;
 import dev.kkorolyov.ezdb.exceptions.ClosedException;
 import dev.kkorolyov.ezdb.exceptions.DuplicateTableException;
+import dev.kkorolyov.ezdb.exceptions.MismatchedTypeException;
 import dev.kkorolyov.ezdb.exceptions.NullTableException;
 import dev.kkorolyov.ezdb.logging.DebugLogger;
+import dev.kkorolyov.ezdb.properties.Properties;
 
 @SuppressWarnings("javadoc")
 public class SimpleTableConnectionTest {	// TODO Better tests
-	private static final String TEST_HOST = "192.168.1.157", TEST_DB = "TEST_DB", TEST_USER = "postgres", TEST_PASSWORD = "", TEST_TABLE = "TEST_TABLE";
-
+	private static final String host = Properties.getValue(Properties.HOST), database = "TEST_DB", user = Properties.getValue(Properties.USER), password = Properties.getValue(Properties.PASSWORD);
 	private static DatabaseConnection dbConn;
+
+	private final String table = "TABLE_TEST_TABLE";
+	private final Column[] columns = buildAllColumns();
+	
 	private TableConnection conn;
 	
 	@Before
-	public void setUp() throws NullTableException, SQLException, DuplicateTableException, ClosedException{
-		dbConn = new SimpleDatabaseConnection(TEST_HOST, TEST_DB, TEST_USER, TEST_PASSWORD);
-		if (!dbConn.containsTable(TEST_TABLE)) {
-			String[] testColumnNames = {"BOOLEAN", "INTEGER", "VARCHAR"};
-			boolean testBoolean = (Math.random() < .5) ? false : true;	// Random boolean
-			int testInt = (int) Math.random() * 100;	// Random int 0-99
-			String testString = "TEST_STRING";
-			
-			Column[] columns = {new Column(testColumnNames[0], SqlType.BOOLEAN),
-																new Column(testColumnNames[1], SqlType.INTEGER),
-																new Column(testColumnNames[2], SqlType.VARCHAR)};		
-			
-			dbConn.createTable(TEST_TABLE, columns);
-		}
-		conn = new SimpleTableConnection(dbConn, TEST_TABLE);
+	public void setUp() throws NullTableException, DuplicateTableException, ClosedException, SQLException{
+		dbConn = new SimpleDatabaseConnection(host, database, user, password);
+		
+		if (dbConn.containsTable(table))
+			dbConn.dropTable(table);
+		dbConn.createTable(table, columns);
+		
+		conn = new SimpleTableConnection(dbConn, table);
 		
 		DebugLogger.enableAll();
 	}
 
 	@After
-	public void tearDown() {
+	public void tearDown() throws ClosedException, NullTableException {
+		if (dbConn.containsTable(table))
+			dbConn.dropTable(table);
+		
 		conn.close();
 	}
 
 	@Test
-	public void testSelect() throws SQLException, DuplicateTableException, NullTableException {
-		String[] testColumnNames = {"BOOLEAN", "INTEGER", "VARCHAR"};
-		boolean testBoolean = (Math.random() < .5) ? false : true;	// Random boolean
-		int testInt = (int) Math.random() * 100;	// Random int 0-99
-		String testString = "TEST_STRING";
-		
-		DatabaseConnection dbConn = new SimpleDatabaseConnection(TEST_HOST, TEST_DB);
-		dbConn.dropTable(TEST_TABLE);
-		conn = dbConn.createTable(TEST_TABLE, testColumns);
-		
-		ResultSet rs = conn.select(testColumnNames);
-
-		while (rs.next()) {
-			boolean actualBoolean = rs.getBoolean(testColumnNames[0]);
-			int actualInt = rs.getInt(testColumnNames[1]);
-			String actualString = rs.getString(testColumnNames[2]);
-			
-			assertEquals(testBoolean, actualBoolean);
-			System.out.println(String.valueOf(actualBoolean));
-			assertEquals(testInt, actualInt);
-			System.out.println(String.valueOf(actualInt));
-			assertEquals(testString, actualString);
-			System.out.println(actualString);
-		}
+	public void testClose() {
+		//T\ TODO
 	}
 	
 	@Test
-	public void testInsert() throws SQLException {
-		//System.out.println(conn.insert(new Object[]{true, 5, "Thing"}));
+	public void testSelect() throws SQLException, DuplicateTableException, NullTableException, ClosedException {
+		Results results = conn.select(columns);
+		Column[] resultColumns = results.getColumns();
+		
+		for (int i = 0; i < columns.length; i++) {
+			assertEquals(columns[i], resultColumns[i]);
+		}
+	}
+	@Test
+	public void testSelectParameters() {
+		// TODO
+	}
+	
+	@Test
+	public void testInsert() throws SQLException, MismatchedTypeException, ClosedException {
+		RowEntry[] testEntries = buildAllEntries();
+		Column[] testColumns = new Column[testEntries.length];
+		for (int i = 0; i < testColumns.length; i++)
+			testColumns[i] = testEntries[i].getColumn();
+		
+		conn.insert(testEntries);
+		
+		RowEntry[] retrievedEntries = null;
+		try (Results results = conn.select(testColumns)) {
+			retrievedEntries = results.getNextRow();
+		}
+		for (int i = 0; i < retrievedEntries.length; i++)
+			assertEquals(testEntries[i], retrievedEntries[i]);	// Input entries should be the same as selected entries
+	}
+	
+	private static Column[] buildAllColumns() {
+		SqlType[] allTypes = SqlType.values();
+		Column[] allColumns = new Column[allTypes.length];
+		
+		for (int i = 0; i < allColumns.length; i++)
+			allColumns[i] = new Column(allTypes[i].toString(), allTypes[i]);
+		
+		return allColumns;
+	}
+	private static RowEntry[] buildAllEntries() throws MismatchedTypeException {
+		Column[] allColumns = buildAllColumns();
+		RowEntry[] allEntries = new RowEntry[allColumns.length];
+		
+		Map<SqlType, Object> matchedTypes = buildMatchedTypes();
+		for (int i = 0; i < allEntries.length; i++) {
+			allEntries[i] = new RowEntry(allColumns[i], matchedTypes.get(allColumns[i].getType()));
+		}
+		return allEntries;
+	}
+	private static Map<SqlType, Object> buildMatchedTypes() {
+		Map<SqlType, Object> matchedTypes = new HashMap<>();
+		
+		matchedTypes.put(SqlType.BOOLEAN, false);
+		
+		matchedTypes.put(SqlType.SMALLINT, (short) 0);
+		matchedTypes.put(SqlType.INTEGER, 0);
+		matchedTypes.put(SqlType.BIGINT, (long) 0);
+		matchedTypes.put(SqlType.REAL, (float) 0.0);
+		matchedTypes.put(SqlType.DOUBLE, 0.0);
+		
+		matchedTypes.put(SqlType.CHAR, 'A');
+		matchedTypes.put(SqlType.VARCHAR, "String");
+		
+		assert (matchedTypes.size() == SqlType.values().length);
+		
+		return matchedTypes;
 	}
 }

@@ -67,19 +67,17 @@ public interface DatabaseConnection {
 	 * @param name new table name
 	 * @param columns new table columns in the order they should appear
 	 * @throws DuplicateTableException if a table of the specified name already exists
-	 * @throws SQLException if specified parameters lead to an invalid statement execution
 	 * @return connection to the recently-created table
 	 * @throws ClosedException if called on a closed connection
 	 */
-	TableConnection createTable(String name, Column[] columns) throws DuplicateTableException, SQLException, ClosedException;
+	TableConnection createTable(String name, Column[] columns) throws DuplicateTableException, ClosedException;
 	/**
 	 * Drops a table from the database.
 	 * @param table name of table to drop
 	 * @throws NullTableException if no table of the specified name exists
-	 * @throws SQLException if specified parameters lead to an invalid statement execution
 	 * @throws ClosedException if called on a closed connection
 	 */
-	void dropTable(String table) throws NullTableException, SQLException, ClosedException;
+	void dropTable(String table) throws NullTableException, ClosedException;
 	
 	/**
 	 * @param table name of table to search for

@@ -168,31 +168,34 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 	}
 	
 	@Override
-	public TableConnection createTable(String name, Column[] columns) throws DuplicateTableException, SQLException, ClosedException {
+	public TableConnection createTable(String name, Column[] columns) throws DuplicateTableException, ClosedException {
 		testClosed();
 		
-		if (containsTable(name))
+		if (containsTable(name))	// Can't add a table of the same name
 			throw new DuplicateTableException(database, name);
-		
-		execute(StatementBuilder.buildCreate(name, columns));
-		
+				
 		TableConnection newTable = null;
 		try {
+			execute(StatementBuilder.buildCreate(name, columns));
 			newTable = new SimpleTableConnection(this, name);
-		} catch (NullTableException e) {	// Should not be a null table, just created it
+		} catch (NullTableException | SQLException e) {	// Should not be a null table or result in bad statement
 			log.exceptionSevere(e);
 		}
 		return newTable;
 	}
 	
 	@Override
-	public void dropTable(String table) throws NullTableException, SQLException, ClosedException {
+	public void dropTable(String table) throws NullTableException, ClosedException {
 		testClosed();
 		
 		if (!containsTable(table))	// No such table to drop
 			throw new NullTableException(database, table);
 		
-		execute(StatementBuilder.buildDrop(table));
+		try {
+			execute(StatementBuilder.buildDrop(table));
+		} catch (SQLException e) {
+			log.exceptionSevere(e);
+		}
 	}
 	
 	@Override
