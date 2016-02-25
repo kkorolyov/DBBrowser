@@ -37,4 +37,39 @@ public class RowEntry {
 		
 		this.value = value;
 	}
+	
+	@Override
+	public int hashCode() {
+		int result = 1, prime = 31;
+		
+		result = result * prime + column.hashCode();
+		result = result * prime + value.hashCode();
+		
+		return result;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		
+		if (obj == null)
+			return false;
+		
+		if (!(obj instanceof RowEntry))
+			return false;
+		
+		RowEntry o = (RowEntry) obj;
+		if (column == null) {
+			if (o.column != null)
+				return false;
+		} else if (!column.equals(o.column))
+			return false;
+		if (value == null) {
+			if (o.value != null)
+				return false;
+		} else if (!value.equals(o.value))
+			return false;
+		
+		return true;
+	}
 }

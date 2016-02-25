@@ -70,4 +70,24 @@ public class RowEntryTest {
 		}
 	}
 
+	@Test
+	public void testHashCode() throws MismatchedTypeException {
+		Column testColumn = new Column("TestColumn", SqlType.BOOLEAN);
+		Boolean testValue = false;
+		
+		RowEntry entry1 = new RowEntry(testColumn, testValue), entry2 = new RowEntry(testColumn, testValue);
+		assertEquals(entry1, entry2);
+	}
+	@Test
+	public void testEquals() throws MismatchedTypeException {
+		Column testColumn = new Column("TestColumn", SqlType.BOOLEAN);
+		Boolean testValue = false, testValue2 = true;
+		
+		RowEntry entry1 = new RowEntry(testColumn, testValue), entry2 = new RowEntry(testColumn, testValue), entry3 = new RowEntry(testColumn, testValue2);
+		assertEquals(entry1, entry2);
+		assertEquals(entry1.hashCode(), entry2.hashCode());
+		
+		assertNotEquals(entry1, entry3);
+		assertNotEquals(entry1, entry3);
+	}
 }

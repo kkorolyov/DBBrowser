@@ -31,4 +31,31 @@ public class ColumnTest {
 			assertEquals(type, new Column(testName, type).getType());
 	}
 
+	@Test
+	public void testHashCode() {
+		String testName = "HashTest";
+		
+		for (SqlType testType : SqlType.values()) {
+			Column column1 = new Column(testName, testType), column2 = new Column(testName, testType);
+			assertEquals(column1.hashCode(), column2.hashCode());
+		}
+	}
+	@Test
+	public void testEquals() {
+		String testName = "EqualsTest", testNameLower = testName.toLowerCase(), testNameUpper = testName.toUpperCase(), testName2 = "EqualsTest2";
+		
+		for (SqlType testType : SqlType.values()) {
+			Column column1 = new Column(testName, testType), column2 = new Column(testName, testType), column3 = new Column(testName2, testType);
+			Column columnLower = new Column(testNameLower, testType), columnUpper = new Column(testNameUpper, testType);
+			assertEquals(column1, column2);
+			assertEquals(column1.hashCode(), column2.hashCode());	// Test equals-hashcode contract 
+			assertEquals(column1, columnLower);
+			assertEquals(column1.hashCode(), columnLower.hashCode());
+			assertEquals(column1, columnUpper);
+			assertEquals(column1.hashCode(), columnUpper.hashCode());
+			
+			assertNotEquals(column1, column3);
+			assertNotEquals(column2, column3);
+		}
+	}
 }
