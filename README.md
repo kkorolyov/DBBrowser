@@ -1,2 +1,2 @@
 # SQLOb
-SQLOb (pronounced "Sklob"), is an API facilitating object-oriented access to a SQL database.
+SQLOb (pronounced "Sklob"), is a Java API facilitating object-oriented access to a SQL database.
