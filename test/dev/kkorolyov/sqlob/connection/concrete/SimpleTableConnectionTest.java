@@ -10,6 +10,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import dev.kkorolyov.simpleprops.Properties;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.connection.TableConnection;
 import dev.kkorolyov.sqlob.connection.concrete.SimpleDatabaseConnection;
@@ -23,14 +24,12 @@ import dev.kkorolyov.sqlob.exceptions.DuplicateTableException;
 import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 import dev.kkorolyov.sqlob.exceptions.NullTableException;
 import dev.kkorolyov.sqlob.logging.DebugLogger;
-import dev.kkorolyov.sqlob.properties.Properties;
 
 @SuppressWarnings("javadoc")
 public class SimpleTableConnectionTest {	// TODO Better tests
-	private static final String host = Properties.getValue(Properties.HOST), database = "TEST_DB", user = Properties.getValue(Properties.USER), password = Properties.getValue(Properties.PASSWORD);
+	private static final String host = Properties.getValue("HOST"), database = Properties.getValue("DATABASE"), user = Properties.getValue("USER"), password = Properties.getValue("PASSWORD"), table = Properties.getValue("TABLE");
 	private static DatabaseConnection dbConn;
 
-	private final String table = "TABLE_TEST_TABLE";
 	private final Column[] columns = buildAllColumns();
 	
 	private TableConnection conn;

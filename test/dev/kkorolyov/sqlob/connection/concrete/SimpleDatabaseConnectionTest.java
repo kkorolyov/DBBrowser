@@ -10,8 +10,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import dev.kkorolyov.simpleprops.Properties;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
-import dev.kkorolyov.sqlob.connection.concrete.SimpleDatabaseConnection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
@@ -20,11 +20,10 @@ import dev.kkorolyov.sqlob.exceptions.DuplicateTableException;
 import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 import dev.kkorolyov.sqlob.exceptions.NullTableException;
 import dev.kkorolyov.sqlob.logging.DebugLogger;
-import dev.kkorolyov.sqlob.properties.Properties;
 
 @SuppressWarnings("javadoc")
 public class SimpleDatabaseConnectionTest {
-	private static final String host = Properties.getValue(Properties.HOST), database = "TEST_DB", user = Properties.getValue(Properties.USER), password = Properties.getValue(Properties.PASSWORD),table = "DATABASE_TEST_TABLE";
+	private static final String host = Properties.getValue("HOST"), database = Properties.getValue("DATABASE"), user = Properties.getValue("USER"), password = Properties.getValue("PASSWORD"), table = Properties.getValue("TABLE");
 	
 	private DatabaseConnection conn;
 	private Column[] columns = {new Column("TEST_COL_1", SqlType.BOOLEAN)};
