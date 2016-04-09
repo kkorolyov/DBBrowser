@@ -3,6 +3,7 @@ import java.sql.*;
 import java.util.LinkedList;
 import java.util.List;
 
+import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.connection.TableConnection;
 import dev.kkorolyov.sqlob.construct.Column;
@@ -11,7 +12,6 @@ import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.exceptions.ClosedException;
 import dev.kkorolyov.sqlob.exceptions.DuplicateTableException;
 import dev.kkorolyov.sqlob.exceptions.NullTableException;
-import dev.kkorolyov.sqlob.logging.DebugLogger;
 import dev.kkorolyov.sqlob.statement.StatementBuilder;
 
 /**
@@ -20,7 +20,7 @@ import dev.kkorolyov.sqlob.statement.StatementBuilder;
  * @see DatabaseConnection
  */
 public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseable {
-	private static final DebugLogger log = DebugLogger.getLogger(SimpleDatabaseConnection.class.getName());
+	private static final Logger log = Logger.getLogger(SimpleDatabaseConnection.class.getName());
 
 	private static final String jdbcDriverClassName = "org.postgresql.Driver";
 	private static final String jdbcHeader = "jdbc:postgresql:";

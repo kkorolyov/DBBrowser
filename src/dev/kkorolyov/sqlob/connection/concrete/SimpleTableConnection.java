@@ -2,6 +2,7 @@ package dev.kkorolyov.sqlob.connection.concrete;
 import java.lang.reflect.Array;
 import java.sql.SQLException;
 
+import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.connection.TableConnection;
 import dev.kkorolyov.sqlob.construct.Column;
@@ -9,7 +10,6 @@ import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.exceptions.ClosedException;
 import dev.kkorolyov.sqlob.exceptions.NullTableException;
-import dev.kkorolyov.sqlob.logging.DebugLogger;
 import dev.kkorolyov.sqlob.statement.StatementBuilder;
 
 /**
@@ -20,7 +20,7 @@ import dev.kkorolyov.sqlob.statement.StatementBuilder;
  * @see DatabaseConnection
  */
 public class SimpleTableConnection implements TableConnection, AutoCloseable {
-	private static final DebugLogger log = DebugLogger.getLogger(SimpleTableConnection.class.getName());
+	private static final Logger log = Logger.getLogger(SimpleTableConnection.class.getName());
 
 	private DatabaseConnection conn;
 	private String tableName;

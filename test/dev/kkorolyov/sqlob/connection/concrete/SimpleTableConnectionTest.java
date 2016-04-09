@@ -1,6 +1,6 @@
 package dev.kkorolyov.sqlob.connection.concrete;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -10,11 +10,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.simpleprops.Properties;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.connection.TableConnection;
-import dev.kkorolyov.sqlob.connection.concrete.SimpleDatabaseConnection;
-import dev.kkorolyov.sqlob.connection.concrete.SimpleTableConnection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
@@ -23,11 +22,11 @@ import dev.kkorolyov.sqlob.exceptions.ClosedException;
 import dev.kkorolyov.sqlob.exceptions.DuplicateTableException;
 import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 import dev.kkorolyov.sqlob.exceptions.NullTableException;
-import dev.kkorolyov.sqlob.logging.DebugLogger;
 
 @SuppressWarnings("javadoc")
 public class SimpleTableConnectionTest {	// TODO Better tests
-	private static final String host = Properties.getValue("HOST"), database = Properties.getValue("DATABASE"), user = Properties.getValue("USER"), password = Properties.getValue("PASSWORD"), table = Properties.getValue("TABLE");
+	private static Properties props = Properties.getInstance("SimpleProps.txt");
+	private static final String host = props.getValue("HOST"), database = props.getValue("DATABASE"), user = props.getValue("USER"), password = props.getValue("PASSWORD"), table = props.getValue("TABLE");
 	private static DatabaseConnection dbConn;
 
 	private final Column[] columns = buildAllColumns();
@@ -44,7 +43,7 @@ public class SimpleTableConnectionTest {	// TODO Better tests
 		
 		conn = new SimpleTableConnection(dbConn, table);
 		
-		DebugLogger.enableAll();
+		Logger.enableAll();
 	}
 
 	@After

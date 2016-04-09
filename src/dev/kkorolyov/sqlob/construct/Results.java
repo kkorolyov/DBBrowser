@@ -4,9 +4,9 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
+import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.sqlob.exceptions.ClosedException;
 import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
-import dev.kkorolyov.sqlob.logging.DebugLogger;
 
 /**
  * Results obtained from a SQL query.
@@ -16,7 +16,7 @@ import dev.kkorolyov.sqlob.logging.DebugLogger;
  * @see RowEntry
  */
 public class Results implements AutoCloseable {
-	private static final DebugLogger log = DebugLogger.getLogger(Results.class.getName());
+	private static final Logger log = Logger.getLogger(Results.class.getName());
 	
 	private ResultSet rs;
 	private Column[] columns;

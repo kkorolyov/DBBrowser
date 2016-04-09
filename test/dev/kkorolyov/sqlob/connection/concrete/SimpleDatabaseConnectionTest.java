@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.simpleprops.Properties;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.Column;
@@ -19,18 +20,18 @@ import dev.kkorolyov.sqlob.exceptions.ClosedException;
 import dev.kkorolyov.sqlob.exceptions.DuplicateTableException;
 import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 import dev.kkorolyov.sqlob.exceptions.NullTableException;
-import dev.kkorolyov.sqlob.logging.DebugLogger;
 
 @SuppressWarnings("javadoc")
 public class SimpleDatabaseConnectionTest {
-	private static final String host = Properties.getValue("HOST"), database = Properties.getValue("DATABASE"), user = Properties.getValue("USER"), password = Properties.getValue("PASSWORD"), table = Properties.getValue("TABLE");
+	private static Properties props = Properties.getInstance("SimpleProps.txt");
+	private static final String host = props.getValue("HOST"), database = props.getValue("DATABASE"), user = props.getValue("USER"), password = props.getValue("PASSWORD"), table = props.getValue("TABLE");
 	
 	private DatabaseConnection conn;
 	private Column[] columns = {new Column("TEST_COL_1", SqlType.BOOLEAN)};
 	
 	@BeforeClass
 	public static void setUpBeforeClass() {
-		DebugLogger.enableAll();
+		Logger.enableAll();
 	}
 	@Before
 	public void setUp() throws SQLException, DuplicateTableException, NullTableException, ClosedException {

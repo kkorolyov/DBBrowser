@@ -7,18 +7,17 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
 import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
-import dev.kkorolyov.sqlob.logging.DebugLogger;
-import dev.kkorolyov.sqlob.statement.StatementBuilder;
 
 @SuppressWarnings("javadoc")
 public class StatementBuilderTest {
 
 	{
-		DebugLogger.enableAll();	// Enable all loggers before testing
+		Logger.enableAll();	// Enable all loggers before testing
 	}
 	
 	@Test

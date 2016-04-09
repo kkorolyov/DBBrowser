@@ -1,14 +1,14 @@
 package dev.kkorolyov.sqlob.statement;
 
+import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.RowEntry;
-import dev.kkorolyov.sqlob.logging.DebugLogger;
 
 /**
  * Provides methods for constructing strings for use in SQL statements.
  */
 public class StatementBuilder {
-	private static final DebugLogger log = DebugLogger.getLogger(StatementBuilder.class.getName());
+	private static final Logger log = Logger.getLogger(StatementBuilder.class.getName());
 	
 	private static final String createStatement = "CREATE TABLE " + Marker.table + " " + Marker.columns;
 	private static final String dropStatement = "DROP TABLE " + Marker.table;

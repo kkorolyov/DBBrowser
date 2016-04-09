@@ -1,6 +1,8 @@
 package dev.kkorolyov.sqlob.construct;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -11,17 +13,13 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.connection.TableConnection;
 import dev.kkorolyov.sqlob.connection.concrete.SimpleDatabaseConnection;
 import dev.kkorolyov.sqlob.connection.concrete.SimpleTableConnection;
-import dev.kkorolyov.sqlob.construct.Column;
-import dev.kkorolyov.sqlob.construct.Results;
-import dev.kkorolyov.sqlob.construct.RowEntry;
-import dev.kkorolyov.sqlob.construct.SqlType;
 import dev.kkorolyov.sqlob.exceptions.ClosedException;
 import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
-import dev.kkorolyov.sqlob.logging.DebugLogger;
 
 @SuppressWarnings("javadoc")
 public class ResultsTest {
@@ -41,7 +39,7 @@ public class ResultsTest {
 		tableConn = new SimpleTableConnection(databaseConn, testTable);
 		tableConn.insert(buildAllEntries());
 		
-		DebugLogger.enableAll();
+		Logger.enableAll();
 	}
 
 	@AfterClass
