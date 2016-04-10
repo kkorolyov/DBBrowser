@@ -20,7 +20,7 @@ public interface DatabaseConnection {
 	 * @return connection to the table, if it exists, {@code null} if otherwise
 	 * @throws ClosedException if called on a closed connection
 	 */
-	TableConnection connect(String table) throws ClosedException;
+	TableConnection connect(String table);
 	
 	/**
 	 * Closes the connection and releases all resources.
@@ -35,7 +35,7 @@ public interface DatabaseConnection {
 	 * Executes a complete SQL statement without additional parameters.
 	 * @see #execute(String, RowEntry[])
 	 */
-	Results execute(String statement) throws SQLException, ClosedException;
+	Results execute(String statement) throws SQLException;
 	/**
 	 * Executes a partial SQL statement with parameters.
 	 * @param baseStatement statement without parameters, with {@code ?} denoting an area where a parameter should be substituted in
@@ -44,7 +44,7 @@ public interface DatabaseConnection {
 	 * @throws SQLException if the executed statement is invalid
 	 * @throws ClosedException if called on a closed connection
 	 */
-	Results execute(String baseStatement, RowEntry[] parameters) throws SQLException, ClosedException;
+	Results execute(String baseStatement, RowEntry[] parameters) throws SQLException;
 	
 	/**
 	 * Executes a partial SQL update statement with parameters.
@@ -54,7 +54,7 @@ public interface DatabaseConnection {
 	 * @throws SQLException if the executed statement is invalid
 	 * @throws ClosedException if called on a closed connection
 	 */
-	int update(String baseStatement, RowEntry[] parameters) throws SQLException, ClosedException;
+	int update(String baseStatement, RowEntry[] parameters) throws SQLException;
 	
 	/**
 	 * Closes all opened statements.
@@ -70,27 +70,27 @@ public interface DatabaseConnection {
 	 * @return connection to the recently-created table
 	 * @throws ClosedException if called on a closed connection
 	 */
-	TableConnection createTable(String name, Column[] columns) throws DuplicateTableException, ClosedException;
+	TableConnection createTable(String name, Column[] columns) throws DuplicateTableException;
 	/**
 	 * Drops a table from the database.
 	 * @param table name of table to drop
 	 * @throws NullTableException if no table of the specified name exists
 	 * @throws ClosedException if called on a closed connection
 	 */
-	void dropTable(String table) throws NullTableException, ClosedException;
+	void dropTable(String table) throws NullTableException;
 	
 	/**
 	 * @param table name of table to search for
 	 * @return {@code true} if this database contains a table of the specified name (ignoring case), {@code false} if otherwise 
 	 * @throws ClosedException if called on a closed connection
 	 */
-	boolean containsTable(String table) throws ClosedException;
+	boolean containsTable(String table);
 	
 	/**
 	 * @return names of all tables in this database.
 	 * @throws ClosedException if called on a closed connection
 	 */
-	String[] getTables() throws ClosedException;
+	String[] getTables();
 	
 	/**
 	 * Returns the name of the database connected to.

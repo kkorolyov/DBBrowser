@@ -34,7 +34,7 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 	 * @throws NullTableException if such a table does not exist on the specified database
 	 * @throws ClosedException if constructed from a closed database connection 
 	 */
-	public SimpleTableConnection(DatabaseConnection conn, String tableName) throws NullTableException, ClosedException {		
+	public SimpleTableConnection(DatabaseConnection conn, String tableName) throws NullTableException {	// TODO Remove NullTableException
 		if (!conn.containsTable(tableName))
 			throw new NullTableException(conn.getDBName(), tableName);
 		
@@ -59,26 +59,26 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 	}
 	
 	@Override
-	public Results select(Column[] columns) throws SQLException, ClosedException {
+	public Results select(Column[] columns) throws SQLException {
 		return select(columns, null);
 	}
 	@Override
-	public Results select(Column[] columns, RowEntry[] criteria) throws SQLException, ClosedException {
+	public Results select(Column[] columns, RowEntry[] criteria) throws SQLException {
 		return conn.execute(StatementBuilder.buildSelect(tableName, columns, criteria), criteria);	// Execute marked statement with substituted parameters
 	}
 	
 	@Override
-	public int insert(RowEntry[] entries) throws SQLException, ClosedException {		
+	public int insert(RowEntry[] entries) throws SQLException {		
 		return conn.update(StatementBuilder.buildInsert(tableName, entries), entries);
 	}
 	
 	@Override
-	public int delete(RowEntry[] criteria) throws SQLException, ClosedException {
+	public int delete(RowEntry[] criteria) throws SQLException {
 		return conn.update(StatementBuilder.buildDelete(tableName, criteria), criteria);
 	}
 	
 	@Override
-	public int update(RowEntry[] newEntries, RowEntry[] criteria) throws SQLException, ClosedException {
+	public int update(RowEntry[] newEntries, RowEntry[] criteria) throws SQLException {
 		RowEntry[] combinedParameters = combineArrays(RowEntry.class, newEntries, criteria);
 		
 		return conn.update(StatementBuilder.buildUpdate(tableName, newEntries, criteria), combinedParameters);
@@ -103,7 +103,7 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 	}
 	
 	@Override
-	public void flush() throws ClosedException {
+	public void flush() {
 		conn.flush();
 	}
 	
@@ -117,7 +117,7 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 	}
 	
 	@Override
-	public Column[] getColumns() throws ClosedException {
+	public Column[] getColumns() {
 		Column[] columns = null;
 		try {
 			columns = conn.execute(metaDataStatement).getColumns();
@@ -128,7 +128,7 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 	}
 	
 	@Override
-	public int getNumColumns() throws ClosedException {
+	public int getNumColumns() {
 		int numColumns = 0;
 		try {
 			numColumns = conn.execute(metaDataStatement).getNumColumns();
@@ -141,7 +141,7 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 	 * May take a while for large tables.
 	 */
 	@Override
-	public int getNumRows() throws ClosedException {
+	public int getNumRows() {
 		int numRows = 0;
 		try {
 			Results rs = conn.execute(metaDataStatement);

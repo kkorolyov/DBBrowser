@@ -56,7 +56,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 	}
 	
 	@Override
-	public TableConnection connect(String table) throws ClosedException {
+	public TableConnection connect(String table) {
 		testClosed();
 		
 		try {
@@ -88,11 +88,11 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 	}
 	
 	@Override
-	public Results execute(String statement) throws SQLException, ClosedException {
+	public Results execute(String statement) throws SQLException {
 		return execute(statement, (RowEntry[]) null);
 	}
 	@Override
-	public Results execute(String baseStatement, RowEntry[] parameters) throws SQLException, ClosedException {
+	public Results execute(String baseStatement, RowEntry[] parameters) throws SQLException {
 		testClosed();
 		
 		PreparedStatement s = setupStatement(baseStatement, parameters);
@@ -102,7 +102,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 	}
 	
 	@Override
-	public int update(String baseStatement, RowEntry[] parameters) throws SQLException, ClosedException {
+	public int update(String baseStatement, RowEntry[] parameters) throws SQLException {
 		testClosed();
 		
 		PreparedStatement s = setupStatement(baseStatement, parameters);
@@ -150,7 +150,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 	}
 	
 	@Override
-	public void flush() throws ClosedException {
+	public void flush() {
 		testClosed();
 		
 		int closedStatements = 0;	// Count closed statements for debugging
@@ -168,7 +168,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 	}
 	
 	@Override
-	public TableConnection createTable(String name, Column[] columns) throws DuplicateTableException, ClosedException {
+	public TableConnection createTable(String name, Column[] columns) throws DuplicateTableException {
 		testClosed();
 		
 		if (containsTable(name))	// Can't add a table of the same name
@@ -185,7 +185,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 	}
 	
 	@Override
-	public void dropTable(String table) throws NullTableException, ClosedException {
+	public void dropTable(String table) throws NullTableException {
 		testClosed();
 		
 		if (!containsTable(table))	// No such table to drop
@@ -199,7 +199,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 	}
 	
 	@Override
-	public boolean containsTable(String table) throws ClosedException {
+	public boolean containsTable(String table) {
 		testClosed();
 		
 		boolean contains = false;
@@ -214,7 +214,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 	}
 	
 	@Override
-	public String[] getTables() throws ClosedException {
+	public String[] getTables() {
 		testClosed();
 		
 		List<String> tables = new LinkedList<>();
@@ -234,7 +234,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 		return database;
 	}
 	
-	private void testClosed() throws ClosedException {
+	private void testClosed() {
 		if (isClosed())
 			throw new ClosedException();
 	}

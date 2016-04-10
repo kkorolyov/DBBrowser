@@ -25,7 +25,7 @@ public interface TableConnection {
 	 * Executes a SELECT statement without any constraining criteria.
 	 * @see #select(Column[], RowEntry[])
 	 */
-	Results select(Column[] columns) throws SQLException, ClosedException;
+	Results select(Column[] columns) throws SQLException;
 	/**
 	 * Executes a SELECT statement constrained by the specified criteria.
 	 * @param columns column(s) to return; if {@code null}, empty, or any column name = "*", will return all columns
@@ -34,7 +34,7 @@ public interface TableConnection {
 	 * @throws SQLException if specified parameters result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	Results select(Column[] columns, RowEntry[] criteria) throws SQLException, ClosedException;
+	Results select(Column[] columns, RowEntry[] criteria) throws SQLException;
 	
 	/**
 	 * Inserts a row of entries into the table.
@@ -43,7 +43,7 @@ public interface TableConnection {
 	 * @throws SQLException if specified values result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	int insert(RowEntry[] entries) throws SQLException, ClosedException;
+	int insert(RowEntry[] entries) throws SQLException;
 	
 	/**
 	 * Deletes rows matching the specified criteria.
@@ -52,7 +52,7 @@ public interface TableConnection {
 	 * @throws SQLException if specified values result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	int delete(RowEntry[] criteria) throws SQLException, ClosedException;
+	int delete(RowEntry[] criteria) throws SQLException;
 	
 	/**
 	 * Updates entries to new values.
@@ -62,13 +62,13 @@ public interface TableConnection {
 	 * @throws SQLException if specified values result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	int update(RowEntry[] newEntries, RowEntry[] criteria) throws SQLException, ClosedException;
+	int update(RowEntry[] newEntries, RowEntry[] criteria) throws SQLException;
 	
 	/**
 	 * Closes all open statements.
 	 * @throws ClosedException if called on a closed connection
 	 */
-	void flush() throws ClosedException;
+	void flush();
 	
 	/**
 	 * @return name of this table
@@ -83,16 +83,16 @@ public interface TableConnection {
 	 * @return all table columns
 	 * @throws ClosedException if called on a closed connection
 	 */
-	Column[] getColumns() throws ClosedException;
+	Column[] getColumns();
 	
 	/**
 	 * @return total number of columns in this table
 	 * @throws ClosedException if called on a closed connection
 	 */
-	int getNumColumns() throws ClosedException;
+	int getNumColumns();
 	/**
 	 * @return total number of rows in this table
 	 * @throws ClosedException if called on a closed connection
 	 */
-	int getNumRows() throws ClosedException;
+	int getNumRows();
 }
