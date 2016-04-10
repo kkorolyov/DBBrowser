@@ -8,6 +8,7 @@ import java.util.Map;
 import org.junit.Test;
 
 import dev.kkorolyov.simplelogs.Logger;
+import dev.kkorolyov.simplelogs.Logger.Level;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
@@ -17,6 +18,7 @@ import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 public class StatementBuilderTest {
 
 	{
+		Logger.setGlobalLevel(Level.DEBUG);
 		Logger.enableAll();	// Enable all loggers before testing
 	}
 	
