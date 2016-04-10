@@ -14,6 +14,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import dev.kkorolyov.simplelogs.Logger;
+import dev.kkorolyov.simpleprops.Properties;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.connection.TableConnection;
 import dev.kkorolyov.sqlob.connection.concrete.SimpleDatabaseConnection;
@@ -23,7 +24,8 @@ import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 
 @SuppressWarnings("javadoc")
 public class ResultsTest {
-	private static final String host = "192.168.47.3", database = "TEST_DB", TEST_USER = "postgres", TEST_PASSWORD = "";
+	private static Properties props = Properties.getInstance("SimpleProps.txt");
+	private static final String host = props.getValue("HOST"), database = props.getValue("DATABASE"), TEST_USER = props.getValue("USER"), TEST_PASSWORD = props.getValue("PASSWORD");
 
 	private static String testTable = "RESULTS_TEST_TABLE";
 	private static DatabaseConnection databaseConn;
