@@ -55,7 +55,7 @@ public class Results implements AutoCloseable {
 	 * @return all columns
 	 * @throws ClosedException if called on a closed resource
 	 */
-	public Column[] getColumns() throws ClosedException {
+	public Column[] getColumns() {
 		if (isClosed())
 			throw new ClosedException();
 		
@@ -69,7 +69,8 @@ public class Results implements AutoCloseable {
 					
 					String columnName = rsmd.getColumnName(rsmdColumn);
 					SqlType columnType = SqlType.get(rsmd.getColumnType(rsmdColumn));
-					//System.out.println("Column name: " + columnName + " type: " + rsmd.getColumnType(rsmdColumn));	// TODO Log this
+
+					log.debug("Column name: " + columnName + " type: " + rsmd.getColumnType(rsmdColumn));
 					
 					columns[i] = new Column(columnName, columnType);
 				}
@@ -85,7 +86,7 @@ public class Results implements AutoCloseable {
 	 * @return total number of columns
 	 * @throws ClosedException if called on a closed resource
 	 */
-	public int getNumColumns() throws ClosedException {
+	public int getNumColumns() {
 		if (isClosed())
 			throw new ClosedException();
 		
@@ -97,7 +98,7 @@ public class Results implements AutoCloseable {
 	 * @return next row of results, or {@code null} if no more rows
 	 * @throws ClosedException if called on a closed resource
 	 */
-	public RowEntry[] getNextRow() throws ClosedException {
+	public RowEntry[] getNextRow() {
 		if (isClosed())
 			throw new ClosedException();
 			
@@ -115,7 +116,7 @@ public class Results implements AutoCloseable {
 		}
 		return row;
 	}
-	private Object setValue(ResultSet rs, int columnIndex) throws ClosedException {
+	private Object setValue(ResultSet rs, int columnIndex) {
 		Object value = null;
 		int rsIndex = columnIndex + 1;	// ResultSet index starts 1 ahead of column
 		
