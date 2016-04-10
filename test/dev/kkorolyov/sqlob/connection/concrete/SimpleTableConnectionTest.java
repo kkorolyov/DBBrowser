@@ -1,6 +1,6 @@
 package dev.kkorolyov.sqlob.connection.concrete;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -18,7 +18,6 @@ import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
-import dev.kkorolyov.sqlob.exceptions.ClosedException;
 import dev.kkorolyov.sqlob.exceptions.DuplicateTableException;
 import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 import dev.kkorolyov.sqlob.exceptions.NullTableException;
@@ -34,7 +33,7 @@ public class SimpleTableConnectionTest {	// TODO Better tests
 	private TableConnection conn;
 	
 	@Before
-	public void setUp() throws NullTableException, DuplicateTableException, ClosedException, SQLException{
+	public void setUp() throws NullTableException, DuplicateTableException, SQLException{
 		dbConn = new SimpleDatabaseConnection(host, database, user, password);
 		
 		if (dbConn.containsTable(table))
@@ -47,7 +46,7 @@ public class SimpleTableConnectionTest {	// TODO Better tests
 	}
 
 	@After
-	public void tearDown() throws ClosedException, NullTableException {
+	public void tearDown() throws NullTableException {
 		if (dbConn.containsTable(table))
 			dbConn.dropTable(table);
 		
@@ -55,12 +54,7 @@ public class SimpleTableConnectionTest {	// TODO Better tests
 	}
 
 	@Test
-	public void testClose() {
-		//T\ TODO
-	}
-	
-	@Test
-	public void testSelect() throws SQLException, DuplicateTableException, NullTableException, ClosedException {
+	public void testSelect() throws SQLException, DuplicateTableException, NullTableException {
 		Results results = conn.select(columns);
 		Column[] resultColumns = results.getColumns();
 		
@@ -74,7 +68,7 @@ public class SimpleTableConnectionTest {	// TODO Better tests
 	}
 	
 	@Test
-	public void testInsert() throws SQLException, MismatchedTypeException, ClosedException {
+	public void testInsert() throws SQLException, MismatchedTypeException {
 		RowEntry[] testEntries = buildAllEntries();
 		Column[] testColumns = new Column[testEntries.length];
 		for (int i = 0; i < testColumns.length; i++)
