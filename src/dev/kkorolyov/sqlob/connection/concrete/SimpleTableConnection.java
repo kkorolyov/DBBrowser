@@ -122,7 +122,7 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 		try {
 			columns = conn.execute(metaDataStatement).getColumns();
 		} catch (SQLException e) {
-			log.exceptionSevere(e);
+			log.exception(e);
 		}
 		return columns;
 	}
@@ -133,7 +133,7 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 		try {
 			numColumns = conn.execute(metaDataStatement).getNumColumns();
 		} catch (SQLException e) {
-			log.exceptionSevere(e);
+			log.exception(e);
 		}
 		return numColumns;
 	}
@@ -148,7 +148,7 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 			while (rs.getNextRow() != null)	// Counts rows
 				numRows++;
 		} catch (SQLException e) {
-			log.exceptionSevere(e);
+			log.exception(e);
 		}
 		return numRows;
 	}

@@ -51,7 +51,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 		try {
 			Class.forName(jdbcDriverClassName);
 		} catch (ClassNotFoundException e) {
-			log.exceptionSevere(e);
+			log.exception(e);
 		}
 	}
 	
@@ -74,7 +74,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 		try {
 			conn.close();	// Release JDBC resources
 		} catch (SQLException e) {
-			log.exceptionWarning(e);
+			log.exception(e);
 		}
 		conn = null;
 		openStatements = null;
@@ -159,7 +159,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 				openStatement.close();
 				closedStatements++;
 			} catch (SQLException e) {
-				log.exceptionWarning(e);;
+				log.exception(e);
 			}
 		}
 		openStatements.clear();
@@ -179,7 +179,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 			execute(StatementBuilder.buildCreate(name, columns));
 			newTable = new SimpleTableConnection(this, name);
 		} catch (NullTableException | SQLException e) {	// Should not be a null table or result in bad statement
-			log.exceptionSevere(e);
+			log.exception(e);
 		}
 		return newTable;
 	}
@@ -194,7 +194,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 		try {
 			execute(StatementBuilder.buildDrop(table));
 		} catch (SQLException e) {
-			log.exceptionSevere(e);
+			log.exception(e);
 		}
 	}
 	
@@ -224,7 +224,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 			}
 			tableSet.close();
 		} catch (SQLException e) {
-			log.exceptionSevere(e);
+			log.exception(e);
 		}
 		return tables.toArray(new String[tables.size()]);
 	}

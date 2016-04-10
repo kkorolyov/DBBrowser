@@ -42,7 +42,7 @@ public class Results implements AutoCloseable {
 			rs = null;
 			columns = null;
 		} catch (SQLException e) {
-			log.exceptionSevere(e);
+			log.exception(e);
 		}
 	}
 	/** @return	{@code true} if this resource is closed, {@code false} if otherwise */
@@ -75,7 +75,7 @@ public class Results implements AutoCloseable {
 					columns[i] = new Column(columnName, columnType);
 				}
 			} catch (SQLException e) {
-				log.exceptionSevere(e);
+				log.exception(e);
 			}
 		}
 		return columns;
@@ -112,7 +112,7 @@ public class Results implements AutoCloseable {
 				}
 			}
 		} catch (SQLException | MismatchedTypeException e) {
-			log.exceptionSevere(e);
+			log.exception(e);
 		}
 		return row;
 	}
@@ -148,7 +148,7 @@ public class Results implements AutoCloseable {
 				break;
 			}
 		} catch (SQLException e) {
-			log.exceptionSevere(e);
+			log.exception(e);
 		}
 		return value;
 	}
