@@ -35,7 +35,7 @@ public interface DatabaseConnection {
 	 * Executes a complete SQL statement without additional parameters.
 	 * @see #execute(String, RowEntry[])
 	 */
-	Results execute(String statement) throws SQLException, ClosedException;	// TODO Return a proprietary results collection
+	Results execute(String statement) throws SQLException, ClosedException;
 	/**
 	 * Executes a partial SQL statement with parameters.
 	 * @param baseStatement statement without parameters, with {@code ?} denoting an area where a parameter should be substituted in
