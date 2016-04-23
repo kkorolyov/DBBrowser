@@ -31,7 +31,7 @@ public class SimpleDatabaseConnectionTest {
 	
 	@BeforeClass
 	public static void setUpBeforeClass() {
-		//Logger.setGlobalLevel(Level.DEBUG);
+		// TODO Set up proprietary test table
 	}
 	@Before
 	public void setUp() throws Exception {
@@ -65,6 +65,7 @@ public class SimpleDatabaseConnectionTest {
 	@Test
 	public void testClose() throws Exception {
 		String validityStatement = "SELECT";	// Will work as long as connection is open and valid
+		
 		try {
 			conn.execute(validityStatement);	// Connection is open
 		} catch (SQLException e) {
@@ -78,6 +79,15 @@ public class SimpleDatabaseConnectionTest {
 			return;	// As expected
 		}
 		fail("Resources failed to close");
+	}
+	
+	@Test
+	public void testIsClosed() {
+		assertTrue(!conn.isClosed());
+		
+		conn.close();
+		
+		assertTrue(conn.isClosed());
 	}
 
 	@Test
