@@ -58,7 +58,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 	public TableConnection connect(String table) {
 		testClosed();
 		
-		return new SimpleTableConnection(this, table);
+		return containsTable(table) ? new SimpleTableConnection(this, table) : null;
 	}
 	
 	@Override
