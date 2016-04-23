@@ -8,15 +8,11 @@ import dev.kkorolyov.sqlob.connection.TableConnection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
-import dev.kkorolyov.sqlob.exceptions.ClosedException;
-import dev.kkorolyov.sqlob.exceptions.NullTableException;
 import dev.kkorolyov.sqlob.statement.StatementBuilder;
 
 /**
  * A simple {@code TableConnection} implementation.
- * Uses a {@code DBConnection} to execute statements formatted for its table.
- * This object will automatically release all resources upon exiting a {@code try-with-resources} block;
- * @see TableConnection
+ * Uses a {@code DatabaseConnection} to execute statements on itself.
  * @see DatabaseConnection
  */
 public class SimpleTableConnection implements TableConnection, AutoCloseable {
@@ -28,16 +24,11 @@ public class SimpleTableConnection implements TableConnection, AutoCloseable {
 	private final String metaDataStatement;
 
 	/**
-	 * Opens a new connection to a specified table on a database.
+	 * Constructs a table-specific connection for a {@code DatabaseConnection}.
 	 * @param conn database connection
-	 * @param tableName name of table to connect to
-	 * @throws NullTableException if such a table does not exist on the specified database
-	 * @throws ClosedException if constructed from a closed database connection 
+	 * @param tableName name of table to explore
 	 */
-	public SimpleTableConnection(DatabaseConnection conn, String tableName) throws NullTableException {	// TODO Remove NullTableException
-		if (!conn.containsTable(tableName))
-			throw new NullTableException(conn.getDBName(), tableName);
-		
+	public SimpleTableConnection(DatabaseConnection conn, String tableName) {
 		this.conn = conn;
 		this.tableName = tableName;		
 		

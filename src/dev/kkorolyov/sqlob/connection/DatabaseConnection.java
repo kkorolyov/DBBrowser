@@ -7,7 +7,6 @@ import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.exceptions.ClosedException;
 import dev.kkorolyov.sqlob.exceptions.DuplicateTableException;
-import dev.kkorolyov.sqlob.exceptions.NullTableException;
 
 /**
  * Opens a connection to a single database and allows for SQL statement execution.
@@ -72,12 +71,12 @@ public interface DatabaseConnection {
 	 */
 	TableConnection createTable(String name, Column[] columns) throws DuplicateTableException;
 	/**
-	 * Drops a table from the database.
+	 * Drops a table of the specified name from the database.
 	 * @param table name of table to drop
-	 * @throws NullTableException if no table of the specified name exists
+	 * @return {@code true} if table dropped successfully, {@code false} if drop failed or no such table
 	 * @throws ClosedException if called on a closed connection
 	 */
-	void dropTable(String table) throws NullTableException;
+	boolean dropTable(String table);
 	
 	/**
 	 * @param table name of table to search for

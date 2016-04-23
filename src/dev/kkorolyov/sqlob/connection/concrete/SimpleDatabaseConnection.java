@@ -11,7 +11,6 @@ import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.exceptions.ClosedException;
 import dev.kkorolyov.sqlob.exceptions.DuplicateTableException;
-import dev.kkorolyov.sqlob.exceptions.NullTableException;
 import dev.kkorolyov.sqlob.statement.StatementBuilder;
 
 /**
@@ -59,11 +58,7 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 	public TableConnection connect(String table) {
 		testClosed();
 		
-		try {
-			return new SimpleTableConnection(this, table);
-		} catch (NullTableException e) {
-			return null;
-		}
+		return new SimpleTableConnection(this, table);
 	}
 	
 	@Override
@@ -178,24 +173,28 @@ public class SimpleDatabaseConnection implements DatabaseConnection, AutoCloseab
 		try {
 			execute(StatementBuilder.buildCreate(name, columns));
 			newTable = new SimpleTableConnection(this, name);
-		} catch (NullTableException | SQLException e) {	// Should not be a null table or result in bad statement
+		} catch (SQLException e) {	// Should not result in bad statement
 			log.exception(e);
 		}
 		return newTable;
 	}
 	
 	@Override
-	public void dropTable(String table) throws NullTableException {
+	public boolean dropTable(String table) {
 		testClosed();
 		
-		if (!containsTable(table))	// No such table to drop
-			throw new NullTableException(database, table);
+		boolean success = false;
 		
-		try {
-			execute(StatementBuilder.buildDrop(table));
-		} catch (SQLException e) {
-			log.exception(e);
+		if (containsTable(table)) {
+			try {
+				execute(StatementBuilder.buildDrop(table));
+				
+				success = true;
+			} catch (SQLException e) {
+				log.exception(e);
+			}
 		}
+		return success;
 	}
 	
 	@Override
