@@ -19,7 +19,7 @@ public class StatementBuilderTest {
 
 	{
 		Logger.setGlobalLevel(Level.DEBUG);
-		Logger.enableAll();	// Enable all loggers before testing
+		//Logger.enableAll();	// Enable all loggers before testing
 	}
 	
 	@Test

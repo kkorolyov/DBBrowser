@@ -10,47 +10,47 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.simpleprops.Properties;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
 import dev.kkorolyov.sqlob.exceptions.ClosedException;
-import dev.kkorolyov.sqlob.exceptions.DuplicateTableException;
-import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
-import dev.kkorolyov.sqlob.exceptions.NullTableException;
 
 @SuppressWarnings("javadoc")
 public class SimpleDatabaseConnectionTest {
 	private static Properties props = Properties.getInstance("SimpleProps.txt");
-	private static final String host = props.getValue("HOST"), database = props.getValue("DATABASE"), user = props.getValue("USER"), password = props.getValue("PASSWORD"), table = props.getValue("TABLE");
+	private static final String HOST_IP_ADDRESS = props.getValue("HOST"),
+															DATABASE_NAME = props.getValue("DATABASE"),
+															USER_NAME = props.getValue("USER"),
+															USER_PASSWORD = props.getValue("PASSWORD"),
+															TABLE_NAME = props.getValue("TABLE");
 	
 	private DatabaseConnection conn;
 	private Column[] columns = {new Column("TEST_COL_1", SqlType.BOOLEAN)};
 	
 	@BeforeClass
 	public static void setUpBeforeClass() {
-		Logger.enableAll();
+		//Logger.setGlobalLevel(Level.DEBUG);
 	}
 	@Before
-	public void setUp() throws SQLException, DuplicateTableException, NullTableException, ClosedException {
-		conn = new SimpleDatabaseConnection(host, database, user, password);	// Use a fresh connection for each test
+	public void setUp() throws Exception {
+		conn = new SimpleDatabaseConnection(HOST_IP_ADDRESS, DATABASE_NAME, USER_NAME, USER_PASSWORD);	// Use a fresh connection for each test
 		
-		if (conn.containsTable(table))
-			conn.dropTable(table);
-		conn.createTable(table, columns);
+		if (conn.containsTable(TABLE_NAME))
+			conn.dropTable(TABLE_NAME);
+		conn.createTable(TABLE_NAME, columns);
 	}
 	@After
-	public void tearDown() throws NullTableException, SQLException, ClosedException {
+	public void tearDown() throws Exception {
 		if (conn.isClosed())
-			conn = new SimpleDatabaseConnection(host, database, user, password);
-		conn.dropTable(table);
+			conn = new SimpleDatabaseConnection(HOST_IP_ADDRESS, DATABASE_NAME, USER_NAME, USER_PASSWORD);
+		conn.dropTable(TABLE_NAME);
 		conn.close();	// Make sure all resources release after each test
 	}
 	
 	@Test
-	public void testClose() throws SQLException, ClosedException {
+	public void testClose() throws Exception {
 		String validityStatement = "SELECT";	// Will work as long as connection is open and valid
 		try {
 			conn.execute(validityStatement);	// Connection is open
@@ -68,18 +68,18 @@ public class SimpleDatabaseConnectionTest {
 	}
 
 	@Test
-	public void testExecute() throws SQLException, ClosedException {	// Mainly for exceptions
-		String testStatement = "SELECT * FROM " + table;
+	public void testExecute() throws Exception {	// Mainly for exceptions
+		String testStatement = "SELECT * FROM " + TABLE_NAME;
 		conn.execute(testStatement);
 	}
 	@Test
-	public void testExecuteParams() throws SQLException, ClosedException, MismatchedTypeException {	// Mainly for exceptions
-		String testStatement = "SELECT " + columns[0].getName() + " FROM " + table + " WHERE " + columns[0].getName() + "=?";
+	public void testExecuteParams() throws Exception {	// Mainly for exceptions
+		String testStatement = "SELECT " + columns[0].getName() + " FROM " + TABLE_NAME + " WHERE " + columns[0].getName() + "=?";
 		conn.execute(testStatement, new RowEntry[]{new RowEntry(columns[0], false)});
 	}
 	
 	@Test
-	public void testCreateTable() throws DuplicateTableException, NullTableException, SQLException, ClosedException {
+	public void testCreateTable() throws Exception {
 		String testTableName = "TEST_TABLE_CREATE";
 		
 		if (conn.containsTable(testTableName))	// Clear stale test table from a previous run, if exists
@@ -94,7 +94,7 @@ public class SimpleDatabaseConnectionTest {
 		conn.dropTable(testTableName);	// Cleanup
 	}
 	@Test
-	public void testDropTable() throws DuplicateTableException, NullTableException, SQLException, ClosedException {
+	public void testDropTable() throws Exception {
 		String testTableName = "TEST_TABLE_DROP";
 		
 		if (conn.containsTable(testTableName))	// Clear stale test table from a previous run, if exists
@@ -108,7 +108,7 @@ public class SimpleDatabaseConnectionTest {
 	}
 	
 	@Test
-	public void testContainsTable() throws DuplicateTableException, SQLException, NullTableException, ClosedException {
+	public void testContainsTable() throws Exception {
 		String testTableName = "TEST_TABLE_CONTAINS";
 		
 		if (conn.containsTable(testTableName))
@@ -122,7 +122,7 @@ public class SimpleDatabaseConnectionTest {
 	}
 	
 	@Test
-	public void testGetTables() throws ClosedException {
+	public void testGetTables() throws Exception {
 		for (String table : conn.getTables()) {
 			System.out.println(table);
 		}
