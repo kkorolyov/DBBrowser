@@ -50,7 +50,7 @@ public class SimpleDatabaseConnectionTest {
 	}
 	
 	@Test
-	public void testConnect() throws Exception {
+	public void testConnect() {
 		String testTable = "TestConnectTestTable";
 		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.CHAR)};
 		
