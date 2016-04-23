@@ -50,6 +50,19 @@ public class SimpleDatabaseConnectionTest {
 	}
 	
 	@Test
+	public void testConnect() throws Exception {
+		String testTable = "TestConnectTestTable";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.CHAR)};
+		
+		conn.dropTable(testTable);
+		conn.createTable(testTable, testColumns);
+		
+		assertTrue(conn.connect(testTable) != null);
+		
+		conn.dropTable(testTable);	// Clean up
+	}
+	
+	@Test
 	public void testClose() throws Exception {
 		String validityStatement = "SELECT";	// Will work as long as connection is open and valid
 		try {
