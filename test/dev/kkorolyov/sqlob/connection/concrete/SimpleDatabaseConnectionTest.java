@@ -1,18 +1,17 @@
 package dev.kkorolyov.sqlob.connection.concrete;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.sql.SQLException;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import dev.kkorolyov.simpleprops.Properties;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.Column;
+import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
 import dev.kkorolyov.sqlob.exceptions.ClosedException;
@@ -21,41 +20,27 @@ import dev.kkorolyov.sqlob.exceptions.ClosedException;
 public class SimpleDatabaseConnectionTest {
 	private static Properties props = Properties.getInstance("SimpleProps.txt");
 	private static final String HOST_IP_ADDRESS = props.getValue("HOST"),
-															DATABASE_NAME = props.getValue("DATABASE"),
+															DATABASE_NAME = "test_database",
 															USER_NAME = props.getValue("USER"),
-															USER_PASSWORD = props.getValue("PASSWORD"),
-															TABLE_NAME = props.getValue("TABLE");
+															USER_PASSWORD = props.getValue("PASSWORD");	
 	
 	private DatabaseConnection conn;
-	private Column[] columns = {new Column("TEST_COL_1", SqlType.BOOLEAN)};
 	
-	@BeforeClass
-	public static void setUpBeforeClass() {
-		// TODO Set up proprietary test table
-	}
 	@Before
 	public void setUp() throws Exception {
 		conn = new SimpleDatabaseConnection(HOST_IP_ADDRESS, DATABASE_NAME, USER_NAME, USER_PASSWORD);	// Use a fresh connection for each test
-		
-		if (conn.containsTable(TABLE_NAME))
-			conn.dropTable(TABLE_NAME);
-		conn.createTable(TABLE_NAME, columns);
 	}
 	@After
 	public void tearDown() throws Exception {
-		if (conn.isClosed())
-			conn = new SimpleDatabaseConnection(HOST_IP_ADDRESS, DATABASE_NAME, USER_NAME, USER_PASSWORD);
-		conn.dropTable(TABLE_NAME);
 		conn.close();	// Make sure all resources release after each test
 	}
 	
 	@Test
 	public void testConnect() {
-		String testTable = "TestConnectTestTable";
+		String testTable = "TestTable_Connect";
 		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.CHAR)};
 		
-		conn.dropTable(testTable);
-		conn.createTable(testTable, testColumns);
+		refreshTable(testTable, testColumns);
 		
 		assertTrue(conn.connect(testTable) != null);
 		
@@ -92,72 +77,124 @@ public class SimpleDatabaseConnectionTest {
 
 	@Test
 	public void testExecute() throws Exception {	// Mainly for exceptions
-		String testStatement = "SELECT * FROM " + TABLE_NAME;
-		conn.execute(testStatement);
+		String testTable = "TestTable_Execute";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		
+		refreshTable(testTable, testColumns);
+		
+		String 	returnTestStatement = "SELECT * FROM " + testTable,
+						nullReturnTestStatement = "INSERT INTO " + testTable + " VALUES (true)";
+		
+		assertTrue(conn.execute(returnTestStatement) != null);
+		assertTrue(conn.execute(nullReturnTestStatement) == null);
+		
+		conn.dropTable(testTable);
 	}
 	@Test
 	public void testExecuteParams() throws Exception {	// Mainly for exceptions
-		String testStatement = "SELECT " + columns[0].getName() + " FROM " + TABLE_NAME + " WHERE " + columns[0].getName() + "=?";
-		conn.execute(testStatement, new RowEntry[]{new RowEntry(columns[0], false)});
+		String testTable = "TestTable_ExecuteParams";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		
+		refreshTable(testTable, testColumns);
+
+		String testStatement = "SELECT * FROM " + testTable + " WHERE " + testColumns[0].getName() + "=?";
+		Results results = conn.execute(testStatement, new RowEntry[]{new RowEntry(testColumns[0], false)});
+		
+		assertTrue(results != null);
+		
+		conn.dropTable(testTable);
+	}
+	
+	@Test
+	public void testUpdate() throws Exception {
+		String testTable = "TestTable_Update";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		
+		refreshTable(testTable, testColumns);
+		
+		String testStatement = "INSERT INTO " + testTable + " VALUES (?)";
+		int resultsCount = conn.update(testStatement, new RowEntry[]{new RowEntry(testColumns[0], false)});
+		
+		assertEquals(1, resultsCount);
+		
+		conn.dropTable(testTable);
 	}
 	
 	@Test
 	public void testCreateTable() throws Exception {
-		String testTableName = "TEST_TABLE_CREATE";
+		String testTable = "TestTable_Create";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+
+		conn.dropTable(testTable);
 		
-		if (conn.containsTable(testTableName))	// Clear stale test table from a previous run, if exists
-			conn.dropTable(testTableName);
+		assertTrue(!conn.containsTable(testTable));
 		
-		Column[] columns = buildAllColumns();
+		conn.createTable(testTable, testColumns);
+		assertTrue(conn.containsTable(testTable));
 		
-		assertTrue(!conn.containsTable(testTableName));
-		conn.createTable(testTableName, columns);
-		assertTrue(conn.containsTable(testTableName));
-		
-		conn.dropTable(testTableName);	// Cleanup
+		conn.dropTable(testTable);
 	}
+	
 	@Test
 	public void testDropTable() throws Exception {
-		String testTableName = "TEST_TABLE_DROP";
+		String testTable = "TestTable_Drop";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
 		
-		if (conn.containsTable(testTableName))	// Clear stale test table from a previous run, if exists
-			conn.dropTable(testTableName);
+		conn.dropTable(testTable);
 		
-		conn.createTable(testTableName, new Column[]{new Column("TEST_COLUMN", SqlType.BOOLEAN)});
+		conn.createTable(testTable, testColumns);		
+		assertTrue(conn.containsTable(testTable));
 		
-		assertTrue(conn.containsTable(testTableName));
-		conn.dropTable(testTableName);
-		assertTrue(!conn.containsTable(testTableName));
+		conn.dropTable(testTable);
+		assertTrue(!conn.containsTable(testTable));
 	}
 	
 	@Test
 	public void testContainsTable() throws Exception {
-		String testTableName = "TEST_TABLE_CONTAINS";
+		String testTable = "TestTable_Contains";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+
+		conn.dropTable(testTable);		
+		assertTrue(!conn.containsTable(testTable));
 		
-		if (conn.containsTable(testTableName))
-			conn.dropTable(testTableName);
+		conn.createTable(testTable, testColumns);		
+		assertTrue(conn.containsTable(testTable));
 		
-		assertTrue(!conn.containsTable(testTableName));
-		conn.createTable(testTableName, new Column[]{new Column("TEST_COLUMN", SqlType.BOOLEAN)});
-		assertTrue(conn.containsTable(testTableName));
-		
-		conn.dropTable(testTableName);
+		conn.dropTable(testTable);
 	}
 	
 	@Test
 	public void testGetTables() throws Exception {
 		for (String table : conn.getTables()) {
-			System.out.println(table);
+			conn.dropTable(table);
 		}
+		assertEquals(0, conn.getTables().length);
+		
+		int numTestTables = 5;
+		String[] testTables = new String[numTestTables];
+		Column[][] testColumnses = new Column[numTestTables][];	// What's the plural of "columns"?
+		for (int i = 0; i < numTestTables; i++) {
+			testTables[i] = "TestTable_GetTables" + i;
+			testColumnses[i] = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+			
+			conn.createTable(testTables[i], testColumnses[i]);
+			assertEquals(i + 1, conn.getTables().length);
+		}
+		assertEquals(numTestTables, conn.getTables().length);
+		
+		for (String testTable : testTables)
+			conn.dropTable(testTable);
+		
+		assertEquals(0, conn.getTables().length);
 	}
 	
-	private static Column[] buildAllColumns() {
-		SqlType[] allTypes = SqlType.values();
-		Column[] allColumns = new Column[allTypes.length];
-		
-		for (int i = 0; i < allColumns.length; i++)
-			allColumns[i] = new Column(allTypes[i].toString(), allTypes[i]);
-		
-		return allColumns;
+	@Test
+	public void testGetDatabaseName() {
+		assertEquals(DATABASE_NAME, conn.getDBName());
+	}
+	
+	private void refreshTable(String table, Column[] columns) {
+		conn.dropTable(table);
+		conn.createTable(table, columns);
 	}
 }
