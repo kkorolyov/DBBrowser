@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.connection.concrete;
+package dev.kkorolyov.sqlob.connection;
 
 import static org.junit.Assert.*;
 
@@ -9,7 +9,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import dev.kkorolyov.simpleprops.Properties;
-import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
@@ -17,7 +16,7 @@ import dev.kkorolyov.sqlob.construct.SqlType;
 import dev.kkorolyov.sqlob.exceptions.ClosedException;
 
 @SuppressWarnings("javadoc")
-public class SimpleDatabaseConnectionTest {
+public class DatabaseConnectionTest {
 	private static Properties props = Properties.getInstance("SimpleProps.txt");
 	private static final String HOST_IP_ADDRESS = props.getValue("HOST"),
 															DATABASE_NAME = "test_database",
@@ -28,7 +27,7 @@ public class SimpleDatabaseConnectionTest {
 	
 	@Before
 	public void setUp() throws Exception {
-		conn = new SimpleDatabaseConnection(HOST_IP_ADDRESS, DATABASE_NAME, USER_NAME, USER_PASSWORD);	// Use a fresh connection for each test
+		conn = new DatabaseConnection(HOST_IP_ADDRESS, DATABASE_NAME, USER_NAME, USER_PASSWORD);	// Use a fresh connection for each test
 	}
 	@After
 	public void tearDown() throws Exception {

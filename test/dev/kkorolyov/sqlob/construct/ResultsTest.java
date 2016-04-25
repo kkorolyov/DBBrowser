@@ -17,8 +17,6 @@ import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.simpleprops.Properties;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.connection.TableConnection;
-import dev.kkorolyov.sqlob.connection.concrete.SimpleDatabaseConnection;
-import dev.kkorolyov.sqlob.connection.concrete.SimpleTableConnection;
 import dev.kkorolyov.sqlob.exceptions.ClosedException;
 import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 
@@ -35,10 +33,10 @@ public class ResultsTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {		
-		databaseConn = new SimpleDatabaseConnection(host, database, TEST_USER, TEST_PASSWORD);
+		databaseConn = new DatabaseConnection(host, database, TEST_USER, TEST_PASSWORD);
 		databaseConn.createTable(testTable, buildAllColumns());
 		
-		tableConn = new SimpleTableConnection(databaseConn, testTable);
+		tableConn = new TableConnection(databaseConn, testTable);
 		tableConn.insert(buildAllEntries());
 		
 		Logger.enableAll();

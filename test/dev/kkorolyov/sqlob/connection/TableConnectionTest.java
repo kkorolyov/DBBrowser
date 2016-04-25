@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.connection.concrete;
+package dev.kkorolyov.sqlob.connection;
 
 import static org.junit.Assert.assertEquals;
 
@@ -11,15 +11,13 @@ import org.junit.Test;
 
 import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.simpleprops.Properties;
-import dev.kkorolyov.sqlob.connection.DatabaseConnection;
-import dev.kkorolyov.sqlob.connection.TableConnection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
 
 @SuppressWarnings("javadoc")
-public class SimpleTableConnectionTest {	// TODO Better tests
+public class TableConnectionTest {	// TODO Better tests
 	private static Properties props = Properties.getInstance("SimpleProps.txt");
 	private static final String host = props.getValue("HOST"), database = props.getValue("DATABASE"), user = props.getValue("USER"), password = props.getValue("PASSWORD"), table = props.getValue("TABLE");
 	private static DatabaseConnection dbConn;
@@ -30,13 +28,13 @@ public class SimpleTableConnectionTest {	// TODO Better tests
 	
 	@Before
 	public void setUp() throws Exception{
-		dbConn = new SimpleDatabaseConnection(host, database, user, password);
+		dbConn = new DatabaseConnection(host, database, user, password);
 		
 		if (dbConn.containsTable(table))
 			dbConn.dropTable(table);
 		dbConn.createTable(table, columns);
 		
-		conn = new SimpleTableConnection(dbConn, table);
+		conn = new TableConnection(dbConn, table);
 		
 		Logger.enableAll();
 	}
