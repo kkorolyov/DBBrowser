@@ -91,6 +91,7 @@ public class DatabaseConnection implements AutoCloseable {
 	 * Executes a complete SQL statement.
 	 * This version of {@code execute} does not accept extra parameters.
 	 * @throws SQLException if the executed statement is invalid
+	 * @throws ClosedException if called on a closed connection
 	 * @see #execute(String, RowEntry[])
 	 */
 	public Results execute(String statement) throws SQLException {
@@ -275,11 +276,11 @@ public class DatabaseConnection implements AutoCloseable {
 	}
 	
 	/**
-	 * Returns the name of the database connected to.
-	 * Callable on a closed connection.
+	 * Returns the name of this database.
+	 * May be called on a closed connection.
 	 * @return name of this database
 	 */
-	public String getDBName() {
+	public String getDatabaseName() {
 		return database;
 	}
 	

@@ -11,8 +11,7 @@ import dev.kkorolyov.sqlob.exceptions.ClosedException;
 import dev.kkorolyov.sqlob.statement.StatementBuilder;
 
 /**
- * Opens a connection to a single table on a database and provides an interface for table-oriented SQL statement execution.
- * Uses a {@code DatabaseConnection} to execute statements on itself.
+ * A filter for a {@code DatabaseConnection} providing for table-oriented actions.
  * @see DatabaseConnection
  */
 public class TableConnection implements AutoCloseable {
@@ -36,7 +35,7 @@ public class TableConnection implements AutoCloseable {
 	}
 	
 	/**
-	 * Closes the connection and releases all resources.
+	 * Closes the parent {@code DatabaseConnection} and releases all resources.
 	 * Has no effect if called on a closed connection.
 	 */
 	public void close() {
@@ -47,7 +46,7 @@ public class TableConnection implements AutoCloseable {
 		conn = null;
 	}
 	
-	/** @return {@code true} if the connection is closed */
+	/** @return {@code true} if the parent {@code DatabaseConnection} connection is closed */
 	public boolean isClosed() {
 		return (conn == null);
 	}
@@ -134,19 +133,21 @@ public class TableConnection implements AutoCloseable {
 	}
 	
 	/**
+	 * @return the parent {@code DatabaseConnection}
+	 */
+	public DatabaseConnection getDatabase() {
+		return conn;
+	}
+	
+	/**
 	 * @return name of this table
 	 */
 	public String getTableName() {
 		return tableName;
 	}
-	/**
-	 * @return name of the database this table is located in
-	 */
-	public String getDBName() {
-		return conn.getDBName();
-	}
 	
 	/**
+	 * Returns all the columns in this table.
 	 * @return all table columns
 	 * @throws ClosedException if called on a closed connection
 	 */
@@ -161,6 +162,7 @@ public class TableConnection implements AutoCloseable {
 	}
 	
 	/**
+	 * Returns the number of columns in this table.
 	 * @return total number of columns in this table
 	 * @throws ClosedException if called on a closed connection
 	 */

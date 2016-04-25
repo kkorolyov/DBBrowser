@@ -189,7 +189,7 @@ public class DatabaseConnectionTest {
 	
 	@Test
 	public void testGetDatabaseName() {
-		assertEquals(DATABASE_NAME, conn.getDBName());
+		assertEquals(DATABASE_NAME, conn.getDatabaseName());
 	}
 	
 	private void refreshTable(String table, Column[] columns) {
