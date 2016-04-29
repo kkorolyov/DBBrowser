@@ -67,6 +67,7 @@ public class DatabaseConnection implements AutoCloseable {
 	 * Closes this connection and releases all resources.
 	 * Has no effect if called on a closed connection.
 	 */
+	@Override
 	public void close() {
 		if (isClosed())	// Already closed
 			return;

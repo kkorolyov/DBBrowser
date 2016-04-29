@@ -38,17 +38,17 @@ public class TableConnection implements AutoCloseable {
 	 * Closes the parent {@code DatabaseConnection} and releases all resources.
 	 * Has no effect if called on a closed connection.
 	 */
+	@Override
 	public void close() {
 		if (isClosed())	// Already closed
 			return;
 		
 		conn.close();
-		conn = null;
 	}
 	
 	/** @return {@code true} if the parent {@code DatabaseConnection} connection is closed */
 	public boolean isClosed() {
-		return (conn == null);
+		return (conn.isClosed());
 	}
 	
 	/**
@@ -133,6 +133,8 @@ public class TableConnection implements AutoCloseable {
 	}
 	
 	/**
+	 * Returns the database connection this table connection serves as a filter for.
+	 * May be called on a closed connection.
 	 * @return the parent {@code DatabaseConnection}
 	 */
 	public DatabaseConnection getDatabase() {
