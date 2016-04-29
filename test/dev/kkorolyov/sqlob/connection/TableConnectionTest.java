@@ -1,7 +1,10 @@
 package dev.kkorolyov.sqlob.connection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,56 +12,90 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.simpleprops.Properties;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
+import dev.kkorolyov.sqlob.exceptions.ClosedException;
 
 @SuppressWarnings("javadoc")
-public class TableConnectionTest {	// TODO Better tests
+public class TableConnectionTest {
 	private static Properties props = Properties.getInstance("SimpleProps.txt");
-	private static final String host = props.getValue("HOST"), database = props.getValue("DATABASE"), user = props.getValue("USER"), password = props.getValue("PASSWORD"), table = props.getValue("TABLE");
+	private static final String HOST_IP_ADDRESS = props.getValue("HOST"),
+															DATABASE_NAME = props.getValue("DATABASE"),
+															USER_NAME = props.getValue("USER"),
+															PASSWORD = props.getValue("PASSWORD");
 	private static DatabaseConnection dbConn;
 
-	private final Column[] columns = buildAllColumns();
-	
 	private TableConnection conn;
 	
 	@Before
-	public void setUp() throws Exception{
-		dbConn = new DatabaseConnection(host, database, user, password);
-		
-		if (dbConn.containsTable(table))
-			dbConn.dropTable(table);
-		dbConn.createTable(table, columns);
-		
-		conn = new TableConnection(dbConn, table);
-		
-		Logger.enableAll();
+	public void setUp() throws Exception {
+		dbConn = new DatabaseConnection(HOST_IP_ADDRESS, DATABASE_NAME, USER_NAME, PASSWORD);
 	}
-
 	@After
 	public void tearDown() {
-		if (dbConn.containsTable(table))
-			dbConn.dropTable(table);
+		dbConn.close();
+	}
+	
+	@Test
+	public void testClose() throws SQLException {
+		String testTable = "testTable_Close";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		
+		conn = refreshTable(testTable, testColumns);
+		
+		conn.getColumns();	// Connection is open
 		
 		conn.close();
+		
+		try {
+			conn.getColumns();
+		} catch (ClosedException e) {
+			return;	// As expected
+		}
+		fail("Resources failed to close");
 	}
+	
+	@Test
+	public void testIsClosed() throws SQLException {
+		String testTable = "testTable_IsClosed";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		
+		conn = refreshTable(testTable, testColumns);
 
+		assertTrue(!conn.isClosed());
+		
+		conn.close();
+		
+		assertTrue(conn.isClosed());
+	}
+	
 	@Test
 	public void testSelect() throws Exception {
-		Results results = conn.select(columns);
+		String testTable = "testTable_Select";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		
+		conn = refreshTable(testTable, testColumns);
+		
+		Results results = conn.select(testColumns);
 		Column[] resultColumns = results.getColumns();
 		
-		for (int i = 0; i < columns.length; i++) {
-			assertEquals(columns[i], resultColumns[i]);
+		assertEquals(testColumns.length, resultColumns.length);
+		
+		for (int i = 0; i < testColumns.length; i++) {
+			assertEquals(testColumns[i], resultColumns[i]);
 		}
+		dbConn.dropTable(testTable);
 	}
 	@Test
 	public void testSelectParameters() {
-		// TODO
+		String testTable = "testTable_SelectParams";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		
+		conn = refreshTable(testTable, testColumns);
+		// TODO Complete
 	}
 	
 	@Test
@@ -76,6 +113,11 @@ public class TableConnectionTest {	// TODO Better tests
 		}
 		for (int i = 0; i < retrievedEntries.length; i++)
 			assertEquals(testEntries[i], retrievedEntries[i]);	// Input entries should be the same as selected entries
+	}
+	
+	private static TableConnection refreshTable(String table, Column[] columns) {
+		dbConn.dropTable(table);
+		return dbConn.createTable(table, columns);
 	}
 	
 	private static Column[] buildAllColumns() {
