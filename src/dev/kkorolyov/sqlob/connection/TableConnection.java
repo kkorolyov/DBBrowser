@@ -14,7 +14,7 @@ import dev.kkorolyov.sqlob.statement.StatementBuilder;
  * A filter for a {@code DatabaseConnection} providing for table-oriented actions.
  * @see DatabaseConnection
  */
-public class TableConnection implements AutoCloseable {
+public class TableConnection implements AutoCloseable {	// TODO Single-column statements (Auto-build array of 1 column/entry)
 	private static final Logger log = Logger.getLogger(TableConnection.class.getName());
 
 	private DatabaseConnection conn;

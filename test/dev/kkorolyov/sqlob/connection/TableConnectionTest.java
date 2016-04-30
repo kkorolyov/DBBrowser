@@ -8,8 +8,11 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import dev.kkorolyov.simplelogs.Logger;
+import dev.kkorolyov.simplelogs.Logger.Level;
 import dev.kkorolyov.simpleprops.Properties;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
@@ -20,7 +23,8 @@ import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 
 @SuppressWarnings("javadoc")
 public class TableConnectionTest {
-	private static Properties props = Properties.getInstance("SimpleProps.txt");
+	private static final Map<SqlType, Object> matchedTypes = new HashMap<>();
+	private static final Properties props = Properties.getInstance("SimpleProps.txt");
 	private static final String HOST_IP_ADDRESS = props.getValue("HOST"),
 															DATABASE_NAME = props.getValue("DATABASE"),
 															USER_NAME = props.getValue("USER"),
@@ -28,6 +32,26 @@ public class TableConnectionTest {
 	private static DatabaseConnection dbConn;
 
 	private TableConnection conn;
+	
+	@BeforeClass
+	public static void setUpBeforeClass() {
+		setMatchedTypes();
+		Logger.setGlobalLevel(Level.DEBUG);
+	}
+	private static void setMatchedTypes() {
+		matchedTypes.put(SqlType.BOOLEAN, false);
+		
+		matchedTypes.put(SqlType.SMALLINT, (short) 0);
+		matchedTypes.put(SqlType.INTEGER, 0);
+		matchedTypes.put(SqlType.BIGINT, (long) 0);
+		matchedTypes.put(SqlType.REAL, (float) 0.0);
+		matchedTypes.put(SqlType.DOUBLE, 0.0);
+		
+		matchedTypes.put(SqlType.CHAR, 'A');
+		matchedTypes.put(SqlType.VARCHAR, "String");
+		
+		assert (matchedTypes.size() == SqlType.values().length);
+	}
 	
 	@Before
 	public void setUp() throws Exception {
@@ -40,13 +64,15 @@ public class TableConnectionTest {
 	
 	@Test
 	public void testClose() throws SQLException {
-		String testTable = "testTable_Close";
+		String testTable = "TestTable_Close";
 		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
 		
 		conn = refreshTable(testTable, testColumns);
 		
 		conn.getColumns();	// Connection is open
 		
+		dbConn.dropTable(testTable);
+
 		conn.close();
 		
 		try {
@@ -59,12 +85,14 @@ public class TableConnectionTest {
 	
 	@Test
 	public void testIsClosed() throws SQLException {
-		String testTable = "testTable_IsClosed";
+		String testTable = "TestTable_IsClosed";
 		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
 		
 		conn = refreshTable(testTable, testColumns);
 
 		assertTrue(!conn.isClosed());
+		
+		dbConn.dropTable(testTable);
 		
 		conn.close();
 		
@@ -73,8 +101,8 @@ public class TableConnectionTest {
 	
 	@Test
 	public void testSelect() throws Exception {
-		String testTable = "testTable_Select";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		String testTable = "TestTable_Select";
+		Column[] testColumns = buildAllColumns();
 		
 		conn = refreshTable(testTable, testColumns);
 		
@@ -90,7 +118,7 @@ public class TableConnectionTest {
 	}
 	@Test
 	public void testSelectParameters() throws SQLException, MismatchedTypeException {
-		String testTable = "testTable_SelectParams";
+		String testTable = "TestTable_SelectParams";
 		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
 		
 		conn = refreshTable(testTable, testColumns);
@@ -100,30 +128,99 @@ public class TableConnectionTest {
 		RowEntry[] 	criteriaFalse = new RowEntry[]{new RowEntry(testColumns[0], false)},
 								criteriaTrue = new RowEntry[]{new RowEntry(testColumns[0], true)};
 		
-		Results results0 = conn.select(testColumns, criteriaFalse),
-						results1 = conn.select(testColumns, criteriaTrue);
+		Results select0 = conn.select(testColumns, criteriaFalse),
+						select1 = conn.select(testColumns, criteriaTrue);
 		
-		assertNull(results0.getNextRow());
-		assertNotNull(results1.getNextRow());
+		assertNull(select0.getNextRow());
+		assertNotNull(select1.getNextRow());
 		
 		dbConn.dropTable(testTable);
 	}
 	
 	@Test
-	public void testInsert() throws Exception {
-		RowEntry[] testEntries = buildAllEntries();
-		Column[] testColumns = new Column[testEntries.length];
-		for (int i = 0; i < testColumns.length; i++)
-			testColumns[i] = testEntries[i].getColumn();
+	public void testInsert() throws SQLException, MismatchedTypeException {
+		String testTable = "TestTable_Insert";
+		Column[] testColumns = buildAllColumns();
 		
-		conn.insert(testEntries);
+		conn = refreshTable(testTable, testColumns);
 		
-		RowEntry[] retrievedEntries = null;
-		try (Results results = conn.select(testColumns)) {
-			retrievedEntries = results.getNextRow();
-		}
-		for (int i = 0; i < retrievedEntries.length; i++)
-			assertEquals(testEntries[i], retrievedEntries[i]);	// Input entries should be the same as selected entries
+		assertEquals(1, conn.insert(buildMatchingEntries(testColumns)));
+		assertEquals(1, conn.getNumRows());
+		
+		dbConn.dropTable(testTable);
+	}
+	
+	@Test
+	public void testDelete() throws SQLException, MismatchedTypeException {
+		String testTable = "TestTable_Delete";
+		Column[] testColumns = buildAllColumns();
+		
+		conn = refreshTable(testTable, testColumns);
+		
+		conn.insert(buildMatchingEntries(testColumns));
+		
+		Column deleteColumn = new Column(SqlType.BOOLEAN.toString(), SqlType.BOOLEAN);
+		boolean existsBool = (boolean) matchedTypes.get(deleteColumn.getType()),
+						notExistsBool = !existsBool;
+		
+		assertEquals(1, conn.getNumRows());
+		
+		int delete0 = conn.delete(new RowEntry[]{new RowEntry(deleteColumn, notExistsBool)});
+		assertEquals(1, conn.getNumRows());
+		
+		int delete1 = conn.delete(new RowEntry[]{new RowEntry(deleteColumn, existsBool)});
+		assertEquals(0, conn.getNumRows());
+		
+		assertEquals(0, delete0);
+		assertEquals(1, delete1);
+		
+		dbConn.dropTable(testTable);
+	}
+	
+	@Test
+	public void testUpdate() throws SQLException, MismatchedTypeException {
+		String testTable = "TestTable_Update";
+		Column[] testColumns = buildAllColumns();
+		
+		conn = refreshTable(testTable, testColumns);
+		
+		conn.insert(buildMatchingEntries(testColumns));
+		
+		Column updateColumn = new Column(SqlType.BOOLEAN.toString(), SqlType.BOOLEAN);
+		boolean preUpdate = (boolean) matchedTypes.get(updateColumn.getType()),
+						postUpdate = !preUpdate;
+		RowEntry 	preUpdateEntry = new RowEntry(updateColumn, preUpdate),
+							postUpdateEntry = new RowEntry(updateColumn, postUpdate);
+		
+		assertEquals(1, conn.getNumRows());
+		assertNotNull(conn.select(new Column[]{updateColumn}, new RowEntry[]{preUpdateEntry}).getNextRow());
+		assertNull(conn.select(new Column[]{updateColumn}, new RowEntry[]{postUpdateEntry}).getNextRow());
+		
+		conn.update(new RowEntry[]{postUpdateEntry}, new RowEntry[]{postUpdateEntry});	// No match
+		
+		assertEquals(1, conn.getNumRows());
+		assertNotNull(conn.select(new Column[]{updateColumn}, new RowEntry[]{preUpdateEntry}).getNextRow());
+		assertNull(conn.select(new Column[]{updateColumn}, new RowEntry[]{postUpdateEntry}).getNextRow());
+		
+		conn.update(new RowEntry[]{postUpdateEntry}, new RowEntry[]{preUpdateEntry});	// Match
+		
+		assertEquals(1, conn.getNumRows());
+		assertNull(conn.select(new Column[]{updateColumn}, new RowEntry[]{preUpdateEntry}).getNextRow());
+		assertNotNull(conn.select(new Column[]{updateColumn}, new RowEntry[]{postUpdateEntry}).getNextRow());
+		
+		dbConn.dropTable(testTable);
+	}
+	
+	@Test
+	public void testGetColumns() {
+		String testTable = "TestTable_GetColumns";
+		Column[] testColumns = buildAllColumns();
+		
+		conn = refreshTable(testTable, testColumns);
+		
+		assertArrayEquals(testColumns, conn.getColumns());
+		
+		dbConn.dropTable(testTable);
 	}
 	
 	private static TableConnection refreshTable(String table, Column[] columns) {
@@ -140,32 +237,12 @@ public class TableConnectionTest {
 		
 		return allColumns;
 	}
-	private static RowEntry[] buildAllEntries() throws Exception {
-		Column[] allColumns = buildAllColumns();
-		RowEntry[] allEntries = new RowEntry[allColumns.length];
+	private static RowEntry[] buildMatchingEntries(Column[] columns) throws MismatchedTypeException {
+		RowEntry[] allEntries = new RowEntry[columns.length];
 		
-		Map<SqlType, Object> matchedTypes = buildMatchedTypes();
 		for (int i = 0; i < allEntries.length; i++) {
-			allEntries[i] = new RowEntry(allColumns[i], matchedTypes.get(allColumns[i].getType()));
+			allEntries[i] = new RowEntry(columns[i], matchedTypes.get(columns[i].getType()));
 		}
 		return allEntries;
-	}
-	private static Map<SqlType, Object> buildMatchedTypes() {
-		Map<SqlType, Object> matchedTypes = new HashMap<>();
-		
-		matchedTypes.put(SqlType.BOOLEAN, false);
-		
-		matchedTypes.put(SqlType.SMALLINT, (short) 0);
-		matchedTypes.put(SqlType.INTEGER, 0);
-		matchedTypes.put(SqlType.BIGINT, (long) 0);
-		matchedTypes.put(SqlType.REAL, (float) 0.0);
-		matchedTypes.put(SqlType.DOUBLE, 0.0);
-		
-		matchedTypes.put(SqlType.CHAR, 'A');
-		matchedTypes.put(SqlType.VARCHAR, "String");
-		
-		assert (matchedTypes.size() == SqlType.values().length);
-		
-		return matchedTypes;
 	}
 }
