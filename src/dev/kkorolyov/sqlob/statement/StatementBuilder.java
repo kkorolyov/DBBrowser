@@ -17,7 +17,7 @@ public class StatementBuilder {
 															criteriaAddOn = " WHERE " + Marker.criteria;	// Appended to SELECT when criteria specified
 	private static final String insertStatement = "INSERT INTO " + Marker.table + " " + Marker.columns + " VALUES " + Marker.values;
 	private static final String deleteStatement = "DELETE FROM " + Marker.table + " WHERE " + Marker.criteria;
-	private static final String updateStatement = "UPDATE " + Marker.table + " SET " + Marker.columns + " " + Marker.values + " WHERE " + Marker.criteria;
+	private static final String updateStatement = "UPDATE " + Marker.table + " SET " + Marker.columns + "=" + Marker.values + " WHERE " + Marker.criteria;
 	
 	private static final String wildcard = "*";
 	

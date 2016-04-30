@@ -146,7 +146,7 @@ public class StatementBuilderTest {
 		RowEntry[] criteria = buildAllCriteria();
 		
 		String columnsMarker = "<COLUMNS>", valuesMarker = "<VALUES>", criteriaMarker = "<CRITERIA>";
-		String expectedStatement = insertSelectCriteria(insertSelectColumnsValues("UPDATE " + testTable + " SET " + columnsMarker + " " + valuesMarker + " WHERE " + criteriaMarker, columnsMarker, valuesMarker, newEntries), criteriaMarker, criteria);
+		String expectedStatement = insertSelectCriteria(insertSelectColumnsValues("UPDATE " + testTable + " SET " + columnsMarker + "=" + valuesMarker + " WHERE " + criteriaMarker, columnsMarker, valuesMarker, newEntries), criteriaMarker, criteria);
 		String actualStatement = StatementBuilder.buildUpdate(testTable, newEntries, criteria);
 		
 		assertEquals(expectedStatement, actualStatement);
