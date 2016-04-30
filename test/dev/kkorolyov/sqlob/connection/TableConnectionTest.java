@@ -1,8 +1,6 @@
 package dev.kkorolyov.sqlob.connection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -18,6 +16,7 @@ import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
 import dev.kkorolyov.sqlob.exceptions.ClosedException;
+import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 
 @SuppressWarnings("javadoc")
 public class TableConnectionTest {
@@ -90,12 +89,24 @@ public class TableConnectionTest {
 		dbConn.dropTable(testTable);
 	}
 	@Test
-	public void testSelectParameters() {
+	public void testSelectParameters() throws SQLException, MismatchedTypeException {
 		String testTable = "testTable_SelectParams";
 		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
 		
 		conn = refreshTable(testTable, testColumns);
-		// TODO Complete
+		
+		conn.insert(new RowEntry[]{new RowEntry(testColumns[0], true)});
+		
+		RowEntry[] 	criteriaFalse = new RowEntry[]{new RowEntry(testColumns[0], false)},
+								criteriaTrue = new RowEntry[]{new RowEntry(testColumns[0], true)};
+		
+		Results results0 = conn.select(testColumns, criteriaFalse),
+						results1 = conn.select(testColumns, criteriaTrue);
+		
+		assertNull(results0.getNextRow());
+		assertNotNull(results1.getNextRow());
+		
+		dbConn.dropTable(testTable);
 	}
 	
 	@Test
