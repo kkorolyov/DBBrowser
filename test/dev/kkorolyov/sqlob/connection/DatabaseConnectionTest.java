@@ -1,6 +1,8 @@
 package dev.kkorolyov.sqlob.connection;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.sql.SQLException;
 
@@ -8,7 +10,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import dev.kkorolyov.simpleprops.Properties;
+import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
@@ -17,17 +19,16 @@ import dev.kkorolyov.sqlob.exceptions.ClosedException;
 
 @SuppressWarnings("javadoc")
 public class DatabaseConnectionTest {
-	private static Properties props = Properties.getInstance("SimpleProps.txt");
-	private static final String HOST_IP_ADDRESS = props.getValue("HOST"),
-															DATABASE_NAME = "test_database",
-															USER_NAME = props.getValue("USER"),
-															USER_PASSWORD = props.getValue("PASSWORD");	
+	private static final String HOST = TestAssets.host(),
+															DATABASE = TestAssets.database(),
+															USER = TestAssets.user(),
+															PASSWORD = TestAssets.password();	
 	
 	private DatabaseConnection conn;
 	
 	@Before
 	public void setUp() throws Exception {
-		conn = new DatabaseConnection(HOST_IP_ADDRESS, DATABASE_NAME, USER_NAME, USER_PASSWORD);	// Use a fresh connection for each test
+		conn = new DatabaseConnection(HOST, DATABASE, USER, PASSWORD);	// Use a fresh connection for each test
 	}
 	@After
 	public void tearDown() throws Exception {
@@ -189,7 +190,7 @@ public class DatabaseConnectionTest {
 	
 	@Test
 	public void testGetDatabaseName() {
-		assertEquals(DATABASE_NAME, conn.getDatabaseName());
+		assertEquals(DATABASE, conn.getDatabaseName());
 	}
 	
 	private void refreshTable(String table, Column[] columns) {

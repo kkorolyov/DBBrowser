@@ -13,7 +13,7 @@ import org.junit.Test;
 
 import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.simplelogs.Logger.Level;
-import dev.kkorolyov.simpleprops.Properties;
+import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
@@ -24,11 +24,11 @@ import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 @SuppressWarnings("javadoc")
 public class TableConnectionTest {
 	private static final Map<SqlType, Object> matchedTypes = new HashMap<>();
-	private static final Properties props = Properties.getInstance("SimpleProps.txt");
-	private static final String HOST_IP_ADDRESS = props.getValue("HOST"),
-															DATABASE_NAME = props.getValue("DATABASE"),
-															USER_NAME = props.getValue("USER"),
-															PASSWORD = props.getValue("PASSWORD");
+	private static final String HOST = TestAssets.host(),
+															DATABASE = TestAssets.database(),
+															USER = TestAssets.user(),
+															PASSWORD = TestAssets.password();	
+
 	private static DatabaseConnection dbConn;
 
 	private TableConnection conn;
@@ -55,7 +55,7 @@ public class TableConnectionTest {
 	
 	@Before
 	public void setUp() throws Exception {
-		dbConn = new DatabaseConnection(HOST_IP_ADDRESS, DATABASE_NAME, USER_NAME, PASSWORD);
+		dbConn = new DatabaseConnection(HOST, DATABASE, USER, PASSWORD);
 	}
 	@After
 	public void tearDown() {

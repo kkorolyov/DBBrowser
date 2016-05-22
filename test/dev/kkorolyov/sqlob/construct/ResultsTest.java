@@ -14,7 +14,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import dev.kkorolyov.simplelogs.Logger;
-import dev.kkorolyov.simpleprops.Properties;
+import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.connection.TableConnection;
 import dev.kkorolyov.sqlob.exceptions.ClosedException;
@@ -22,8 +22,10 @@ import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 
 @SuppressWarnings("javadoc")
 public class ResultsTest {
-	private static Properties props = Properties.getInstance("SimpleProps.txt");
-	private static final String host = props.getValue("HOST"), database = props.getValue("DATABASE"), TEST_USER = props.getValue("USER"), TEST_PASSWORD = props.getValue("PASSWORD");
+	private static final String HOST = TestAssets.host(),
+															DATABASE = TestAssets.database(),
+															USER = TestAssets.user(),
+															PASSWORD = TestAssets.password();	
 
 	private static String testTable = "RESULTS_TEST_TABLE";
 	private static DatabaseConnection databaseConn;
@@ -33,7 +35,7 @@ public class ResultsTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {		
-		databaseConn = new DatabaseConnection(host, database, TEST_USER, TEST_PASSWORD);
+		databaseConn = new DatabaseConnection(HOST, DATABASE, USER, PASSWORD);
 		databaseConn.createTable(testTable, buildAllColumns());
 		
 		tableConn = new TableConnection(databaseConn, testTable);
