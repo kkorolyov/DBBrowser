@@ -9,9 +9,7 @@ public class LoggerImplementation implements LoggerInterface {
 	private dev.kkorolyov.simplelogs.Logger log;
 	
 	LoggerImplementation(String name) {
-		log = dev.kkorolyov.simplelogs.Logger.getLogger(name);
-		
-		dev.kkorolyov.simplelogs.Logger.setGlobalLevel(Level.DEBUG);
+		log = dev.kkorolyov.simplelogs.Logger.getLogger(name);		
 	}
 
 	@Override
