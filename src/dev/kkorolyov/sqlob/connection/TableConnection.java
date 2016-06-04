@@ -2,7 +2,8 @@ package dev.kkorolyov.sqlob.connection;
 import java.lang.reflect.Array;
 import java.sql.SQLException;
 
-import dev.kkorolyov.simplelogs.Logger;
+import dev.kkorolyov.sqlob.logging.Logger;
+import dev.kkorolyov.sqlob.logging.LoggerInterface;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
@@ -15,7 +16,7 @@ import dev.kkorolyov.sqlob.statement.StatementBuilder;
  * @see DatabaseConnection
  */
 public class TableConnection implements AutoCloseable {	// TODO Single-column statements (Auto-build array of 1 column/entry)
-	private static final Logger log = Logger.getLogger(TableConnection.class.getName());
+	private static final LoggerInterface log = Logger.getLogger(TableConnection.class.getName());
 
 	private DatabaseConnection conn;
 	private String tableName;

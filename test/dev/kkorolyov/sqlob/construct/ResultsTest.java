@@ -13,7 +13,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.connection.TableConnection;
@@ -39,9 +38,7 @@ public class ResultsTest {
 		databaseConn.createTable(testTable, buildAllColumns());
 		
 		tableConn = new TableConnection(databaseConn, testTable);
-		tableConn.insert(buildAllEntries());
-		
-		Logger.enableAll();
+		tableConn.insert(buildAllEntries());		
 	}
 
 	@AfterClass

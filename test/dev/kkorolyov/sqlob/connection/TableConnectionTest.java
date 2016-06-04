@@ -11,8 +11,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import dev.kkorolyov.simplelogs.Logger;
-import dev.kkorolyov.simplelogs.Logger.Level;
 import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
@@ -36,7 +34,6 @@ public class TableConnectionTest {
 	@BeforeClass
 	public static void setUpBeforeClass() {
 		setMatchedTypes();
-		Logger.setGlobalLevel(Level.DEBUG);
 	}
 	private static void setMatchedTypes() {
 		matchedTypes.put(SqlType.BOOLEAN, false);

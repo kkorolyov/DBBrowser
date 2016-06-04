@@ -3,7 +3,8 @@ import java.sql.*;
 import java.util.LinkedList;
 import java.util.List;
 
-import dev.kkorolyov.simplelogs.Logger;
+import dev.kkorolyov.sqlob.logging.Logger;
+import dev.kkorolyov.sqlob.logging.LoggerInterface;
 import dev.kkorolyov.sqlob.connection.TableConnection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
@@ -16,7 +17,7 @@ import dev.kkorolyov.sqlob.statement.StatementBuilder;
  * Opens a connection to a single database and allows for SQL statement execution.
  */
 public class DatabaseConnection implements AutoCloseable {
-	private static final Logger log = Logger.getLogger(DatabaseConnection.class.getName());
+	private static final LoggerInterface log = Logger.getLogger(DatabaseConnection.class.getName());
 
 	private static final String jdbcDriverClassName = "org.postgresql.Driver";
 	private static final String jdbcHeader = "jdbc:postgresql:";
