@@ -10,7 +10,6 @@ import org.junit.Test;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
-import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 
 @SuppressWarnings("javadoc")
 public class RowEntryTest {

@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.exceptions;
+package dev.kkorolyov.sqlob.connection;
 
 /**
  * Exception thrown when attempting to create a table of the same name as a pre-existing table in a database.
@@ -12,6 +12,6 @@ public class DuplicateTableException extends RuntimeException {
 	 * @param table name of the table in the creation attempt
 	 */
 	public DuplicateTableException(String database, String table) {
-		super(database + " already contains table: " + table);
+		super("Database " + database + " already contains table: " + table);
 	}
 }

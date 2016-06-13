@@ -1,7 +1,5 @@
 package dev.kkorolyov.sqlob.construct;
 
-import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
-
 /**
  * A representation of a single entry in a SQL database table row.
  * Composed of a column and a value.

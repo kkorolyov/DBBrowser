@@ -14,10 +14,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import dev.kkorolyov.sqlob.TestAssets;
+import dev.kkorolyov.sqlob.connection.ClosedException;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.connection.TableConnection;
-import dev.kkorolyov.sqlob.exceptions.ClosedException;
-import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 
 @SuppressWarnings("javadoc")
 public class ResultsTest {

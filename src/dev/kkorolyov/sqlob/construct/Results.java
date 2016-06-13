@@ -4,10 +4,9 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
+import dev.kkorolyov.sqlob.connection.ClosedException;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.logging.LoggerInterface;
-import dev.kkorolyov.sqlob.exceptions.ClosedException;
-import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
 
 /**
  * Results obtained from a SQL query.

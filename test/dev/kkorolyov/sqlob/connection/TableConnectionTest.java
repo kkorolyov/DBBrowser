@@ -12,12 +12,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import dev.kkorolyov.sqlob.TestAssets;
-import dev.kkorolyov.sqlob.construct.Column;
-import dev.kkorolyov.sqlob.construct.Results;
-import dev.kkorolyov.sqlob.construct.RowEntry;
-import dev.kkorolyov.sqlob.construct.SqlType;
-import dev.kkorolyov.sqlob.exceptions.ClosedException;
-import dev.kkorolyov.sqlob.exceptions.MismatchedTypeException;
+import dev.kkorolyov.sqlob.construct.*;
 
 @SuppressWarnings("javadoc")
 public class TableConnectionTest {

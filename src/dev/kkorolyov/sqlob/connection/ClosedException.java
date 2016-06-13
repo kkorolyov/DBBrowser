@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.exceptions;
+package dev.kkorolyov.sqlob.connection;
 
 /**
  * Exception thrown when attempting to access a closed resource.

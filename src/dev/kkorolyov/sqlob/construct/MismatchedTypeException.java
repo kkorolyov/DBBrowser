@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.exceptions;
+package dev.kkorolyov.sqlob.construct;
 
 /**
  * Exception thrown when an input type does not match a predetermined constraint.
