@@ -4,7 +4,8 @@ package dev.kkorolyov.sqlob.logging;
  * Provides the appropriate logger or a stub depending on the existence of the {@code SimpleLogs} API during runtime.
  */
 public class Logger {
-	private static final boolean SIMPLE_LOGS_FOUND; 
+	private static final boolean SIMPLE_LOGS_FOUND;
+	private static LoggerInterface stub;
 		
 	static {
 		boolean simpleLogsFound = true;
@@ -21,16 +22,16 @@ public class Logger {
 	 * @param name name of logger to get
 	 * @return appropriate logger
 	 */
-	public static LoggerInterface getLogger(String name) {
-		LoggerInterface toReturn = new LoggerStub();
-		
+	public static LoggerInterface getLogger(String name) {		
 		if (SIMPLE_LOGS_FOUND) {
 			try {
-				toReturn = (LoggerInterface) Class.forName("dev.kkorolyov.sqlob.logging.LoggerImplementation").getDeclaredConstructor(new Class[]{String.class}).newInstance(name);
+				return (LoggerInterface) Class.forName("dev.kkorolyov.sqlob.logging.LoggerImplementation").getDeclaredConstructor(new Class[]{String.class}).newInstance(name);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
-		return toReturn;
+		if (stub == null)
+			stub = new LoggerStub();
+		return stub;
 	}
 }

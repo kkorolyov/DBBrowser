@@ -1,7 +1,5 @@
 package dev.kkorolyov.sqlob.logging;
 
-import dev.kkorolyov.simplelogs.Logger.Level;
-
 /**
  * Logger implementation to be loaded when {@code SimpleLogs} found.
  */
