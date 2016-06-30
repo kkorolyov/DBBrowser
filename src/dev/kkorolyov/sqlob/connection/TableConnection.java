@@ -10,10 +10,10 @@ import dev.kkorolyov.sqlob.statement.StatementBuilder;
 
 /**
  * A filter for a {@code DatabaseConnection} providing for table-oriented actions.
- * @see PostgresDatabaseConnection
+ * @see DatabaseConnection
  */
 public class TableConnection implements AutoCloseable {	// TODO Single-column statements (Auto-build array of 1 column/entry)
-	private PostgresDatabaseConnection conn;
+	private DatabaseConnection conn;
 	private String tableName;
 	
 	private final String metaDataStatement;
@@ -23,7 +23,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @param conn database connection
 	 * @param tableName name of table to explore
 	 */
-	public TableConnection(PostgresDatabaseConnection conn, String tableName) {
+	public TableConnection(DatabaseConnection conn, String tableName) {
 		this.conn = conn;
 		this.tableName = tableName;		
 		
@@ -133,7 +133,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * May be called on a closed connection.
 	 * @return the parent {@code DatabaseConnection}
 	 */
-	public PostgresDatabaseConnection getDatabase() {
+	public DatabaseConnection getDatabase() {
 		return conn;
 	}
 	
