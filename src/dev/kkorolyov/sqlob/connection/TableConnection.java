@@ -1,10 +1,8 @@
 package dev.kkorolyov.sqlob.connection;
+
 import java.lang.reflect.Array;
 import java.sql.SQLException;
 
-import dev.kkorolyov.sqlob.logging.Logger;
-import dev.kkorolyov.sqlob.logging.LoggerInterface;
-import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
@@ -12,12 +10,10 @@ import dev.kkorolyov.sqlob.statement.StatementBuilder;
 
 /**
  * A filter for a {@code DatabaseConnection} providing for table-oriented actions.
- * @see DatabaseConnection
+ * @see PostgresDatabaseConnection
  */
 public class TableConnection implements AutoCloseable {	// TODO Single-column statements (Auto-build array of 1 column/entry)
-	private static final LoggerInterface log = Logger.getLogger(TableConnection.class.getName());
-
-	private DatabaseConnection conn;
+	private PostgresDatabaseConnection conn;
 	private String tableName;
 	
 	private final String metaDataStatement;
@@ -27,7 +23,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @param conn database connection
 	 * @param tableName name of table to explore
 	 */
-	public TableConnection(DatabaseConnection conn, String tableName) {
+	public TableConnection(PostgresDatabaseConnection conn, String tableName) {
 		this.conn = conn;
 		this.tableName = tableName;		
 		
@@ -137,7 +133,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * May be called on a closed connection.
 	 * @return the parent {@code DatabaseConnection}
 	 */
-	public DatabaseConnection getDatabase() {
+	public PostgresDatabaseConnection getDatabase() {
 		return conn;
 	}
 	
@@ -154,13 +150,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public Column[] getColumns() {
-		Column[] columns = null;
-		try {
-			columns = conn.execute(metaDataStatement).getColumns();
-		} catch (SQLException e) {
-			log.exception(e);
-		}
-		return columns;
+		return conn.execute(metaDataStatement).getColumns();
 	}
 	
 	/**
@@ -169,13 +159,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int getNumColumns() {
-		int numColumns = 0;
-		try {
-			numColumns = conn.execute(metaDataStatement).getNumColumns();
-		} catch (SQLException e) {
-			log.exception(e);
-		}
-		return numColumns;
+		return conn.execute(metaDataStatement).getNumColumns();
 	}
 	/**
 	 * Returns the number of rows in this table.
@@ -185,13 +169,11 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 */
 	public int getNumRows() {
 		int numRows = 0;
-		try {
-			Results rs = conn.execute(metaDataStatement);
-			while (rs.getNextRow() != null)	// Counts rows
-				numRows++;
-		} catch (SQLException e) {
-			log.exception(e);
-		}
+
+		Results rs = conn.execute(metaDataStatement);
+		while (rs.getNextRow() != null)	// Counts rows
+			numRows++;
+		
 		return numRows;
 	}
 }

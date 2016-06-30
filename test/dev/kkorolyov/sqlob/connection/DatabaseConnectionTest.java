@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.sql.SQLException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,11 +21,11 @@ public class DatabaseConnectionTest {
 															USER = TestAssets.user(),
 															PASSWORD = TestAssets.password();	
 	
-	private DatabaseConnection conn;
+	private PostgresDatabaseConnection conn;
 	
 	@Before
 	public void setUp() throws Exception {
-		conn = new DatabaseConnection(HOST, DATABASE, USER, PASSWORD);	// Use a fresh connection for each test
+		conn = new PostgresDatabaseConnection(HOST, DATABASE, USER, PASSWORD);	// Use a fresh connection for each test
 	}
 	@After
 	public void tearDown() throws Exception {
@@ -50,11 +48,8 @@ public class DatabaseConnectionTest {
 	public void testClose() throws Exception {
 		String validityStatement = "SELECT";	// Will work as long as connection is open and valid
 		
-		try {
-			conn.execute(validityStatement);	// Connection is open
-		} catch (SQLException e) {
-			fail("Statement execution failed");
-		}
+		conn.execute(validityStatement);	// Connection is open
+		
 		conn.close();
 		
 		try {

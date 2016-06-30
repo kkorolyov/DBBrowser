@@ -15,7 +15,7 @@ import org.junit.Test;
 
 import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.connection.ClosedException;
-import dev.kkorolyov.sqlob.connection.DatabaseConnection;
+import dev.kkorolyov.sqlob.connection.PostgresDatabaseConnection;
 import dev.kkorolyov.sqlob.connection.TableConnection;
 
 @SuppressWarnings("javadoc")
@@ -26,14 +26,14 @@ public class ResultsTest {
 															PASSWORD = TestAssets.password();	
 
 	private static String testTable = "RESULTS_TEST_TABLE";
-	private static DatabaseConnection databaseConn;
+	private static PostgresDatabaseConnection databaseConn;
 	private static TableConnection tableConn;
 	
 	private Results results;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {		
-		databaseConn = new DatabaseConnection(HOST, DATABASE, USER, PASSWORD);
+		databaseConn = new PostgresDatabaseConnection(HOST, DATABASE, USER, PASSWORD);
 		databaseConn.createTable(testTable, buildAllColumns());
 		
 		tableConn = new TableConnection(databaseConn, testTable);

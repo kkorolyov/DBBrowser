@@ -22,7 +22,7 @@ public class TableConnectionTest {
 															USER = TestAssets.user(),
 															PASSWORD = TestAssets.password();	
 
-	private static DatabaseConnection dbConn;
+	private static PostgresDatabaseConnection dbConn;
 
 	private TableConnection conn;
 	
@@ -47,7 +47,7 @@ public class TableConnectionTest {
 	
 	@Before
 	public void setUp() throws Exception {
-		dbConn = new DatabaseConnection(HOST, DATABASE, USER, PASSWORD);
+		dbConn = new PostgresDatabaseConnection(HOST, DATABASE, USER, PASSWORD);
 	}
 	@After
 	public void tearDown() {
