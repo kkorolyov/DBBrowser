@@ -1,7 +1,6 @@
 package dev.kkorolyov.sqlob.connection;
 
 import java.lang.reflect.Array;
-import java.sql.SQLException;
 
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
@@ -51,7 +50,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * Executes a SELECT statement without any constraining criteria.
 	 * @see #select(Column[], RowEntry[])
 	 */
-	public Results select(Column[] columns) throws SQLException {
+	public Results select(Column[] columns) {
 		return select(columns, null);
 	}
 	/**
@@ -59,10 +58,10 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @param columns column(s) to return; if {@code null}, empty, or any column name = "*", will return all columns
 	 * @param criteria specified as columns with certain values; if {@code null} or empty, will return all rows
 	 * @return results meeting the specified columns and criteria
-	 * @throws SQLException if specified parameters result in an invalid statement
+	 * @throws UncheckedSQLException if specified parameters result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public Results select(Column[] columns, RowEntry[] criteria) throws SQLException {
+	public Results select(Column[] columns, RowEntry[] criteria) {
 		return conn.execute(StatementBuilder.buildSelect(tableName, columns, criteria), criteria);	// Execute marked statement with substituted parameters
 	}
 	
@@ -70,10 +69,10 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * Inserts a row of entries into the table.
 	 * @param entries entries to insert
 	 * @return number of inserted rows
-	 * @throws SQLException if specified values result in an invalid statement
+	 * @throws UncheckedSQLException if specified values result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public int insert(RowEntry[] entries) throws SQLException {		
+	public int insert(RowEntry[] entries) {		
 		return conn.update(StatementBuilder.buildInsert(tableName, entries), entries);
 	}
 	
@@ -81,10 +80,10 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * Deletes rows matching the specified criteria.
 	 * @param criteria specified as columns with certain values
 	 * @return number of deleted rows
-	 * @throws SQLException if specified values result in an invalid statement
+	 * @throws UncheckedSQLException if specified values result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public int delete(RowEntry[] criteria) throws SQLException {
+	public int delete(RowEntry[] criteria) {
 		return conn.update(StatementBuilder.buildDelete(tableName, criteria), criteria);
 	}
 	
@@ -93,10 +92,10 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @param newEntries new entries to set
 	 * @param criteria criteria to match
 	 * @return number of updated rows
-	 * @throws SQLException if specified values result in an invalid statement
+	 * @throws UncheckedSQLException if specified values result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public int update(RowEntry[] newEntries, RowEntry[] criteria) throws SQLException {
+	public int update(RowEntry[] newEntries, RowEntry[] criteria) {
 		RowEntry[] combinedParameters = combineArrays(RowEntry.class, newEntries, criteria);
 		
 		return conn.update(StatementBuilder.buildUpdate(tableName, newEntries, criteria), combinedParameters);
