@@ -97,4 +97,9 @@ public interface DatabaseConnection {
 	 * @return name of the database
 	 */
 	String getDatabaseName();
+	
+	/** @param listener statement listener to add */
+	void addStatementListener(StatementListener listener);
+	/** @param listener statement listener to remove */
+	void removeStatementListener(StatementListener listener);
 }

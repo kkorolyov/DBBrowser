@@ -81,4 +81,14 @@ public class DatabaseConnectionStub implements DatabaseConnection {
 		return null;
 	}
 
+	@Override
+	public void addStatementListener(StatementListener listener) {
+		/* TODO Auto-generated method stub */
+		
+	}
+	@Override
+	public void removeStatementListener(StatementListener listener) {
+		/* TODO Auto-generated method stub */
+		
+	}
 }

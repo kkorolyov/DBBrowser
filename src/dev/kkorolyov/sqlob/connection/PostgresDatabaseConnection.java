@@ -2,13 +2,14 @@ package dev.kkorolyov.sqlob.connection;
 import java.sql.*;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
-import dev.kkorolyov.sqlob.logging.Logger;
-import dev.kkorolyov.sqlob.logging.LoggerInterface;
-import dev.kkorolyov.sqlob.connection.TableConnection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.logging.Logger;
+import dev.kkorolyov.sqlob.logging.LoggerInterface;
 import dev.kkorolyov.sqlob.statement.StatementBuilder;
 
 /**
@@ -23,6 +24,8 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	private final String url, database;
 	private Connection conn;
 	private List<Statement> openStatements = new LinkedList<>();
+	
+	private Set<StatementListener> statementListeners = new CopyOnWriteArraySet<>();
 	
 	/**
 	 * Opens a new connection to the specified host and database residing on it.
@@ -72,7 +75,12 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 			log.exception(e);	// Nothing to do for close() exception
 		}
 		conn = null;
+		
+		openStatements.clear();
 		openStatements = null;
+		
+		statementListeners.clear();
+		statementListeners = null;
 		
 		log.debug("Closed " + getClass().getSimpleName() + " at URL: " + url);
 	}
@@ -124,12 +132,14 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		PreparedStatement statement = conn.prepareStatement(baseStatement);
 		openStatements.add(statement);	// Add to flushable list
 		
-		buildParameters(statement, parameters);	// Add appropriate types
+		buildParameters(statement, parameters, (statementListeners.isEmpty() ? null : baseStatement));	// Add appropriate types
 		
 		return statement;
 	}
-	private static PreparedStatement buildParameters(PreparedStatement statement, RowEntry[] parameters) throws SQLException {	// Inserts appropriate type into statement
+	private PreparedStatement buildParameters(PreparedStatement statement, RowEntry[] parameters, String initialStatementString) throws SQLException {	// Inserts appropriate type into statement
 		if (parameters != null && parameters.length > 0) {
+			String statementString = initialStatementString;
+			
 			for (int i = 0; i < parameters.length; i++) {	// Prepare with appropriate types
 				Object currentParameter = parameters[i].getValue();
 				
@@ -152,7 +162,14 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 				else if (currentParameter instanceof String)
 					statement.setString(i + 1, (String) currentParameter);
 				
+				if (statementString != null)
+					statementString = statementString.replaceFirst("\\?", currentParameter.toString());
+				
 				log.debug("Adding parameter " + i + ": " + currentParameter.toString());
+			}
+			if (statementString != null) {
+				for (StatementListener listener : statementListeners)
+					listener.statementPrepared(statementString, this);
 			}
 		}
 		return statement;
@@ -241,5 +258,14 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	private void testClosed() {
 		if (isClosed())
 			throw new ClosedException();
+	}
+	
+	@Override
+	public void addStatementListener(StatementListener listener) {
+		statementListeners.add(listener);
+	}
+	@Override
+	public void removeStatementListener(StatementListener listener) {
+		statementListeners.remove(listener);
 	}
 }
