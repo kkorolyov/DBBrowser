@@ -10,8 +10,6 @@ import org.junit.Test;
 
 import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.construct.Column;
-import dev.kkorolyov.sqlob.construct.Results;
-import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
 import dev.kkorolyov.sqlob.statement.SelectStatement;
 
@@ -50,7 +48,7 @@ public class DatabaseConnectionTest {
 		conn.close();
 		
 		try {
-			new SelectStatement(conn, "Closed", null, null).execute();
+			conn.execute(new SelectStatement("Closed", null, null));
 		} catch (ClosedException e) {
 			return;	// As expected
 		}

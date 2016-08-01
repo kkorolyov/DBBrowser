@@ -1,6 +1,5 @@
 package dev.kkorolyov.sqlob.statement;
 
-import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 
@@ -10,8 +9,8 @@ import dev.kkorolyov.sqlob.construct.RowEntry;
  * @see Results
  */
 public abstract class ResultingStatement extends StatementCommand {
-	ResultingStatement(DatabaseConnection conn, String baseStatement, RowEntry[] values, RowEntry[] criteria) {
-		super(conn, baseStatement, values, criteria);
+	ResultingStatement(String baseStatement, RowEntry[] values, RowEntry[] criteria) {
+		super(baseStatement, values, criteria);
 	}
 
 	/**
@@ -22,6 +21,6 @@ public abstract class ResultingStatement extends StatementCommand {
 	public Results execute() {
 		assertExecutable();
 		
-		return getConn().executeStatement(this);
+		return getConn().runStatement(this);
 	}
 }

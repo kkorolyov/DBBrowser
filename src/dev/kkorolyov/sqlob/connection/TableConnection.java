@@ -59,7 +59,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public Results select(Column[] columns, RowEntry[] criteria) {
-		return new SelectStatement(conn, tableName, columns, criteria).execute();
+		return conn.execute(new SelectStatement(tableName, columns, criteria));
 	}
 	
 	/**
@@ -70,7 +70,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int insert(RowEntry[] entries) {		
-		return new InsertRowStatement(conn, tableName, entries).execute();
+		return conn.execute(new InsertRowStatement(tableName, entries));
 	}
 	
 	/**
@@ -81,7 +81,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int delete(RowEntry[] criteria) {
-		return new DeleteRowStatement(conn, tableName, criteria).execute();
+		return conn.execute(new DeleteRowStatement(tableName, criteria));
 	}
 	
 	/**
@@ -93,7 +93,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int update(RowEntry[] newEntries, RowEntry[] criteria) {
-		return new UpdateRowStatement(conn, tableName, newEntries, criteria).execute();
+		return conn.execute(new UpdateRowStatement(tableName, newEntries, criteria));
 	}
 	
 	/**
@@ -126,7 +126,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public Column[] getColumns() {
-		return new SelectStatement(conn, tableName, null, null).execute().getColumns();
+		return conn.execute(new SelectStatement(tableName, null, null)).getColumns();
 	}
 	
 	/**
@@ -135,7 +135,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int getNumColumns() {
-		return new SelectStatement(conn, tableName, null, null).execute().getNumColumns();
+		return conn.execute(new SelectStatement(tableName, null, null)).getNumColumns();
 	}
 	/**
 	 * Returns the number of rows in this table.
@@ -146,7 +146,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	public int getNumRows() {
 		int numRows = 0;
 
-		Results rs = new SelectStatement(conn, tableName, null, null).execute();
+		Results rs = conn.execute(new SelectStatement(tableName, null, null));
 		while (rs.getNextRow() != null)	// Counts rows
 			numRows++;
 		

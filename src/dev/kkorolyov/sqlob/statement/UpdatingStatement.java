@@ -1,6 +1,5 @@
 package dev.kkorolyov.sqlob.statement;
 
-import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 
 /**
@@ -8,8 +7,8 @@ import dev.kkorolyov.sqlob.construct.RowEntry;
  * @see StatementCommand
  */
 public abstract class UpdatingStatement extends StatementCommand {
-	UpdatingStatement(DatabaseConnection conn, String baseStatement, RowEntry[] values, RowEntry[] criteria) {
-		super(conn, baseStatement, values, criteria);
+	UpdatingStatement(String baseStatement, RowEntry[] values, RowEntry[] criteria) {
+		super(baseStatement, values, criteria);
 	}
 	
 	/**
@@ -20,7 +19,7 @@ public abstract class UpdatingStatement extends StatementCommand {
 	public int execute() {
 		assertExecutable();
 		
-		int result = getConn().executeStatement(this);
+		int result = getConn().runStatement(this);
 		setExecuted(true);
 		
 		return result;
@@ -33,7 +32,7 @@ public abstract class UpdatingStatement extends StatementCommand {
 	public int revert() {
 		assertRevertible();
 		
-		int result = ((UpdatingStatement) getReversionStatement()).execute();
+		int result = getConn().execute((UpdatingStatement) getReversionStatement());
 		setExecuted(false);
 		
 		return result;

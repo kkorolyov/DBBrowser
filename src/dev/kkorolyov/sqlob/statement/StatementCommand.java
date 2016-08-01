@@ -13,11 +13,24 @@ public abstract class StatementCommand {
 											criteria;
 	private boolean executed = false;
 	
-	StatementCommand(DatabaseConnection conn, String baseStatement, RowEntry[] values, RowEntry[] criteria) {
-		this.conn = conn;
+	StatementCommand(String baseStatement, RowEntry[] values, RowEntry[] criteria) {
 		this.baseStatement = baseStatement;
 		this.values = values;
 		this.criteria = criteria;
+	}
+	
+	/**
+	 * Registers a database connection to this statement if this statement does not yet have a connection.
+	 * @param conn database connection to execute this statement
+	 * @return {@code true} if registration successful, {@code false} if this statement already has a registered connection
+	 */
+	public boolean register(DatabaseConnection conn) {
+		boolean free = (this.conn == null);
+		
+		if (free)
+			this.conn = conn;
+		
+		return free;
 	}
 	
 	/** @return {@code true} if this statement is in an executable state */
@@ -40,6 +53,9 @@ public abstract class StatementCommand {
 		if (!isRevertible())
 			throw new IllegalStateException("Statement is not in a revertible state: " + baseStatement);
 	}
+	
+	/** @return a statement which reverts this statement, or {@code null} if this statement is not currently revertible */
+	public abstract StatementCommand getReversionStatement();
 	
 	/** @return database connection used for statement execution */
 	public DatabaseConnection getConn() {
@@ -74,7 +90,4 @@ public abstract class StatementCommand {
 		}
 		return parameters;
 	}
-	
-	/** @return a statement which reverts this statement, or {@code null} if this statement is not currently revertible */
-	public abstract StatementCommand getReversionStatement();
 }

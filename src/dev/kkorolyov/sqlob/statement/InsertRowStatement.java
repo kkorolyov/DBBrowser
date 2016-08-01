@@ -1,6 +1,5 @@
 package dev.kkorolyov.sqlob.statement;
 
-import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 
 /**
@@ -11,17 +10,16 @@ public class InsertRowStatement extends UpdatingStatement {
 	
 	/**
 	 * Constructs a new {@code INSERT ROW} statement.
-	 * @param conn database connection used for statement execution
 	 * @param table table to insert row into
 	 * @param values values to insert
 	 */
-	public InsertRowStatement(DatabaseConnection conn, String table, RowEntry[] values) {
-		super(conn, StatementBuilder.buildInsert(table, values), values, null);
+	public InsertRowStatement(String table, RowEntry[] values) {
+		super(StatementBuilder.buildInsert(table, values), values, null);
 		this.table = table;
 	}
 
 	@Override
 	public StatementCommand getReversionStatement() {
-		return isRevertible() ? new DeleteRowStatement(getConn(), table, getValues()) : null;
+		return isRevertible() ? new DeleteRowStatement(table, getValues()) : null;
 	}
 }

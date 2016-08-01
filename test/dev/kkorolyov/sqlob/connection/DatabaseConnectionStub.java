@@ -2,7 +2,8 @@ package dev.kkorolyov.sqlob.connection;
 
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
-import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.statement.ResultingStatement;
+import dev.kkorolyov.sqlob.statement.UpdatingStatement;
 
 /**
  * A stub {@code DatabaseConnection} for testing purposes.
@@ -27,20 +28,30 @@ public class DatabaseConnectionStub implements DatabaseConnection {
 	}
 
 	@Override
-	public Results execute(String statement) {
-		// TODO Auto-generated method stub
+	public Results execute(ResultingStatement statement) {
+		/* TODO Auto-generated method stub */
 		return null;
+	}
+	@Override
+	public int execute(UpdatingStatement statement) {
+		/* TODO Auto-generated method stub */
+		return 0;
 	}
 
 	@Override
-	public Results execute(String baseStatement, RowEntry[] parameters) {
-		// TODO Auto-generated method stub
+	public Results runStatement(ResultingStatement statement) {
+		/* TODO Auto-generated method stub */
 		return null;
+	}
+	@Override
+	public int runStatement(UpdatingStatement statement) {
+		/* TODO Auto-generated method stub */
+		return 0;
 	}
 
 	@Override
-	public int update(String baseStatement, RowEntry[] parameters) {
-		// TODO Auto-generated method stub
+	public int revertLastStatement() {
+		/* TODO Auto-generated method stub */
 		return 0;
 	}
 

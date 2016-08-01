@@ -3,6 +3,7 @@ import java.sql.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import dev.kkorolyov.sqlob.construct.Column;
@@ -24,6 +25,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	private final String url, database;
 	private Connection conn;
 	private List<Statement> openStatements = new LinkedList<>();
+	private Stack<UpdatingStatement> statements = new Stack<>();
 	
 	private Set<StatementListener> statementListeners = new CopyOnWriteArraySet<>();
 	
@@ -91,7 +93,22 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	}
 	
 	@Override
-	public Results executeStatement(ResultingStatement statement) {
+	public Results execute(ResultingStatement statement) {
+		testClosed();
+		
+		statement.register(this);
+		return statement.execute();
+	}
+	@Override
+	public int execute(UpdatingStatement statement) {
+		testClosed();
+		
+		statement.register(this);
+		return statement.execute();
+	}
+	
+	@Override
+	public Results runStatement(ResultingStatement statement) {
 		testClosed();
 		assertStatementRegistered(statement);
 		
@@ -108,7 +125,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		return results;
 	}
 	@Override
-	public int executeStatement(UpdatingStatement statement) {
+	public int runStatement(UpdatingStatement statement) {
 		testClosed();
 		assertStatementRegistered(statement);
 		
@@ -122,11 +139,19 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		} catch(SQLException e) {
 			throw new UncheckedSQLException(e);
 		}
+		statements.push(statement);
 		return updated;
 	}
 	private void assertStatementRegistered(StatementCommand command) {
 		if (this != command.getConn())
 			throw new IllegalArgumentException("Statement not registered to this connection: " + this + " != " + command.getConn());
+	}
+	
+	@Override
+	public int revertLastStatement() {
+		UpdatingStatement lastStatement = !statements.isEmpty() ? statements.pop() : null;
+		
+		return (lastStatement != null && lastStatement.isRevertible()) ? lastStatement.revert() : -1;
 	}
 	
 	private PreparedStatement setupStatement(StatementCommand command) throws SQLException {
@@ -201,7 +226,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		if (containsTable(name))	// Can't add a table of the same name
 			throw new DuplicateTableException(database, name);
 				
-		executeStatement(new CreateTableStatement(this, name, columns));
+		execute(new CreateTableStatement(name, columns));
 		
 		return new TableConnection(this, name);
 	}
@@ -213,7 +238,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		boolean success = false;
 		
 		if (containsTable(table)) {
-			executeStatement(new DropTableStatement(this, table));
+			execute(new DropTableStatement(table));
 				
 			success = true;
 		}

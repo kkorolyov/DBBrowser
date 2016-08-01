@@ -28,23 +28,48 @@ public interface DatabaseConnection {
 	boolean isClosed();
 	
 	/**
-	 * Executes a {@code ResultingStatement}.
+	 * Registers with and executes the specified statement.
 	 * @param statement statement to execute
+	 * @return results from statement execution, or {@code null} if the statement does not return results
+	 * @throws UncheckedSQLException if the executed statement is invalid
+	 * @throws ClosedException if called on a closed connection
+	 * @throws IllegalArgumentException if {@code statement} cannot be registered to this database connection
+	 */
+	Results execute(ResultingStatement statement);
+	/**
+	 * Registers with and executes the specified statement.
+	 * @param statement statement to execute
+	 * @return number of rows affected by statement execution
+	 * @throws UncheckedSQLException if the executed statement is invalid
+	 * @throws ClosedException if called on a closed connection
+	 * @throws IllegalArgumentException if {@code statement} cannot be not registered to this database connection
+	 */
+	int execute(UpdatingStatement statement);
+	
+	/**
+	 * Runs the SQL statement encapsulated by the specified statement.
+	 * @param statement statement to run
 	 * @return results from statement execution, or {@code null} if the statement does not return results
 	 * @throws UncheckedSQLException if the executed statement is invalid
 	 * @throws ClosedException if called on a closed connection
 	 * @throws IllegalArgumentException if {@code statement} is not registered to this database connection
 	 */
-	Results executeStatement(ResultingStatement statement);
+	Results runStatement(ResultingStatement statement);
 	/**
-	 * Executes an {@code UpdatingStatement}.
-	 * @param statement statement to execute
-	 * @return number of affected rows
+	 * Runs the SQL statement encapsulated by the specified statement.
+	 * @param statement statement to run
+	 * @return number of rows affected by statement execution
 	 * @throws UncheckedSQLException if the executed statement is invalid
 	 * @throws ClosedException if called on a closed connection
 	 * @throws IllegalArgumentException if {@code statement} is not registered to this database connection
 	 */
-	int executeStatement(UpdatingStatement statement);
+	int runStatement(UpdatingStatement statement);
+	
+	/**
+	 * Reverts the last statement executed by this connection, if it is revertible.
+	 * @return number of reverted rows, or {@code -1} if the last statement is not revertible or there are no more statements to revert
+	 */
+	int revertLastStatement();
 	
 	/**
 	 * Closes all open statements.

@@ -1,6 +1,5 @@
 package dev.kkorolyov.sqlob.statement;
 
-import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 
 /**
@@ -11,17 +10,16 @@ public class DeleteRowStatement extends UpdatingStatement {
 	
 	/**
 	 * Constructs a new {@code DELETE ROW} statement.
-	 * @param conn database connection used for statement execution
 	 * @param table table to delete row(s) from
 	 * @param criteria criteria used by row deletion
 	 */
-	public DeleteRowStatement(DatabaseConnection conn, String table, RowEntry[] criteria) {
-		super(conn, StatementBuilder.buildDelete(table, criteria), null, criteria);
+	public DeleteRowStatement(String table, RowEntry[] criteria) {
+		super(StatementBuilder.buildDelete(table, criteria), null, criteria);
 		this.table = table;
 	}
 
 	@Override
 	public StatementCommand getReversionStatement() {
-		return isRevertible() ? new InsertRowStatement(getConn(), table, getCritera()) : null;
+		return isRevertible() ? new InsertRowStatement(table, getCritera()) : null;
 	}
 }
