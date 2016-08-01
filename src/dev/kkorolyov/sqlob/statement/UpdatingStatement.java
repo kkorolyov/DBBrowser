@@ -41,6 +41,26 @@ public abstract class UpdatingStatement extends StatementCommand {
 	}
 	
 	/**
+	 * An executable custom SQL statement.
+	 * Cannot be reverted.
+	 */
+	public static class CustomStatement extends UpdatingStatement {
+		/**
+		 * Constructs a new custom statement.
+		 * @param baseStatement base SQL statement, with {@code ?} denoting areas of substitution with parameters
+		 * @param parameters parameters to utilize in statement, will be substituted into the base statement in order of declaration
+		 */
+		public CustomStatement(String baseStatement, RowEntry[] parameters) {
+			super(baseStatement, parameters, null);
+		}
+		
+		@Override
+		public StatementCommand getReversionStatement() {
+			return null;
+		}
+	}
+	
+	/**
 	 * An executable and revertible {@code CREATE TABLE} SQL statement.
 	 */
 	public static class CreateTableStatement extends UpdatingStatement {
