@@ -13,6 +13,7 @@ import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
+import dev.kkorolyov.sqlob.statement.SelectStatement;
 
 @SuppressWarnings("javadoc")
 public class DatabaseConnectionTest {
@@ -46,14 +47,10 @@ public class DatabaseConnectionTest {
 	
 	@Test
 	public void testClose() throws Exception {
-		String validityStatement = "SELECT";	// Will work as long as connection is open and valid
-		
-		conn.execute(validityStatement);	// Connection is open
-		
 		conn.close();
 		
 		try {
-			conn.execute(validityStatement);
+			new SelectStatement(conn, "Closed", null, null).execute();
 		} catch (ClosedException e) {
 			return;	// As expected
 		}
@@ -69,7 +66,7 @@ public class DatabaseConnectionTest {
 		assertTrue(conn.isClosed());
 	}
 
-	@Test
+	/*@Test
 	public void testExecute() throws Exception {	// Mainly for exceptions
 		String testTable = "TestTable_Execute";
 		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
@@ -79,8 +76,8 @@ public class DatabaseConnectionTest {
 		String 	returnTestStatement = "SELECT * FROM " + testTable,
 						nullReturnTestStatement = "INSERT INTO " + testTable + " VALUES (true)";
 		
-		assertTrue(conn.execute(returnTestStatement) != null);
-		assertTrue(conn.execute(nullReturnTestStatement) == null);
+		assertTrue(conn.executeStatement(returnTestStatement) != null);
+		assertTrue(conn.executeStatement(nullReturnTestStatement) == null);
 		
 		conn.dropTable(testTable);
 	}
@@ -112,7 +109,7 @@ public class DatabaseConnectionTest {
 		assertEquals(1, resultsCount);
 		
 		conn.dropTable(testTable);
-	}
+	}*/
 	
 	@Test
 	public void testCreateTable() throws Exception {

@@ -2,7 +2,8 @@ package dev.kkorolyov.sqlob.connection;
 
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
-import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.statement.ResultingStatement;
+import dev.kkorolyov.sqlob.statement.UpdatingStatement;
 
 /**
  * A connection to a SQL database.
@@ -27,32 +28,23 @@ public interface DatabaseConnection {
 	boolean isClosed();
 	
 	/**
-	 * Executes a complete SQL statement.
-	 * This version of {@code execute} does not accept extra parameters.
-	 * @throws UncheckedSQLException if the executed statement is invalid
-	 * @throws ClosedException if called on a closed connection
-	 * @see #execute(String, RowEntry[])
-	 */
-	Results execute(String statement);
-	/**
-	 * Executes a partial SQL statement with extra parameters.
-	 * @param baseStatement statement without parameters, with {@code ?} denoting an area where a parameter should be substituted in
-	 * @param parameters values to use, will be substituted into the base statement in the order of appearance, if this array is empty or {@code null}, only the base statement is executed
+	 * Executes a {@code ResultingStatement}.
+	 * @param statement statement to execute
 	 * @return results from statement execution, or {@code null} if the statement does not return results
 	 * @throws UncheckedSQLException if the executed statement is invalid
 	 * @throws ClosedException if called on a closed connection
+	 * @throws IllegalArgumentException if {@code statement} is not registered to this database connection
 	 */
-	Results execute(String baseStatement, RowEntry[] parameters);
-	
+	Results executeStatement(ResultingStatement statement);
 	/**
-	 * Executes a partial SQL update statement with parameters.
-	 * @param baseStatement statement without parameters, with {@code ?} denoting an area where a parameter should be substituted in
-	 * @param parameters parameters to use, will be substituted into the base statement in the order of appearance, if this array is empty or {@code null}, only the base statement is executed
+	 * Executes an {@code UpdatingStatement}.
+	 * @param statement statement to execute
 	 * @return number of affected rows
 	 * @throws UncheckedSQLException if the executed statement is invalid
 	 * @throws ClosedException if called on a closed connection
+	 * @throws IllegalArgumentException if {@code statement} is not registered to this database connection
 	 */
-	int update(String baseStatement, RowEntry[] parameters);
+	int executeStatement(UpdatingStatement statement);
 	
 	/**
 	 * Closes all open statements.

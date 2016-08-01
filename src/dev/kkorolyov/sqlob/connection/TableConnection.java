@@ -1,11 +1,12 @@
 package dev.kkorolyov.sqlob.connection;
 
-import java.lang.reflect.Array;
-
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
-import dev.kkorolyov.sqlob.statement.StatementBuilder;
+import dev.kkorolyov.sqlob.statement.DeleteRowStatement;
+import dev.kkorolyov.sqlob.statement.InsertRowStatement;
+import dev.kkorolyov.sqlob.statement.SelectStatement;
+import dev.kkorolyov.sqlob.statement.UpdateRowStatement;
 
 /**
  * A filter for a {@code DatabaseConnection} providing for table-oriented actions.
@@ -15,8 +16,6 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	private DatabaseConnection conn;
 	private String tableName;
 	
-	private final String metaDataStatement;
-
 	/**
 	 * Constructs a table-specific connection for a {@code DatabaseConnection}.
 	 * @param conn database connection
@@ -25,8 +24,6 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	public TableConnection(DatabaseConnection conn, String tableName) {
 		this.conn = conn;
 		this.tableName = tableName;		
-		
-		metaDataStatement = StatementBuilder.buildSelect(tableName, null, null);	// Metadata statement = "SELECT * FROM <table>"
 	}
 	
 	/**
@@ -62,7 +59,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public Results select(Column[] columns, RowEntry[] criteria) {
-		return conn.execute(StatementBuilder.buildSelect(tableName, columns, criteria), criteria);	// Execute marked statement with substituted parameters
+		return new SelectStatement(conn, tableName, columns, criteria).execute();
 	}
 	
 	/**
@@ -73,7 +70,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int insert(RowEntry[] entries) {		
-		return conn.update(StatementBuilder.buildInsert(tableName, entries), entries);
+		return new InsertRowStatement(conn, tableName, entries).execute();
 	}
 	
 	/**
@@ -84,7 +81,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int delete(RowEntry[] criteria) {
-		return conn.update(StatementBuilder.buildDelete(tableName, criteria), criteria);
+		return new DeleteRowStatement(conn, tableName, criteria).execute();
 	}
 	
 	/**
@@ -96,27 +93,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int update(RowEntry[] newEntries, RowEntry[] criteria) {
-		RowEntry[] combinedParameters = combineArrays(RowEntry.class, newEntries, criteria);
-		
-		return conn.update(StatementBuilder.buildUpdate(tableName, newEntries, criteria), combinedParameters);
-	}
-	@SafeVarargs
-	private static <T> T[] combineArrays(Class<T> finalClass, T[]... arrays) {
-		int totalLength = 0;
-		for (T[] array : arrays)	// Add lengths
-			totalLength += array.length;
-		
-		@SuppressWarnings("unchecked")
-		T[] combined = (T[]) Array.newInstance(finalClass, totalLength);	// Create empty combined array
-
-		int cursor = 0;
-		for (T[] array : arrays) {	// Fill combined array
-			for (T element : array) {
-				combined[cursor] = element;
-				cursor++;
-			}
-		}
-		return combined;
+		return new UpdateRowStatement(conn, tableName, newEntries, criteria).execute();
 	}
 	
 	/**
@@ -149,7 +126,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public Column[] getColumns() {
-		return conn.execute(metaDataStatement).getColumns();
+		return new SelectStatement(conn, tableName, null, null).execute().getColumns();
 	}
 	
 	/**
@@ -158,7 +135,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int getNumColumns() {
-		return conn.execute(metaDataStatement).getNumColumns();
+		return new SelectStatement(conn, tableName, null, null).execute().getNumColumns();
 	}
 	/**
 	 * Returns the number of rows in this table.
@@ -169,7 +146,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	public int getNumRows() {
 		int numRows = 0;
 
-		Results rs = conn.execute(metaDataStatement);
+		Results rs = new SelectStatement(conn, tableName, null, null).execute();
 		while (rs.getNextRow() != null)	// Counts rows
 			numRows++;
 		

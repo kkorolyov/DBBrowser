@@ -10,7 +10,7 @@ import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.logging.LoggerInterface;
-import dev.kkorolyov.sqlob.statement.StatementBuilder;
+import dev.kkorolyov.sqlob.statement.*;
 
 /**
  * A {@code DatabaseConnection} to a PostgreSQL database.
@@ -91,17 +91,14 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	}
 	
 	@Override
-	public Results execute(String statement) {
-		return execute(statement, (RowEntry[]) null);
-	}
-	@Override
-	public Results execute(String baseStatement, RowEntry[] parameters) {
+	public Results executeStatement(ResultingStatement statement) {
 		testClosed();
+		assertStatementRegistered(statement);
 		
 		Results results = null;
 		
 		try {
-			PreparedStatement s = setupStatement(baseStatement, parameters);
+			PreparedStatement s = setupStatement(statement);
 
 			if (s.execute())
 				results = new Results(s.getResultSet());
@@ -110,15 +107,15 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		}
 		return results;
 	}
-	
 	@Override
-	public int update(String baseStatement, RowEntry[] parameters) {
+	public int executeStatement(UpdatingStatement statement) {
 		testClosed();
+		assertStatementRegistered(statement);
 		
 		int updated = 0;
 		
 		try {
-			PreparedStatement s = setupStatement(baseStatement, parameters);
+			PreparedStatement s = setupStatement(statement);
 
 			if (!s.execute())
 				updated = s.getUpdateCount();
@@ -127,12 +124,16 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		}
 		return updated;
 	}
+	private void assertStatementRegistered(StatementCommand command) {
+		if (this != command.getConn())
+			throw new IllegalArgumentException("Statement not registered to this connection: " + this + " != " + command.getConn());
+	}
 	
-	private PreparedStatement setupStatement(String baseStatement, RowEntry[] parameters) throws SQLException {
-		PreparedStatement statement = conn.prepareStatement(baseStatement);
+	private PreparedStatement setupStatement(StatementCommand command) throws SQLException {
+		PreparedStatement statement = conn.prepareStatement(command.getBaseStatement());
 		openStatements.add(statement);	// Add to flushable list
 		
-		buildParameters(statement, parameters, (statementListeners.isEmpty() ? null : baseStatement));	// Add appropriate types
+		buildParameters(statement, command.getParameters(), (statementListeners.isEmpty() ? null : command.getBaseStatement()));	// Add appropriate types
 		
 		return statement;
 	}
@@ -200,7 +201,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		if (containsTable(name))	// Can't add a table of the same name
 			throw new DuplicateTableException(database, name);
 				
-		execute(StatementBuilder.buildCreate(name, columns));
+		executeStatement(new CreateTableStatement(this, name, columns));
 		
 		return new TableConnection(this, name);
 	}
@@ -212,7 +213,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		boolean success = false;
 		
 		if (containsTable(table)) {
-			execute(StatementBuilder.buildDrop(table));
+			executeStatement(new DropTableStatement(this, table));
 				
 			success = true;
 		}
