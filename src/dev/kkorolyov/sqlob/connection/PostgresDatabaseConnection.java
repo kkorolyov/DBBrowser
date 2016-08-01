@@ -11,7 +11,11 @@ import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.logging.LoggerInterface;
-import dev.kkorolyov.sqlob.statement.*;
+import dev.kkorolyov.sqlob.statement.ResultingStatement;
+import dev.kkorolyov.sqlob.statement.StatementCommand;
+import dev.kkorolyov.sqlob.statement.UpdatingStatement;
+import dev.kkorolyov.sqlob.statement.UpdatingStatement.CreateTableStatement;
+import dev.kkorolyov.sqlob.statement.UpdatingStatement.DropTableStatement;
 
 /**
  * A {@code DatabaseConnection} to a PostgreSQL database.

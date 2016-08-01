@@ -11,7 +11,7 @@ import org.junit.Test;
 import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.SqlType;
-import dev.kkorolyov.sqlob.statement.SelectStatement;
+import dev.kkorolyov.sqlob.statement.ResultingStatement.SelectStatement;
 
 @SuppressWarnings("javadoc")
 public class DatabaseConnectionTest {

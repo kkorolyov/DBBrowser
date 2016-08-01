@@ -3,10 +3,10 @@ package dev.kkorolyov.sqlob.connection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
-import dev.kkorolyov.sqlob.statement.DeleteRowStatement;
-import dev.kkorolyov.sqlob.statement.InsertRowStatement;
-import dev.kkorolyov.sqlob.statement.SelectStatement;
-import dev.kkorolyov.sqlob.statement.UpdateRowStatement;
+import dev.kkorolyov.sqlob.statement.ResultingStatement.SelectStatement;
+import dev.kkorolyov.sqlob.statement.UpdatingStatement.DeleteRowStatement;
+import dev.kkorolyov.sqlob.statement.UpdatingStatement.InsertRowStatement;
+import dev.kkorolyov.sqlob.statement.UpdatingStatement.UpdateRowStatement;
 
 /**
  * A filter for a {@code DatabaseConnection} providing for table-oriented actions.
