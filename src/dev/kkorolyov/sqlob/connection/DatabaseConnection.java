@@ -64,12 +64,6 @@ public interface DatabaseConnection {
 	int update (String baseStatement, RowEntry... parameters);
 		
 	/**
-	 * Reverts the last statement executed by this connection, if it is revertible.
-	 * @return number of reverted rows, or {@code -1} if the last statement is not revertible or there are no more statements to revert
-	 */
-	int revertLastStatement();
-	
-	/**
 	 * Creates a table with the specifed name and columns.
 	 * @param name new table name
 	 * @param columns new table columns in the order they should appear
@@ -108,9 +102,9 @@ public interface DatabaseConnection {
 	String getDatabaseName();
 	
 	/**
-	 * Returns all non-reversion statements executed by this connection.
+	 * Returns all statements executed by this connection.
 	 * May be called on a closed connection.
-	 * @return executed non-reversion statements ordered by age descending
+	 * @return executed statements in order of execution
 	 */
 	List<StatementCommand> getStatementLog();
 }

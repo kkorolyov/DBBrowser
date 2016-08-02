@@ -1,9 +1,7 @@
 package dev.kkorolyov.sqlob.connection;
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Stack;
 
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
@@ -27,7 +25,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		
 	private final String url, database;
 	private Connection conn;
-	private Stack<UpdatingStatement> statements = new Stack<>();
+	private List<StatementCommand> statementLog = new LinkedList<>();
 	
 	/**
 	 * Opens a new connection to the specified host and database residing on it.
@@ -90,17 +88,15 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	public Results execute(ResultingStatement statement) {
 		assertNotClosed();
 		
+		statementLog.add(statement);
+		
 		return statement.execute(this);
 	}
 	@Override
 	public int execute(UpdatingStatement statement) {
-		return execute(statement, true);
-	}
-	private int execute(UpdatingStatement statement, boolean remember) {
 		assertNotClosed();
-		
-		if (remember)
-			statements.push(statement);
+
+		statementLog.add(statement);
 		
 		return statement.execute(this);
 	}
@@ -136,13 +132,6 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		return updated;
 	}
 		
-	@Override
-	public int revertLastStatement() {
-		UpdatingStatement lastStatement = !statements.isEmpty() ? statements.pop() : null;
-		
-		return (lastStatement != null && lastStatement.isRevertible()) ? execute((UpdatingStatement) lastStatement.getReversionStatement(), false) : -1;
-	}
-	
 	private PreparedStatement buildStatement(String baseStatement, RowEntry[] parameters) throws SQLException {	// Inserts appropriate type into statement
 		PreparedStatement statement = conn.prepareStatement(baseStatement);
 		
@@ -239,7 +228,10 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	
 	@Override
 	public List<StatementCommand> getStatementLog() {
-		return new ArrayList<StatementCommand>(statements);
+		List<StatementCommand> returnList = new LinkedList<>();
+		returnList.addAll(statementLog);
+		
+		return returnList;
 	}
 	
 	private void assertNotClosed() {
