@@ -1,13 +1,11 @@
 package dev.kkorolyov.sqlob.statement;
 
-import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 
 /**
  * A SQL statement encapsulated as an executable command.
  */
 public abstract class StatementCommand {
-	private DatabaseConnection conn;
 	private String baseStatement;
 	private RowEntry[] 	values,
 											criteria;
@@ -19,27 +17,13 @@ public abstract class StatementCommand {
 		this.criteria = criteria;
 	}
 	
-	/**
-	 * Registers a database connection to this statement if this statement does not yet have a connection.
-	 * @param conn database connection to execute this statement
-	 * @return {@code true} if registration successful, {@code false} if this statement already has a registered connection
-	 */
-	public boolean register(DatabaseConnection conn) {
-		boolean free = (this.conn == null);
-		
-		if (free)
-			this.conn = conn;
-		
-		return free;
-	}
-	
 	/** @return {@code true} if this statement is in an executable state */
 	public boolean isExecutable() {
-		return conn != null && !executed;
+		return !executed;
 	}
 	/** @return {@code true} if this statement is in a revertible state */
 	public boolean isRevertible() {
-		return conn != null && executed;
+		return executed;
 	}
 	void setExecuted(boolean executed) {
 		this.executed = executed;
@@ -56,11 +40,6 @@ public abstract class StatementCommand {
 	
 	/** @return a statement which reverts this statement, or {@code null} if this statement is not currently revertible */
 	public abstract StatementCommand getReversionStatement();
-	
-	/** @return database connection used for statement execution */
-	public DatabaseConnection getConn() {
-		return conn;
-	}
 	
 	/** @return	base SQL statement */
 	public String getBaseStatement() {

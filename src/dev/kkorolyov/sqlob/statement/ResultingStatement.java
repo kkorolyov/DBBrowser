@@ -1,5 +1,6 @@
 package dev.kkorolyov.sqlob.statement;
 
+import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
@@ -16,13 +17,14 @@ public abstract class ResultingStatement extends StatementCommand {
 
 	/**
 	 * Executes this statement if it is in an executable state.
+	 * @param conn database connection with which to execute this statement
 	 * @return results obtained by statement execution
 	 * @throws IllegalStateException if this statement is not in an executable state
 	 */
-	public Results execute() {
+	public Results execute(DatabaseConnection conn) {
 		assertExecutable();
 		
-		return getConn().runStatement(this);
+		return conn.execute(getBaseStatement(), getParameters());
 	}
 	
 	/**

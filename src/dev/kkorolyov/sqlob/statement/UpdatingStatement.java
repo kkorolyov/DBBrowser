@@ -1,5 +1,6 @@
 package dev.kkorolyov.sqlob.statement;
 
+import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.connection.TableConnection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.RowEntry;
@@ -15,26 +16,28 @@ public abstract class UpdatingStatement extends StatementCommand {
 	
 	/**
 	 * Executes this statement if it is in an executable state.
+	 * @param conn database connection with which to execute this statement
 	 * @return number of rows updated by statement execution
 	 * @throws IllegalStateException if this statement is not in an executable state
 	 */
-	public int execute() {
+	public int execute(DatabaseConnection conn) {
 		assertExecutable();
 		
-		int result = getConn().runStatement(this);
+		int result = conn.update(getBaseStatement(), getParameters());
 		setExecuted(true);
 		
 		return result;
 	}
 	/**
 	 * Reverts this statement if it is in a revertible state.
+	 * @param conn database connection with which to revert this statement
 	 * @return number of rows updated by statement reversion
 	 * @throws IllegalStateException if this statement is not in a revertible state
 	 */
-	public int revert() {
+	public int revert(DatabaseConnection conn) {
 		assertRevertible();
 		
-		int result = getConn().execute((UpdatingStatement) getReversionStatement());
+		int result = conn.execute((UpdatingStatement) getReversionStatement());
 		setExecuted(false);
 		
 		return result;
@@ -102,12 +105,12 @@ public abstract class UpdatingStatement extends StatementCommand {
 		}
 		
 		@Override
-		public int execute() {
-			TableConnection droppedTable = getConn().connect(table);
+		public int execute(DatabaseConnection conn) {
+			TableConnection droppedTable = conn.connect(table);
 			if (droppedTable != null)
 				columns = droppedTable.getColumns();
 				
-			return super.execute();
+			return super.execute(conn);
 		}
 	}
 	

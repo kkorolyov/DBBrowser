@@ -1,8 +1,12 @@
 package dev.kkorolyov.sqlob.connection;
 
+import java.util.List;
+
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
+import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.statement.ResultingStatement;
+import dev.kkorolyov.sqlob.statement.StatementCommand;
 import dev.kkorolyov.sqlob.statement.UpdatingStatement;
 
 /**
@@ -33,7 +37,6 @@ public interface DatabaseConnection {
 	 * @return results from statement execution, or {@code null} if the statement does not return results
 	 * @throws UncheckedSQLException if the executed statement is invalid
 	 * @throws ClosedException if called on a closed connection
-	 * @throws IllegalArgumentException if {@code statement} cannot be registered to this database connection
 	 */
 	Results execute(ResultingStatement statement);
 	/**
@@ -42,29 +45,24 @@ public interface DatabaseConnection {
 	 * @return number of rows affected by statement execution
 	 * @throws UncheckedSQLException if the executed statement is invalid
 	 * @throws ClosedException if called on a closed connection
-	 * @throws IllegalArgumentException if {@code statement} cannot be not registered to this database connection
 	 */
 	int execute(UpdatingStatement statement);
 	
 	/**
-	 * Runs the SQL statement encapsulated by the specified statement.
-	 * @param statement statement to run
-	 * @return results from statement execution, or {@code null} if the statement does not return results
-	 * @throws UncheckedSQLException if the executed statement is invalid
-	 * @throws ClosedException if called on a closed connection
-	 * @throws IllegalArgumentException if {@code statement} is not registered to this database connection
+	 * Executes a SQL statement with substituted parameters.
+	 * @param baseStatement base SQL statement with '?' denoting an area for parameter substitution
+	 * @param parameters parameters to substitute in order of declaration
+	 * @return results of statement execution, or {@code null} if statement does not return results
 	 */
-	Results runStatement(ResultingStatement statement);
+	Results execute(String baseStatement, RowEntry... parameters);
 	/**
-	 * Runs the SQL statement encapsulated by the specified statement.
-	 * @param statement statement to run
+	 * Executes a SQL statement with substituted parameters.
+	 * @param baseStatement base SQL statement with '?' denoting an area for parameter substitution
+	 * @param parameters parameters to substitute in order of declaration
 	 * @return number of rows affected by statement execution
-	 * @throws UncheckedSQLException if the executed statement is invalid
-	 * @throws ClosedException if called on a closed connection
-	 * @throws IllegalArgumentException if {@code statement} is not registered to this database connection
 	 */
-	int runStatement(UpdatingStatement statement);
-	
+	int update (String baseStatement, RowEntry... parameters);
+		
 	/**
 	 * Reverts the last statement executed by this connection, if it is revertible.
 	 * @return number of reverted rows, or {@code -1} if the last statement is not revertible or there are no more statements to revert
@@ -114,6 +112,13 @@ public interface DatabaseConnection {
 	 * @return name of the database
 	 */
 	String getDatabaseName();
+	
+	/**
+	 * Returns all non-reversion statements executed by this connection.
+	 * May be called on a closed connection.
+	 * @return executed non-reversion statements ordered by age descending
+	 */
+	List<StatementCommand> getStatementLog();
 	
 	/** @param listener statement listener to add */
 	void addStatementListener(StatementListener listener);

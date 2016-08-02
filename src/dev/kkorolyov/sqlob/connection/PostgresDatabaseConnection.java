@@ -1,9 +1,6 @@
 package dev.kkorolyov.sqlob.connection;
 import java.sql.*;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import dev.kkorolyov.sqlob.construct.Column;
@@ -28,7 +25,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		
 	private final String url, database;
 	private Connection conn;
-	private List<Statement> openStatements = new LinkedList<>();
+	private List<Statement> openStatements = new LinkedList<>();	// TODO Remove
 	private Stack<UpdatingStatement> statements = new Stack<>();
 	
 	private Set<StatementListener> statementListeners = new CopyOnWriteArraySet<>();
@@ -100,26 +97,29 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	public Results execute(ResultingStatement statement) {
 		testClosed();
 		
-		statement.register(this);
-		return statement.execute();
+		return statement.execute(this);
 	}
 	@Override
 	public int execute(UpdatingStatement statement) {
+		return execute(statement, true);
+	}
+	private int execute(UpdatingStatement statement, boolean remember) {
 		testClosed();
 		
-		statement.register(this);
-		return statement.execute();
+		if (remember)
+			statements.push(statement);
+		
+		return statement.execute(this);
 	}
 	
 	@Override
-	public Results runStatement(ResultingStatement statement) {
+	public Results execute(String baseStatement, RowEntry... parameters) {
 		testClosed();
-		assertStatementRegistered(statement);
 		
 		Results results = null;
 		
 		try {
-			PreparedStatement s = setupStatement(statement);
+			PreparedStatement s = setupStatement(baseStatement, parameters);
 
 			if (s.execute())
 				results = new Results(s.getResultSet());
@@ -129,40 +129,34 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		return results;
 	}
 	@Override
-	public int runStatement(UpdatingStatement statement) {
+	public int update(String baseStatement, RowEntry... parameters) {
 		testClosed();
-		assertStatementRegistered(statement);
 		
 		int updated = 0;
 		
 		try {
-			PreparedStatement s = setupStatement(statement);
+			PreparedStatement s = setupStatement(baseStatement, parameters);
 
 			if (!s.execute())
 				updated = s.getUpdateCount();
 		} catch(SQLException e) {
 			throw new UncheckedSQLException(e);
 		}
-		statements.push(statement);
 		return updated;
 	}
-	private void assertStatementRegistered(StatementCommand command) {
-		if (this != command.getConn())
-			throw new IllegalArgumentException("Statement not registered to this connection: " + this + " != " + command.getConn());
-	}
-	
+		
 	@Override
 	public int revertLastStatement() {
 		UpdatingStatement lastStatement = !statements.isEmpty() ? statements.pop() : null;
 		
-		return (lastStatement != null && lastStatement.isRevertible()) ? lastStatement.revert() : -1;
+		return (lastStatement != null && lastStatement.isRevertible()) ? execute((UpdatingStatement) lastStatement.getReversionStatement(), false) : -1;
 	}
 	
-	private PreparedStatement setupStatement(StatementCommand command) throws SQLException {
-		PreparedStatement statement = conn.prepareStatement(command.getBaseStatement());
+	private PreparedStatement setupStatement(String baseStatement, RowEntry[] parameters) throws SQLException {
+		PreparedStatement statement = conn.prepareStatement(baseStatement);
 		openStatements.add(statement);	// Add to flushable list
 		
-		buildParameters(statement, command.getParameters(), (statementListeners.isEmpty() ? null : command.getBaseStatement()));	// Add appropriate types
+		buildParameters(statement, parameters, (statementListeners.isEmpty() ? null : baseStatement));	// Add appropriate types
 		
 		return statement;
 	}
@@ -288,6 +282,11 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	private void testClosed() {
 		if (isClosed())
 			throw new ClosedException();
+	}
+	
+	@Override
+	public List<StatementCommand> getStatementLog() {
+		return new ArrayList<StatementCommand>(statements);
 	}
 	
 	@Override
