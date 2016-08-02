@@ -9,7 +9,6 @@ public abstract class StatementCommand {
 	private String baseStatement;
 	private RowEntry[] 	values,
 											criteria;
-	private boolean executed = false;
 	
 	StatementCommand(String baseStatement, RowEntry[] values, RowEntry[] criteria) {
 		this.baseStatement = baseStatement;
@@ -17,29 +16,8 @@ public abstract class StatementCommand {
 		this.criteria = criteria;
 	}
 	
-	/** @return {@code true} if this statement is in an executable state */
-	public boolean isExecutable() {
-		return !executed;
-	}
-	/** @return {@code true} if this statement is in a revertible state */
-	public boolean isRevertible() {
-		return executed;
-	}
-	void setExecuted(boolean executed) {
-		this.executed = executed;
-	}
-	
-	void assertExecutable() {
-		if (!isExecutable())
-			throw new IllegalStateException("Statement is not in an executable state: " + baseStatement);
-	}
-	void assertRevertible() {
-		if (!isRevertible())
-			throw new IllegalStateException("Statement is not in a revertible state: " + baseStatement);
-	}
-	
-	/** @return a statement which reverts this statement, or {@code null} if this statement is not currently revertible */
-	public abstract StatementCommand getReversionStatement();
+	/** @return a statement which accomplishes the opposite of this statement, or {@code null} if this statement has no inverse */
+	public abstract StatementCommand getInverseStatement();
 	
 	/** @return	base SQL statement */
 	public String getBaseStatement() {

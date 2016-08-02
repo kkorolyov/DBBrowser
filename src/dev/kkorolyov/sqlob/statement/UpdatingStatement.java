@@ -21,28 +21,9 @@ public abstract class UpdatingStatement extends StatementCommand {
 	 * @throws IllegalStateException if this statement is not in an executable state
 	 */
 	public int execute(DatabaseConnection conn) {
-		assertExecutable();
-		
-		int result = conn.update(getBaseStatement(), getParameters());
-		setExecuted(true);
-		
-		return result;
+		return conn.update(getBaseStatement(), getParameters());
 	}
-	/**
-	 * Reverts this statement if it is in a revertible state.
-	 * @param conn database connection with which to revert this statement
-	 * @return number of rows updated by statement reversion
-	 * @throws IllegalStateException if this statement is not in a revertible state
-	 */
-	public int revert(DatabaseConnection conn) {
-		assertRevertible();
 		
-		int result = conn.execute((UpdatingStatement) getReversionStatement());
-		setExecuted(false);
-		
-		return result;
-	}
-	
 	/**
 	 * An executable custom SQL statement.
 	 * Cannot be reverted.
@@ -58,8 +39,8 @@ public abstract class UpdatingStatement extends StatementCommand {
 		}
 		
 		@Override
-		public StatementCommand getReversionStatement() {
-			return null;
+		public UpdatingStatement getInverseStatement() {
+			return (UpdatingStatement) null;
 		}
 	}
 	
@@ -79,7 +60,7 @@ public abstract class UpdatingStatement extends StatementCommand {
 		}
 		
 		@Override
-		public StatementCommand getReversionStatement() {
+		public StatementCommand getInverseStatement() {
 			return new DropTableStatement(table);
 		}
 	}
@@ -100,8 +81,8 @@ public abstract class UpdatingStatement extends StatementCommand {
 		}
 
 		@Override
-		public StatementCommand getReversionStatement() {
-			return isRevertible() ? new CreateTableStatement(table, columns) : null;
+		public StatementCommand getInverseStatement() {
+			return new CreateTableStatement(table, columns);
 		}
 		
 		@Override
@@ -131,8 +112,8 @@ public abstract class UpdatingStatement extends StatementCommand {
 		}
 
 		@Override
-		public StatementCommand getReversionStatement() {
-			return isRevertible() ? new DeleteRowStatement(table, getValues()) : null;
+		public StatementCommand getInverseStatement() {
+			return new DeleteRowStatement(table, getValues());
 		}
 	}
 	/**
@@ -152,8 +133,8 @@ public abstract class UpdatingStatement extends StatementCommand {
 		}
 
 		@Override
-		public StatementCommand getReversionStatement() {
-			return isRevertible() ? new InsertRowStatement(table, getCritera()) : null;
+		public StatementCommand getInverseStatement() {
+			return new InsertRowStatement(table, getCritera());
 		}
 	}
 	/**
@@ -174,8 +155,8 @@ public abstract class UpdatingStatement extends StatementCommand {
 		}
 
 		@Override
-		public StatementCommand getReversionStatement() {
-			return isRevertible() ? new UpdateRowStatement(table, getCritera(), getValues()) : null;
+		public StatementCommand getInverseStatement() {
+			return new UpdateRowStatement(table, getCritera(), getValues());
 		}
 	}
 }

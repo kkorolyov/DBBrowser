@@ -22,8 +22,6 @@ public abstract class ResultingStatement extends StatementCommand {
 	 * @throws IllegalStateException if this statement is not in an executable state
 	 */
 	public Results execute(DatabaseConnection conn) {
-		assertExecutable();
-		
 		return conn.execute(getBaseStatement(), getParameters());
 	}
 	
@@ -42,7 +40,7 @@ public abstract class ResultingStatement extends StatementCommand {
 		}
 		
 		@Override
-		public StatementCommand getReversionStatement() {
+		public StatementCommand getInverseStatement() {
 			return null;
 		}
 	}
@@ -62,7 +60,7 @@ public abstract class ResultingStatement extends StatementCommand {
 		}
 
 		@Override
-		public StatementCommand getReversionStatement() {
+		public StatementCommand getInverseStatement() {
 			return null;
 		}
 	}
