@@ -8,7 +8,6 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,11 +43,6 @@ public class ResultsTest {
 	public static void tearDownAfterClass() throws Exception {
 		databaseConn.dropTable(testTable);
 		databaseConn.close();
-	}
-
-	@After
-	public void tearDown() throws Exception {
-		tableConn.flush();
 	}
 
 	@Test

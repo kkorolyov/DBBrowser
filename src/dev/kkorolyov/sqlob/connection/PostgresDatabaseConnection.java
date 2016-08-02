@@ -1,7 +1,9 @@
 package dev.kkorolyov.sqlob.connection;
 import java.sql.*;
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Stack;
 
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
@@ -25,10 +27,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		
 	private final String url, database;
 	private Connection conn;
-	private List<Statement> openStatements = new LinkedList<>();	// TODO Remove
 	private Stack<UpdatingStatement> statements = new Stack<>();
-	
-	private Set<StatementListener> statementListeners = new CopyOnWriteArraySet<>();
 	
 	/**
 	 * Opens a new connection to the specified host and database residing on it.
@@ -58,7 +57,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	
 	@Override
 	public TableConnection connect(String table) {
-		testClosed();
+		assertNotClosed();
 		
 		return containsTable(table) ? new TableConnection(this, table) : null;
 	}
@@ -79,23 +78,17 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		}
 		conn = null;
 		
-		openStatements.clear();
-		openStatements = null;
-		
-		statementListeners.clear();
-		statementListeners = null;
-		
 		log.debug("Closed " + getClass().getSimpleName() + " at URL: " + url);
 	}
 	
 	@Override
 	public boolean isClosed() {
-		return (conn == null && openStatements == null);
+		return (conn == null);
 	}
 	
 	@Override
 	public Results execute(ResultingStatement statement) {
-		testClosed();
+		assertNotClosed();
 		
 		return statement.execute(this);
 	}
@@ -104,7 +97,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		return execute(statement, true);
 	}
 	private int execute(UpdatingStatement statement, boolean remember) {
-		testClosed();
+		assertNotClosed();
 		
 		if (remember)
 			statements.push(statement);
@@ -114,13 +107,13 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	
 	@Override
 	public Results execute(String baseStatement, RowEntry... parameters) {
-		testClosed();
+		assertNotClosed();
 		
 		Results results = null;
 		
 		try {
-			PreparedStatement s = setupStatement(baseStatement, parameters);
-
+			PreparedStatement s = buildStatement(baseStatement, parameters);	// Remains open to not close results
+					
 			if (s.execute())
 				results = new Results(s.getResultSet());
 		} catch (SQLException e) {
@@ -130,13 +123,11 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	}
 	@Override
 	public int update(String baseStatement, RowEntry... parameters) {
-		testClosed();
+		assertNotClosed();
 		
 		int updated = 0;
 		
-		try {
-			PreparedStatement s = setupStatement(baseStatement, parameters);
-
+		try (PreparedStatement s = buildStatement(baseStatement, parameters)) {
 			if (!s.execute())
 				updated = s.getUpdateCount();
 		} catch(SQLException e) {
@@ -152,18 +143,10 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		return (lastStatement != null && lastStatement.isRevertible()) ? execute((UpdatingStatement) lastStatement.getReversionStatement(), false) : -1;
 	}
 	
-	private PreparedStatement setupStatement(String baseStatement, RowEntry[] parameters) throws SQLException {
+	private PreparedStatement buildStatement(String baseStatement, RowEntry[] parameters) throws SQLException {	// Inserts appropriate type into statement
 		PreparedStatement statement = conn.prepareStatement(baseStatement);
-		openStatements.add(statement);	// Add to flushable list
 		
-		buildParameters(statement, parameters, (statementListeners.isEmpty() ? null : baseStatement));	// Add appropriate types
-		
-		return statement;
-	}
-	private PreparedStatement buildParameters(PreparedStatement statement, RowEntry[] parameters, String initialStatementString) throws SQLException {	// Inserts appropriate type into statement
 		if (parameters != null && parameters.length > 0) {
-			String statementString = initialStatementString;
-			
 			for (int i = 0; i < parameters.length; i++) {	// Prepare with appropriate types
 				Object currentParameter = parameters[i].getValue();
 				
@@ -186,40 +169,15 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 				else if (currentParameter instanceof String)
 					statement.setString(i + 1, (String) currentParameter);
 				
-				if (statementString != null)
-					statementString = statementString.replaceFirst("\\?", currentParameter.toString());
-				
 				log.debug("Adding parameter " + i + ": " + currentParameter.toString());
-			}
-			if (statementString != null) {
-				for (StatementListener listener : statementListeners)
-					listener.statementPrepared(statementString, this);
 			}
 		}
 		return statement;
 	}
 	
 	@Override
-	public void flush() {
-		testClosed();
-		
-		int closedStatements = 0;	// Count closed statements for debugging
-		for (Statement openStatement : openStatements) {
-			try {
-				openStatement.close();
-				closedStatements++;
-			} catch (SQLException e) {
-				log.exception(e);	// Nothing to do for close() exception
-			}
-		}
-		openStatements.clear();
-		
-		log.debug("Closed " + closedStatements + " statements");
-	}
-	
-	@Override
 	public TableConnection createTable(String name, Column[] columns) throws DuplicateTableException {
-		testClosed();
+		assertNotClosed();
 		
 		if (containsTable(name))	// Can't add a table of the same name
 			throw new DuplicateTableException(database, name);
@@ -231,7 +189,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	
 	@Override
 	public boolean dropTable(String table) {
-		testClosed();
+		assertNotClosed();
 		
 		boolean success = false;
 		
@@ -245,7 +203,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	
 	@Override
 	public boolean containsTable(String table) {
-		testClosed();
+		assertNotClosed();
 		
 		boolean contains = false;
 		
@@ -260,7 +218,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	
 	@Override
 	public String[] getTables() {
-		testClosed();
+		assertNotClosed();
 		
 		List<String> tables = new LinkedList<>();
 		try (ResultSet tableSet = conn.getMetaData().getTables(null, null, "%", new String[]{"TABLE"})) {
@@ -279,22 +237,13 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		return database;
 	}
 	
-	private void testClosed() {
-		if (isClosed())
-			throw new ClosedException();
-	}
-	
 	@Override
 	public List<StatementCommand> getStatementLog() {
 		return new ArrayList<StatementCommand>(statements);
 	}
 	
-	@Override
-	public void addStatementListener(StatementListener listener) {
-		statementListeners.add(listener);
-	}
-	@Override
-	public void removeStatementListener(StatementListener listener) {
-		statementListeners.remove(listener);
+	private void assertNotClosed() {
+		if (isClosed())
+			throw new ClosedException();
 	}
 }

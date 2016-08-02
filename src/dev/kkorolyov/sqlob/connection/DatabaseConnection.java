@@ -70,12 +70,6 @@ public interface DatabaseConnection {
 	int revertLastStatement();
 	
 	/**
-	 * Closes all open statements.
-	 * @throws ClosedException if called on a closed connection
-	 */
-	void flush();
-	
-	/**
 	 * Creates a table with the specifed name and columns.
 	 * @param name new table name
 	 * @param columns new table columns in the order they should appear
@@ -119,9 +113,4 @@ public interface DatabaseConnection {
 	 * @return executed non-reversion statements ordered by age descending
 	 */
 	List<StatementCommand> getStatementLog();
-	
-	/** @param listener statement listener to add */
-	void addStatementListener(StatementListener listener);
-	/** @param listener statement listener to remove */
-	void removeStatementListener(StatementListener listener);
 }

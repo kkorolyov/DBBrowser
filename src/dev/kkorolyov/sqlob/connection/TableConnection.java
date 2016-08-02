@@ -95,15 +95,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	public int update(RowEntry[] newEntries, RowEntry[] criteria) {
 		return conn.execute(new UpdateRowStatement(tableName, newEntries, criteria));
 	}
-	
-	/**
-	 * Closes all open statements.
-	 * @throws ClosedException if called on a closed connection
-	 */
-	public void flush() {
-		conn.flush();
-	}
-	
+		
 	/**
 	 * Returns the database connection this table connection serves as a filter for.
 	 * May be called on a closed connection.
