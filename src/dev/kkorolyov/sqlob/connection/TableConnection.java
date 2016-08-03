@@ -118,7 +118,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public Column[] getColumns() {
-		return conn.execute(new SelectStatement(tableName, null, null)).getColumns();
+		return select(null).getColumns();
 	}
 	
 	/**
@@ -127,7 +127,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int getNumColumns() {
-		return conn.execute(new SelectStatement(tableName, null, null)).getNumColumns();
+		return select(null).getNumColumns();
 	}
 	/**
 	 * Returns the number of rows in this table.
@@ -138,7 +138,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	public int getNumRows() {
 		int numRows = 0;
 
-		Results rs = conn.execute(new SelectStatement(tableName, null, null));
+		Results rs = select(null);
 		while (rs.getNextRow() != null)	// Counts rows
 			numRows++;
 		

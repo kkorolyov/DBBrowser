@@ -6,6 +6,8 @@ import dev.kkorolyov.sqlob.construct.RowEntry;
  * A SQL statement encapsulated as an executable command.
  */
 public abstract class StatementCommand {
+	private static final String PARAMETER_MARKER = "\\?";
+	
 	private String baseStatement;
 	private RowEntry[] 	values,
 											criteria;
@@ -34,7 +36,7 @@ public abstract class StatementCommand {
 	}
 	/** @return all statement parameters in the order: {@code values}, {@code criteria} */
 	public RowEntry[] getParameters() {
-		RowEntry[] parameters = new RowEntry[(values == null ? 0 : values.length) + (criteria == null ? 0 : criteria.length)];
+		RowEntry[] parameters = (values != null || criteria != null) ? (new RowEntry[(values == null ? 0 : values.length) + (criteria == null ? 0 : criteria.length)]) : null;
 		int i = 0;
 		
 		if (values != null) {
@@ -46,5 +48,15 @@ public abstract class StatementCommand {
 				parameters[i++] = criterion;
 		}
 		return parameters;
+	}
+	
+	@Override
+	public String toString() {
+		String result = baseStatement;
+		
+		for (RowEntry parameter : getParameters())
+			result = result.replaceFirst(PARAMETER_MARKER, parameter.getValue().toString());
+		
+		return result;
 	}
 }
