@@ -9,7 +9,6 @@ import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.logging.LoggerInterface;
 import dev.kkorolyov.sqlob.statement.ResultingStatement;
-import dev.kkorolyov.sqlob.statement.StatementCommand;
 import dev.kkorolyov.sqlob.statement.UpdatingStatement;
 import dev.kkorolyov.sqlob.statement.UpdatingStatement.CreateTableStatement;
 import dev.kkorolyov.sqlob.statement.UpdatingStatement.DropTableStatement;
@@ -25,7 +24,7 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 		
 	private final String url, database;
 	private Connection conn;
-	private List<StatementCommand> statementLog = new LinkedList<>();
+	private StatementLog statementLog = new StatementLog(this);
 	
 	/**
 	 * Opens a new connection to the specified host and database residing on it.
@@ -227,11 +226,8 @@ public class PostgresDatabaseConnection implements DatabaseConnection, AutoClose
 	}
 	
 	@Override
-	public List<StatementCommand> getStatementLog() {
-		List<StatementCommand> returnList = new LinkedList<>();
-		returnList.addAll(statementLog);
-		
-		return returnList;
+	public StatementLog getStatementLog() {
+		return statementLog;
 	}
 	
 	private void assertNotClosed() {

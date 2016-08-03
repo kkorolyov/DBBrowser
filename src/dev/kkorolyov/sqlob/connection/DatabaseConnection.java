@@ -1,12 +1,9 @@
 package dev.kkorolyov.sqlob.connection;
 
-import java.util.List;
-
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.statement.ResultingStatement;
-import dev.kkorolyov.sqlob.statement.StatementCommand;
 import dev.kkorolyov.sqlob.statement.UpdatingStatement;
 
 /**
@@ -102,9 +99,9 @@ public interface DatabaseConnection {
 	String getDatabaseName();
 	
 	/**
-	 * Returns all statements executed by this connection.
+	 * Returns the statement log associated with this connection.
 	 * May be called on a closed connection.
-	 * @return executed statements in order of execution
+	 * @return associated statement log
 	 */
-	List<StatementCommand> getStatementLog();
+	StatementLog getStatementLog();
 }
