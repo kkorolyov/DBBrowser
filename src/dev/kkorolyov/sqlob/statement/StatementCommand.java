@@ -34,7 +34,7 @@ public abstract class StatementCommand {
 	public RowEntry[] getCritera() {
 		return criteria;
 	}
-	/** @return all statement parameters in the order: {@code values}, {@code criteria} */
+	/** @return all statement parameters in the order: {@code values}, {@code criteria}, or {@code null} if this statement has no parameters */
 	public RowEntry[] getParameters() {
 		RowEntry[] parameters = (values != null || criteria != null) ? (new RowEntry[(values == null ? 0 : values.length) + (criteria == null ? 0 : criteria.length)]) : null;
 		int i = 0;
@@ -54,9 +54,11 @@ public abstract class StatementCommand {
 	public String toString() {
 		String result = baseStatement;
 		
-		for (RowEntry parameter : getParameters())
-			result = result.replaceFirst(PARAMETER_MARKER, parameter.getValue().toString());
-		
+		RowEntry[] parameters = getParameters();
+		if (parameters != null) {
+			for (RowEntry parameter : parameters)
+				result = result.replaceFirst(PARAMETER_MARKER, parameter.getValue().toString());
+		}
 		return result;
 	}
 }
