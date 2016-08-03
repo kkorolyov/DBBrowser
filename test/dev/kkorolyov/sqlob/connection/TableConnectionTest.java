@@ -12,6 +12,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import dev.kkorolyov.sqlob.TestAssets;
+import dev.kkorolyov.sqlob.connection.DatabaseConnection.DatabaseType;
 import dev.kkorolyov.sqlob.construct.*;
 
 @SuppressWarnings("javadoc")
@@ -21,8 +22,9 @@ public class TableConnectionTest {
 															DATABASE = TestAssets.database(),
 															USER = TestAssets.user(),
 															PASSWORD = TestAssets.password();	
+	private static final DatabaseType DATABASE_TYPE = DatabaseType.POSTGRESQL;
 
-	private static PostgresDatabaseConnection dbConn;
+	private static DatabaseConnection dbConn;
 
 	private TableConnection conn;
 	
@@ -47,7 +49,7 @@ public class TableConnectionTest {
 	
 	@Before
 	public void setUp() throws Exception {
-		dbConn = new PostgresDatabaseConnection(HOST, DATABASE, USER, PASSWORD);
+		dbConn = new DatabaseConnection(HOST, DATABASE, DATABASE_TYPE, USER, PASSWORD);
 	}
 	@After
 	public void tearDown() {

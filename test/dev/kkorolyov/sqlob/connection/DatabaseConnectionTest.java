@@ -9,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import dev.kkorolyov.sqlob.TestAssets;
+import dev.kkorolyov.sqlob.connection.DatabaseConnection.DatabaseType;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.SqlType;
 import dev.kkorolyov.sqlob.statement.ResultingStatement.SelectStatement;
@@ -19,12 +20,13 @@ public class DatabaseConnectionTest {
 															DATABASE = TestAssets.database(),
 															USER = TestAssets.user(),
 															PASSWORD = TestAssets.password();	
-	
-	private PostgresDatabaseConnection conn;
+	private static final DatabaseType DATABASE_TYPE = DatabaseType.POSTGRESQL;
+
+	private DatabaseConnection conn;
 	
 	@Before
 	public void setUp() throws Exception {
-		conn = new PostgresDatabaseConnection(HOST, DATABASE, USER, PASSWORD);	// Use a fresh connection for each test
+		conn = new DatabaseConnection(HOST, DATABASE, DATABASE_TYPE, USER, PASSWORD);	// Use a fresh connection for each test
 	}
 	@After
 	public void tearDown() throws Exception {
