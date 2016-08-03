@@ -11,6 +11,7 @@ import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.MismatchedTypeException;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
+import dev.kkorolyov.sqlob.construct.statement.StatementBuilder;
 
 @SuppressWarnings("javadoc")
 public class StatementBuilderTest {

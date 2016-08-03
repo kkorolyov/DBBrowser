@@ -4,26 +4,16 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import dev.kkorolyov.sqlob.statement.StatementCommand;
-import dev.kkorolyov.sqlob.statement.UpdatingStatement;
+import dev.kkorolyov.sqlob.construct.statement.StatementCommand;
+import dev.kkorolyov.sqlob.construct.statement.UpdateStatement;
 
 /**
- * A log of all {@code StatementCommands} executed by a {@code DatabaseConnection}.
+ * Logs executed {@code StatementCommands}.
  * @see StatementCommand
- * @see DatabaseConnection
  */
 public class StatementLog implements Iterable<StatementCommand> {
-	private DatabaseConnection conn;
 	private List<StatementCommand> statements = new LinkedList<>();
 
-	/**
-	 * Constructs a new statement log.
-	 * @param conn connection to log statements for
-	 */
-	public StatementLog(DatabaseConnection conn) {
-		this.conn = conn;
-	}
-	
 	/**
 	 * Returns the statement at the specified index.
 	 * @param index index of statement to return
@@ -75,11 +65,11 @@ public class StatementLog implements Iterable<StatementCommand> {
 	 * @param statement statement to revert
 	 * @param remove if {@code true}, will remove the first occurrence of {@code statement} from this log after reverting
 	 */
-	public void revert(UpdatingStatement statement, boolean remove) {
-		UpdatingStatement inverse = statement.getInverseStatement();
+	public void revert(UpdateStatement statement, boolean remove) {
+		UpdateStatement inverse = statement.getInverseStatement();
 		
 		if (inverse != null) {
-			inverse.execute(conn);	// Statement will not be logged
+			inverse.execute();	// Statement will not be logged
 			
 			if (remove)
 				remove(statement);

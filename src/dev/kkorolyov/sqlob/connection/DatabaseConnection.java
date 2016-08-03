@@ -6,12 +6,11 @@ import java.util.List;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.construct.statement.QueryStatement;
+import dev.kkorolyov.sqlob.construct.statement.StatementFactory;
+import dev.kkorolyov.sqlob.construct.statement.UpdateStatement;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.logging.LoggerInterface;
-import dev.kkorolyov.sqlob.statement.ResultingStatement;
-import dev.kkorolyov.sqlob.statement.UpdatingStatement;
-import dev.kkorolyov.sqlob.statement.UpdatingStatement.CreateTableStatement;
-import dev.kkorolyov.sqlob.statement.UpdatingStatement.DropTableStatement;
 
 /**
  * A connection to a SQL database.
@@ -23,7 +22,8 @@ public class DatabaseConnection implements AutoCloseable {
 	private final String database;
 	private final DatabaseType databaseType;
 	private Connection conn;
-	private StatementLog statementLog = new StatementLog(this);
+	private StatementLog statementLog = new StatementLog();
+	private StatementFactory statementFactory = new StatementFactory(this);
 	
 	/**
 	 * Opens a new connection to the specified host and database residing on it.
@@ -101,12 +101,12 @@ public class DatabaseConnection implements AutoCloseable {
 	 * @throws UncheckedSQLException if the executed statement is invalid
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public Results execute(ResultingStatement statement) {
+	public Results execute(QueryStatement statement) {
 		assertNotClosed();
 		
 		statementLog.add(statement);
 		
-		return statement.execute(this);
+		return statement.execute();
 	}
 	/**
 	 * Executes and logs the specified statement.
@@ -115,12 +115,12 @@ public class DatabaseConnection implements AutoCloseable {
 	 * @throws UncheckedSQLException if the executed statement is invalid
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public int execute(UpdatingStatement statement) {
+	public int execute(UpdateStatement statement) {
 		assertNotClosed();
 
 		statementLog.add(statement);
 		
-		return statement.execute(this);
+		return statement.execute();
 	}
 	
 	/**
@@ -210,7 +210,7 @@ public class DatabaseConnection implements AutoCloseable {
 		if (containsTable(name))	// Can't add a table of the same name
 			throw new DuplicateTableException(database, name);
 				
-		execute(new CreateTableStatement(name, columns));
+		execute(statementFactory.getCreateTable(name, columns));
 		
 		return new TableConnection(this, name);
 	}
@@ -227,7 +227,7 @@ public class DatabaseConnection implements AutoCloseable {
 		boolean success = false;
 		
 		if (containsTable(table)) {
-			execute(new DropTableStatement(table));
+			execute(statementFactory.getDropTable(table));
 				
 			success = true;
 		}
@@ -296,6 +296,14 @@ public class DatabaseConnection implements AutoCloseable {
 	 */
 	public StatementLog getStatementLog() {
 		return statementLog;
+	}
+	
+	/**
+	 * @return a {@code StatementFactory} used to produce statements for execution by this connection
+	 * @throws ClosedException if called on a closed connection
+	 */
+	public StatementFactory getStatementFactory() {
+		return statementFactory;
 	}
 	
 	/**

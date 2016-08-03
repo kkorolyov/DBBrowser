@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.statement;
+package dev.kkorolyov.sqlob.construct.statement;
 
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.RowEntry;

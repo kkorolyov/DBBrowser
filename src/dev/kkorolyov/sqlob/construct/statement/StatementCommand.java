@@ -1,25 +1,25 @@
-package dev.kkorolyov.sqlob.statement;
+package dev.kkorolyov.sqlob.construct.statement;
 
+import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 
 /**
  * A SQL statement encapsulated as an executable command.
  */
 public abstract class StatementCommand {
-	private static final String PARAMETER_MARKER = "\\?";
+	private static final String parameterMarker = "\\?";
 	
-	private String baseStatement;
-	private RowEntry[] 	values,
-											criteria;
-	
-	StatementCommand(String baseStatement, RowEntry[] values, RowEntry[] criteria) {
+	private final String baseStatement;
+	private final RowEntry[] 	values,
+														criteria;
+	private final DatabaseConnection conn;
+
+	StatementCommand(String baseStatement, RowEntry[] values, RowEntry[] criteria, DatabaseConnection conn) {
 		this.baseStatement = baseStatement;
 		this.values = values;
 		this.criteria = criteria;
+		this.conn = conn;
 	}
-	
-	/** @return a statement which accomplishes the opposite of this statement, or {@code null} if this statement has no inverse */
-	public abstract StatementCommand getInverseStatement();
 	
 	/** @return	base SQL statement */
 	public String getBaseStatement() {
@@ -31,7 +31,7 @@ public abstract class StatementCommand {
 		return values;
 	}
 	/** @return statement criteria */
-	public RowEntry[] getCritera() {
+	public RowEntry[] getCriteria() {
 		return criteria;
 	}
 	/** @return all statement parameters in the order: {@code values}, {@code criteria}, or {@code null} if this statement has no parameters */
@@ -50,6 +50,11 @@ public abstract class StatementCommand {
 		return parameters;
 	}
 	
+	/** @return database connection registered to execute this statement */
+	public DatabaseConnection getConn() {
+		return conn;
+	}
+	
 	@Override
 	public String toString() {
 		String result = baseStatement;
@@ -57,7 +62,7 @@ public abstract class StatementCommand {
 		RowEntry[] parameters = getParameters();
 		if (parameters != null) {
 			for (RowEntry parameter : parameters)
-				result = result.replaceFirst(PARAMETER_MARKER, parameter.getValue().toString());
+				result = result.replaceFirst(parameterMarker, parameter.getValue().toString());
 		}
 		return result;
 	}

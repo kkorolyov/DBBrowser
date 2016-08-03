@@ -12,7 +12,6 @@ import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection.DatabaseType;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.SqlType;
-import dev.kkorolyov.sqlob.statement.ResultingStatement.SelectStatement;
 
 @SuppressWarnings("javadoc")
 public class DatabaseConnectionTest {
@@ -50,7 +49,7 @@ public class DatabaseConnectionTest {
 		conn.close();
 		
 		try {
-			conn.execute(new SelectStatement("Closed", null, null));
+			conn.execute(conn.getStatementFactory().getSelect("Closed", null, null));
 		} catch (ClosedException e) {
 			return;	// As expected
 		}

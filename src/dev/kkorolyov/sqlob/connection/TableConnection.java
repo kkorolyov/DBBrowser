@@ -3,10 +3,6 @@ package dev.kkorolyov.sqlob.connection;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
-import dev.kkorolyov.sqlob.statement.ResultingStatement.SelectStatement;
-import dev.kkorolyov.sqlob.statement.UpdatingStatement.DeleteRowStatement;
-import dev.kkorolyov.sqlob.statement.UpdatingStatement.InsertRowStatement;
-import dev.kkorolyov.sqlob.statement.UpdatingStatement.UpdateRowStatement;
 
 /**
  * A filter for a {@code DatabaseConnection} providing for table-oriented actions.
@@ -44,14 +40,21 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	}
 	
 	/**
-	 * Executes a SELECT statement without any constraining criteria.
+	 * Executes a {@code SELECT} statement querying all entries in this table.
+	 * @see #select(Column[], RowEntry[])
+	 */
+	public Results select() {
+		return select(null);
+	}
+	/**
+	 * Executes a {@code SELECT} statement without any constraining criteria.
 	 * @see #select(Column[], RowEntry[])
 	 */
 	public Results select(Column[] columns) {
 		return select(columns, null);
 	}
 	/**
-	 * Executes a SELECT statement constrained by the specified criteria.
+	 * Executes a {@code SELECT} statement constrained by the specified criteria.
 	 * @param columns column(s) to return; if {@code null}, empty, or any column name = "*", will return all columns
 	 * @param criteria specified as columns with certain values; if {@code null} or empty, will return all rows
 	 * @return results meeting the specified columns and criteria
@@ -59,7 +62,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public Results select(Column[] columns, RowEntry[] criteria) {
-		return conn.execute(new SelectStatement(tableName, columns, criteria));
+		return conn.execute(conn.getStatementFactory().getSelect(tableName, columns, criteria));
 	}
 	
 	/**
@@ -70,7 +73,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int insert(RowEntry[] entries) {		
-		return conn.execute(new InsertRowStatement(tableName, entries));
+		return conn.execute(conn.getStatementFactory().getInsert(tableName, entries));
 	}
 	
 	/**
@@ -81,7 +84,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int delete(RowEntry[] criteria) {
-		return conn.execute(new DeleteRowStatement(tableName, criteria));
+		return conn.execute(conn.getStatementFactory().getDelete(tableName, criteria));
 	}
 	
 	/**
@@ -93,7 +96,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int update(RowEntry[] newEntries, RowEntry[] criteria) {
-		return conn.execute(new UpdateRowStatement(tableName, newEntries, criteria));
+		return conn.execute(conn.getStatementFactory().getUpdate(tableName, newEntries, criteria));
 	}
 		
 	/**
@@ -113,32 +116,28 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	}
 	
 	/**
-	 * Returns all the columns in this table.
-	 * @return all table columns
+	 * @return all columns in this table
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public Column[] getColumns() {
-		return select(null).getColumns();
+		return select().getColumns();
 	}
 	
 	/**
-	 * Returns the number of columns in this table.
-	 * @return total number of columns in this table
+	 * @return number of columns in this table
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int getNumColumns() {
-		return select(null).getNumColumns();
+		return select().getNumColumns();
 	}
 	/**
-	 * Returns the number of rows in this table.
-	 * May take a while for large tables.
-	 * @return total number of rows in this table
+	 * @return number of rows in this table
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public int getNumRows() {
 		int numRows = 0;
 
-		Results rs = select(null);
+		Results rs = select();
 		while (rs.getNextRow() != null)	// Counts rows
 			numRows++;
 		
