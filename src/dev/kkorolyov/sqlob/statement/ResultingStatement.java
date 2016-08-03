@@ -25,11 +25,16 @@ public abstract class ResultingStatement extends StatementCommand {
 		return conn.execute(getBaseStatement(), getParameters());
 	}
 	
+	@Override
+	public ResultingStatement getInverseStatement() {
+		return null;
+	}
+	
 	/**
 	 * An executable custom SQL statement.
 	 * Cannot be reverted.
 	 */
-	public static class CustomStatement extends UpdatingStatement {
+	public static class CustomStatement extends ResultingStatement {
 		/**
 		 * Constructs a new custom statement.
 		 * @param baseStatement base SQL statement, with {@code ?} denoting areas of substitution with parameters
@@ -37,11 +42,6 @@ public abstract class ResultingStatement extends StatementCommand {
 		 */
 		public CustomStatement(String baseStatement, RowEntry[] parameters) {
 			super(baseStatement, parameters, null);
-		}
-		
-		@Override
-		public StatementCommand getInverseStatement() {
-			return null;
 		}
 	}
 	
@@ -57,11 +57,6 @@ public abstract class ResultingStatement extends StatementCommand {
 		 */
 		public SelectStatement(String table, Column[] columns, RowEntry[] criteria) {
 			super(StatementBuilder.buildSelect(table, columns, criteria), null, criteria);
-		}
-
-		@Override
-		public StatementCommand getInverseStatement() {
-			return null;
 		}
 	}
 }

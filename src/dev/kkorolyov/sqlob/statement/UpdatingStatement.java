@@ -23,6 +23,11 @@ public abstract class UpdatingStatement extends StatementCommand {
 	public int execute(DatabaseConnection conn) {
 		return conn.update(getBaseStatement(), getParameters());
 	}
+	
+	@Override
+	public UpdatingStatement getInverseStatement() {
+		return null;
+	}
 		
 	/**
 	 * An executable custom SQL statement.
@@ -36,11 +41,6 @@ public abstract class UpdatingStatement extends StatementCommand {
 		 */
 		public CustomStatement(String baseStatement, RowEntry[] parameters) {
 			super(baseStatement, parameters, null);
-		}
-		
-		@Override
-		public UpdatingStatement getInverseStatement() {
-			return (UpdatingStatement) null;
 		}
 	}
 	
@@ -60,7 +60,7 @@ public abstract class UpdatingStatement extends StatementCommand {
 		}
 		
 		@Override
-		public StatementCommand getInverseStatement() {
+		public UpdatingStatement getInverseStatement() {
 			return new DropTableStatement(table);
 		}
 	}
@@ -81,7 +81,7 @@ public abstract class UpdatingStatement extends StatementCommand {
 		}
 
 		@Override
-		public StatementCommand getInverseStatement() {
+		public UpdatingStatement getInverseStatement() {
 			return new CreateTableStatement(table, columns);
 		}
 		
@@ -112,7 +112,7 @@ public abstract class UpdatingStatement extends StatementCommand {
 		}
 
 		@Override
-		public StatementCommand getInverseStatement() {
+		public UpdatingStatement getInverseStatement() {
 			return new DeleteRowStatement(table, getValues());
 		}
 	}
@@ -133,7 +133,7 @@ public abstract class UpdatingStatement extends StatementCommand {
 		}
 
 		@Override
-		public StatementCommand getInverseStatement() {
+		public UpdatingStatement getInverseStatement() {
 			return new InsertRowStatement(table, getCritera());
 		}
 	}
@@ -155,7 +155,7 @@ public abstract class UpdatingStatement extends StatementCommand {
 		}
 
 		@Override
-		public StatementCommand getInverseStatement() {
+		public UpdatingStatement getInverseStatement() {
 			return new UpdateRowStatement(table, getCritera(), getValues());
 		}
 	}
