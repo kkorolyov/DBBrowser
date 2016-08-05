@@ -1,5 +1,9 @@
 package dev.kkorolyov.sqlob.logging;
 
+import java.io.PrintWriter;
+
+import dev.kkorolyov.simplelogs.Logger.Level;
+
 /**
  * Logger implementation to be loaded when {@code SimpleLogs} found.
  */
@@ -7,7 +11,7 @@ public class LoggerImplementation implements LoggerInterface {
 	private dev.kkorolyov.simplelogs.Logger log;
 	
 	LoggerImplementation(String name) {
-		log = dev.kkorolyov.simplelogs.Logger.getLogger(name);		
+		log = dev.kkorolyov.simplelogs.Logger.getLogger(name, Level.DEBUG, new PrintWriter(System.err));
 	}
 
 	@Override
