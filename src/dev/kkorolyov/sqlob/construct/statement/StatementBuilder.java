@@ -29,14 +29,14 @@ public class StatementBuilder {
 	 * @return formatted CREATE TABLE statement
 	 */
 	public static String buildCreate(String table, Column[] columns) {
-		log.debug("Building CREATE statement");
+		log.debug("Building CREATE TABLE statement...");
 		
 		String statement = createStatement.replaceFirst(Marker.table, table);	// Set table
 		
 		statement = statement.replaceFirst(Marker.columns, buildCreateColumns(columns));	// Set columns
 		
-		log.debug(	"Built CREATE statement:"
-							+ "\n\t" + statement);
+		log.debug("Built CREATE TABLE statement:"
+							+ System.lineSeparator() + "\t" + statement);
 		
 		return statement;
 	}
@@ -60,7 +60,12 @@ public class StatementBuilder {
 	 * @return formatted DROP TABLE statement
 	 */
 	public static String buildDrop(String table) {
+		log.debug("Building DROP TABLE statement...");
+		
 		String statement = dropStatement.replaceFirst(Marker.table, table);	// Only thing to set
+		
+		log.debug("Built DROP TABLE statement:"
+							+	System.lineSeparator() + "\t" + statement);
 		
 		return statement;
 	}
@@ -73,7 +78,7 @@ public class StatementBuilder {
 	 * @return formatted SELECT statement
 	 */
 	public static String buildSelect(String table, Column[] columns, RowEntry[] criteria) {
-		log.debug("Building SELECT statement");
+		log.debug("Building SELECT statement...");
 		
 		String statement = selectStatement.replaceFirst(Marker.table, table);	// Set table
 		
@@ -83,8 +88,8 @@ public class StatementBuilder {
 			statement += criteriaAddOn;
 			statement = statement.replaceFirst(Marker.criteria, buildSelectCriteriaMarkers(criteria));	// Set criteria '?'s
 		}
-		log.debug(	"Built SELECT statement:"
-							+ "\n\t" + statement);
+		log.debug("Built SELECT statement:"
+							+ System.lineSeparator() + "\t" + statement);
 		
 		return statement;
 	}
@@ -134,7 +139,7 @@ public class StatementBuilder {
 	 * @return formatted INSERT statement
 	 */
 	public static String buildInsert(String table, RowEntry[] entries) {
-		log.debug("Building INSERT statement");
+		log.debug("Building INSERT statement...");
 		
 		String statement = insertStatement.replaceFirst(Marker.table, table);	// Set table
 		
@@ -143,8 +148,8 @@ public class StatementBuilder {
 		statement = statement.replaceFirst(Marker.columns, columnsValues[0]);	// Set column names
 		statement = statement.replaceFirst(Marker.values, columnsValues[1]);	// Set values markers
 		
-		log.debug(	"Built INSERT statement:"
-							+ "\n\t" + statement);
+		log.debug("Built INSERT statement:"
+							+ System.lineSeparator() + "\t" + statement);
 		
 		return statement;
 	}
@@ -172,14 +177,14 @@ public class StatementBuilder {
 	 * @return formatted DELETE statement
 	 */
 	public static String buildDelete(String table, RowEntry[] criteria) {
-		log.debug("Building DELETE statement");
+		log.debug("Building DELETE statement...");
 		
 		String statement = deleteStatement.replace(Marker.table, table);
 		
 		statement = statement.replaceFirst(Marker.criteria, buildSelectCriteriaMarkers(criteria));	// Set criteria markers
 		
 		log.debug("Built DELETE statement:"
-						+ "\n\t" + statement);
+							+ System.lineSeparator() + "\t" + statement);
 		
 		return statement;
 	}
@@ -192,7 +197,7 @@ public class StatementBuilder {
 	 * @return formatted UPDATE statement
 	 */
 	public static String buildUpdate(String table, RowEntry[] newEntries, RowEntry[] criteria) {
-		log.debug("Building UPDATE statement");
+		log.debug("Building UPDATE statement...");
 		
 		String statement = updateStatement.replaceFirst(Marker.table, table);
 		
@@ -202,8 +207,8 @@ public class StatementBuilder {
 		statement = statement.replaceFirst(Marker.values, columnsValues[1]);	// Set values markers
 		statement = statement.replaceFirst(Marker.criteria, buildSelectCriteriaMarkers(criteria));	// Set criteria markers
 		
-		log.debug("Build UPDATE statement:"
-						+ "\n\t" + statement);
+		log.debug("Built UPDATE statement:"
+							+ System.lineSeparator() + "\t" + statement);
 		
 		return statement;
 	}
