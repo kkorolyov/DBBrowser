@@ -67,9 +67,11 @@ public class StatementFactory {
 	 */
 	public UpdateStatement getDropTable(String table) {
 		return new UpdateStatement(StatementBuilder.buildDrop(table), null, null, conn) {
+			Column[] columns = getConn().connect(table).getColumns();
+			
 			@Override
 			public UpdateStatement getInverseStatement() {
-				return getConn().containsTable(table) ? getCreateTable(table, getConn().connect(table).getColumns()) : null;
+				return getCreateTable(table, columns);
 			}
 		};
 	}
