@@ -3,7 +3,7 @@ package dev.kkorolyov.sqlob.construct;
 /**
  * Exception thrown when an input type does not match a predetermined constraint.
  */
-public class MismatchedTypeException extends Exception {
+public class MismatchedTypeException extends RuntimeException {
 	private static final long serialVersionUID = 5247178864977750536L;
 
 	/**
