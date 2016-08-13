@@ -13,6 +13,10 @@ import dev.kkorolyov.sqlob.construct.statement.UpdateStatement;
  */
 public class StatementLog implements Iterable<StatementCommand> {
 	private List<StatementCommand> statements = new LinkedList<>();
+	
+	StatementLog() {
+		// Should only be instantiated by DatabaseConnections
+	}
 
 	/**
 	 * Returns the statement at the specified index.
