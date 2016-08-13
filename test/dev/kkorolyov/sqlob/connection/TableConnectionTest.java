@@ -3,12 +3,9 @@ package dev.kkorolyov.sqlob.connection;
 import static org.junit.Assert.*;
 
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import dev.kkorolyov.sqlob.TestAssets;
@@ -17,7 +14,6 @@ import dev.kkorolyov.sqlob.construct.*;
 
 @SuppressWarnings("javadoc")
 public class TableConnectionTest {
-	private static final Map<SqlType, Object> matchedTypes = new HashMap<>();
 	private static final String HOST = TestAssets.host(),
 															DATABASE = TestAssets.database(),
 															USER = TestAssets.user(),
@@ -27,25 +23,6 @@ public class TableConnectionTest {
 	private static DatabaseConnection dbConn;
 
 	private TableConnection conn;
-	
-	@BeforeClass
-	public static void setUpBeforeClass() {
-		setMatchedTypes();
-	}
-	private static void setMatchedTypes() {
-		matchedTypes.put(SqlType.BOOLEAN, false);
-		
-		matchedTypes.put(SqlType.SMALLINT, (short) 0);
-		matchedTypes.put(SqlType.INTEGER, 0);
-		matchedTypes.put(SqlType.BIGINT, (long) 0);
-		matchedTypes.put(SqlType.REAL, (float) 0.0);
-		matchedTypes.put(SqlType.DOUBLE, 0.0);
-		
-		matchedTypes.put(SqlType.CHAR, 'A');
-		matchedTypes.put(SqlType.VARCHAR, "String");
-		
-		assert (matchedTypes.size() == SqlType.values().length);
-	}
 	
 	@Before
 	public void setUp() throws Exception {
@@ -154,7 +131,7 @@ public class TableConnectionTest {
 		conn.insert(buildMatchingEntries(testColumns));
 		
 		Column deleteColumn = new Column(SqlType.BOOLEAN.toString(), SqlType.BOOLEAN);
-		boolean existsBool = (boolean) matchedTypes.get(deleteColumn.getType()),
+		boolean existsBool = (boolean) TestAssets.getMatchedType(deleteColumn.getType()),
 						notExistsBool = !existsBool;
 		
 		assertEquals(1, conn.getNumRows());
@@ -181,7 +158,7 @@ public class TableConnectionTest {
 		conn.insert(buildMatchingEntries(testColumns));
 		
 		Column updateColumn = new Column(SqlType.BOOLEAN.toString(), SqlType.BOOLEAN);
-		boolean preUpdate = (boolean) matchedTypes.get(updateColumn.getType()),
+		boolean preUpdate = (boolean) TestAssets.getMatchedType(updateColumn.getType()),
 						postUpdate = !preUpdate;
 		RowEntry 	preUpdateEntry = new RowEntry(updateColumn, preUpdate),
 							postUpdateEntry = new RowEntry(updateColumn, postUpdate);
@@ -235,7 +212,7 @@ public class TableConnectionTest {
 		RowEntry[] allEntries = new RowEntry[columns.length];
 		
 		for (int i = 0; i < allEntries.length; i++) {
-			allEntries[i] = new RowEntry(columns[i], matchedTypes.get(columns[i].getType()));
+			allEntries[i] = new RowEntry(columns[i], TestAssets.getMatchedType(columns[i].getType()));
 		}
 		return allEntries;
 	}

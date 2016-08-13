@@ -1,8 +1,8 @@
 package dev.kkorolyov.sqlob.connection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
+
+import java.util.Random;
 
 import org.junit.After;
 import org.junit.Before;
@@ -11,7 +11,10 @@ import org.junit.Test;
 import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection.DatabaseType;
 import dev.kkorolyov.sqlob.construct.Column;
+import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.construct.SqlType;
+import dev.kkorolyov.sqlob.construct.statement.QueryStatement;
+import dev.kkorolyov.sqlob.construct.statement.UpdateStatement;
 
 @SuppressWarnings("javadoc")
 public class DatabaseConnectionTest {
@@ -35,9 +38,8 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testConnect() {
 		String testTable = "TestTable_Connect";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.CHAR)};
 		
-		refreshTable(testTable, testColumns);
+		refreshTable(testTable);
 		
 		assertTrue(conn.connect(testTable) != null);
 		
@@ -64,56 +66,68 @@ public class DatabaseConnectionTest {
 		
 		assertTrue(conn.isClosed());
 	}
-
-	/*@Test
-	public void testExecute() throws Exception {	// Mainly for exceptions
-		String testTable = "TestTable_Execute";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+	
+	@Test
+	public void testExecuteQueryStatement() {
+		String testTable = "TestTable_ExecuteQuery";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
 		
 		refreshTable(testTable, testColumns);
 		
-		String 	returnTestStatement = "SELECT * FROM " + testTable,
-						nullReturnTestStatement = "INSERT INTO " + testTable + " VALUES (true)";
+		QueryStatement testStatement = conn.getStatementFactory().getSelect(testTable, testColumns, getStubRowEntries(testColumns));
 		
-		assertTrue(conn.executeStatement(returnTestStatement) != null);
-		assertTrue(conn.executeStatement(nullReturnTestStatement) == null);
+		assertNotNull(conn.execute(testStatement));
 		
 		conn.dropTable(testTable);
 	}
 	@Test
-	public void testExecuteParams() throws Exception {	// Mainly for exceptions
-		String testTable = "TestTable_ExecuteParams";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+	public void testExecuteUpdateStatement() {
+		String testTable = "TestTable_ExecuteUpdate";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
 		
 		refreshTable(testTable, testColumns);
-
-		String testStatement = "SELECT * FROM " + testTable + " WHERE " + testColumns[0].getName() + "=?";
-		Results results = conn.execute(testStatement, new RowEntry[]{new RowEntry(testColumns[0], false)});
 		
-		assertTrue(results != null);
+		UpdateStatement testStatement = conn.getStatementFactory().getInsert(testTable, getStubRowEntries(testColumns));
+		
+		assertEquals(1, conn.execute(testStatement));
 		
 		conn.dropTable(testTable);
 	}
-	
+
+	@Test
+	public void testExecute() {	// Mainly for exceptions
+		String testTable = "TestTable_Execute";
+		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
+		
+		refreshTable(testTable, testColumns);
+
+		String 	returnTestStatement = "SELECT * FROM " + testTable + " WHERE " + testColumns[0].getName() + "=?",
+						nullReturnTestStatement = "INSERT INTO " + testTable + " VALUES (?)";
+
+		assertNotNull(conn.execute(returnTestStatement, getStubRowEntries(testColumns)));
+		assertNull(conn.execute(nullReturnTestStatement, getStubRowEntries(testColumns)));
+		
+		conn.dropTable(testTable);
+	}
 	@Test
 	public void testUpdate() throws Exception {
 		String testTable = "TestTable_Update";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
 		
 		refreshTable(testTable, testColumns);
 		
 		String testStatement = "INSERT INTO " + testTable + " VALUES (?)";
-		int resultsCount = conn.update(testStatement, new RowEntry[]{new RowEntry(testColumns[0], false)});
+		int updateCount = conn.update(testStatement, getStubRowEntries(testColumns));
 		
-		assertEquals(1, resultsCount);
+		assertEquals(1, updateCount);
 		
 		conn.dropTable(testTable);
-	}*/
+	}
 	
 	@Test
 	public void testCreateTable() throws Exception {
 		String testTable = "TestTable_Create";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
 
 		conn.dropTable(testTable);
 		
@@ -128,7 +142,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testDropTable() throws Exception {
 		String testTable = "TestTable_Drop";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
 		
 		conn.dropTable(testTable);
 		
@@ -142,7 +156,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testContainsTable() throws Exception {
 		String testTable = "TestTable_Contains";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
 
 		conn.dropTable(testTable);		
 		assertTrue(!conn.containsTable(testTable));
@@ -165,7 +179,7 @@ public class DatabaseConnectionTest {
 		Column[][] testColumnses = new Column[numTestTables][];	// What's the plural of "columns"?
 		for (int i = 0; i < numTestTables; i++) {
 			testTables[i] = "TestTable_GetTables" + i;
-			testColumnses[i] = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+			testColumnses[i] = new Column[]{new Column("TestColumn1", getRandomSqlType())};
 			
 			conn.createTable(testTables[i], testColumnses[i]);
 			assertEquals(i + 1, conn.getTables().length);
@@ -182,9 +196,33 @@ public class DatabaseConnectionTest {
 	public void testGetDatabaseName() {
 		assertEquals(DATABASE, conn.getDatabaseName());
 	}
+	@Test
+	public void testGetDatabaseType() {
+		assertEquals(DATABASE_TYPE, conn.getDatabaseType());
+	}
 	
+	private void refreshTable(String table) {
+		refreshTable(table, new Column[]{new Column("TestColumn1", getRandomSqlType())});
+	}
 	private void refreshTable(String table, Column[] columns) {
 		conn.dropTable(table);
 		conn.createTable(table, columns);
+	}
+	
+	private static SqlType getRandomSqlType() {
+		return SqlType.values()[new Random().nextInt(SqlType.values().length)];
+	}
+	
+	private static Object getMatchedType(SqlType type) {
+		return TestAssets.getMatchedType(type);
+	}
+	
+	private static RowEntry[] getStubRowEntries(Column... columns) {
+		RowEntry[] entries = new RowEntry[columns.length];
+		
+		for (int i = 0; i < entries.length; i++)
+			entries[i] = new RowEntry(columns[i], getMatchedType(columns[i].getType()));
+		
+		return entries;
 	}
 }
