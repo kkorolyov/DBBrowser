@@ -44,15 +44,15 @@ SQL statements can be executed on the selected database using any of the followi
 
 ### TableConnection
 A `TableConnection` is a connection to a single table on a database.
-A `TableConnection` to any table on a database may be retrieved using the `DatabaseConnection#connect(String)` method, which takes the name of the table to connect to as the only parameter.
+A `TableConnection` to any table on a database may be retrieved using the `DatabaseConnection#connect(String)` method, which accepts the name of the table to connect to as the only parameter.
 
 ### StatementCommand
 A `StatementCommand` is a complete SQL statement ready for execution.
 It consists of:
 * The base SQL statement, specified as a `String` with `?` characters denoting areas for parameter substitution during execution
-* Values, a set of `RowEntry` objects denoting the database values set or modified by the statement
-* Criteria, a set of `RowEntry` objects denoting the criteria restricting the statement
-* The `DatabaseConnection` used to execute (and-if supported-revert) the statement
+* A set of `RowEntry` objects denoting the database values set or modified by the statement
+* A set of `RowEntry` objects denoting the criteria restricting the statement
+* The `DatabaseConnection` used to execute the statement
 
 A `StatementCommand` is created using one of the multiple methods found in `StatementFactory`.
 Each `DatabaseConnection` has its own `StatementFactory`, which may be retrieved using the `DatabaseConnection#getStatementFactory()` method.
