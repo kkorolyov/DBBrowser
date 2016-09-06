@@ -3,30 +3,48 @@ package dev.kkorolyov.sqlob.connection;
 import static org.junit.Assert.*;
 
 import java.sql.SQLException;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection.DatabaseType;
 import dev.kkorolyov.sqlob.construct.*;
 
 @SuppressWarnings("javadoc")
+@RunWith(Parameterized.class)
 public class TableConnectionTest {
+	@Parameters
+	public static Collection<Object[]> data() {
+		List<Object[]> data = new LinkedList<>();
+		for (DatabaseType dbType : DatabaseType.values())
+			data.add(new Object[]{dbType, dbType});
+		
+		return data;
+	}
 	private static final String HOST = TestAssets.host(),
 															DATABASE = TestAssets.database(),
 															USER = TestAssets.user(),
 															PASSWORD = TestAssets.password();	
-	private static final DatabaseType DATABASE_TYPE = DatabaseType.POSTGRESQL;
-
-	private static DatabaseConnection dbConn;
-
+	
+	private final DatabaseType dbType;
+	private DatabaseConnection dbConn;
 	private TableConnection conn;
+	
+	public TableConnectionTest(DatabaseType input, DatabaseType expected) {
+		dbType = input;
+	}
 	
 	@Before
 	public void setUp() throws Exception {
-		dbConn = new DatabaseConnection(HOST, DATABASE, DATABASE_TYPE, USER, PASSWORD);
+		dbConn = new DatabaseConnection(HOST, DATABASE, dbType, USER, PASSWORD);
 	}
 	@After
 	public void tearDown() {
@@ -194,7 +212,7 @@ public class TableConnectionTest {
 		dbConn.dropTable(testTable);
 	}
 	
-	private static TableConnection refreshTable(String table, Column[] columns) {
+	private TableConnection refreshTable(String table, Column[] columns) {
 		dbConn.dropTable(table);
 		return dbConn.createTable(table, columns);
 	}

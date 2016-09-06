@@ -33,13 +33,12 @@ public class DatabaseConnectionTest {
 		
 		return data;
 	}
-	
 	private static final String HOST = TestAssets.host(),
 															DATABASE = TestAssets.database(),
 															USER = TestAssets.user(),
 															PASSWORD = TestAssets.password();	
 
-	private DatabaseType dbType;
+	private final DatabaseType dbType;
 	private DatabaseConnection conn;
 	
 	public DatabaseConnectionTest(DatabaseType input, DatabaseType expected) {
