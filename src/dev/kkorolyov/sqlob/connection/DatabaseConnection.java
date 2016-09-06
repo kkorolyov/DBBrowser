@@ -39,13 +39,10 @@ public class DatabaseConnection implements AutoCloseable {
 		this.databaseType = databaseType;
 		
 		initDriver(databaseType);
-		String url = formatURL(databaseType, host, database);
+		String url = databaseType.getURL(host, database);
 		conn = DriverManager.getConnection(url, user, password);
 			
 		log.debug("Successfully initialized " + databaseType + " " + getClass().getSimpleName() + ": " + hashCode() + " for database at: " + url);
-	}
-	private static String formatURL(DatabaseType type, String host, String db) {
-		return type.getHeader() + host + "/" + db;
 	}
 	private static void initDriver(DatabaseType type) {
 		try {
@@ -311,23 +308,36 @@ public class DatabaseConnection implements AutoCloseable {
 	 */
 	public static enum DatabaseType {
 		/** The {@code PostgreSQL} database */
-		POSTGRESQL("org.postgresql.Driver", "jdbc:postgresql://");
+		POSTGRESQL("org.postgresql.Driver", "jdbc:postgresql://" + Marker.HOST + "/" + Marker.DATABASE),
+		/** The {@code SQLite} database */
+		SQLITE("org.sqlite.JDBC", "jdbc:sqlite:" + Marker.DATABASE);
 		
 		private String 	driverClassName,
-										header;
+										baseURL;
 		
 		private DatabaseType(String driverClassName, String header) {
 			this.driverClassName = driverClassName;
-			this.header = header;
+			this.baseURL = header;
 		}
 		
-		/** @return name of the JDBC driver class for this database */
+		/**
+		 * Returns a type-specific URL to a database.
+		 * @param host hostname or address of database host, may be empty
+		 * @param database database name
+		 * @return appropriate URL
+		 */
+		public String getURL(String host, String database) {
+			return baseURL.replaceFirst(Marker.HOST, host).replaceFirst(Marker.DATABASE, database);
+		}
+		
+		/** @return name of the JDBC driver class for this database type */
 		public String getDriverClassName() {
 			return driverClassName;
 		}
-		/** @return header for connections to this database */
-		public String getHeader() {
-			return header;
+		
+		private static class Marker {
+			private static final String HOST = "<HOST>",
+																	DATABASE = "<DATABASE>";
 		}
 	}
 }
