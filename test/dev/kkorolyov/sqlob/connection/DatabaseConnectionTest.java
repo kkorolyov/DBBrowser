@@ -2,11 +2,17 @@ package dev.kkorolyov.sqlob.connection;
 
 import static org.junit.Assert.*;
 
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection.DatabaseType;
@@ -17,18 +23,32 @@ import dev.kkorolyov.sqlob.construct.statement.QueryStatement;
 import dev.kkorolyov.sqlob.construct.statement.UpdateStatement;
 
 @SuppressWarnings("javadoc")
+@RunWith(Parameterized.class)
 public class DatabaseConnectionTest {
+	@Parameters
+	public static Collection<Object[]> data() {
+		List<Object[]> data = new LinkedList<>();
+		for (DatabaseType dbType : DatabaseType.values())
+			data.add(new Object[]{dbType, dbType});
+		
+		return data;
+	}
+	
 	private static final String HOST = TestAssets.host(),
 															DATABASE = TestAssets.database(),
 															USER = TestAssets.user(),
 															PASSWORD = TestAssets.password();	
-	private static final DatabaseType DATABASE_TYPE = DatabaseType.POSTGRESQL;
 
+	private DatabaseType dbType;
 	private DatabaseConnection conn;
+	
+	public DatabaseConnectionTest(DatabaseType input, DatabaseType expected) {
+		dbType = input;
+	}
 	
 	@Before
 	public void setUp() throws Exception {
-		conn = new DatabaseConnection(HOST, DATABASE, DATABASE_TYPE, USER, PASSWORD);	// Use a fresh connection for each test
+		conn = new DatabaseConnection(HOST, DATABASE, dbType, USER, PASSWORD);	// Use a fresh connection for each test
 	}
 	@After
 	public void tearDown() throws Exception {
@@ -198,7 +218,7 @@ public class DatabaseConnectionTest {
 	}
 	@Test
 	public void testGetDatabaseType() {
-		assertEquals(DATABASE_TYPE, conn.getDatabaseType());
+		assertEquals(dbType, conn.getDatabaseType());
 	}
 	
 	private void refreshTable(String table) {
