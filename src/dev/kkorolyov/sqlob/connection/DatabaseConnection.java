@@ -1,7 +1,9 @@
 package dev.kkorolyov.sqlob.connection;
 import java.sql.*;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
@@ -22,6 +24,7 @@ public class DatabaseConnection implements AutoCloseable {
 	private final String database;
 	private final DatabaseType databaseType;
 	private Connection conn;
+	private Set<Statement> openStatements = new HashSet<>();
 	private StatementLog statementLog = new StatementLog();
 	private StatementFactory statementFactory = new StatementFactory(this);
 	
@@ -133,7 +136,8 @@ public class DatabaseConnection implements AutoCloseable {
 		
 		try {
 			PreparedStatement s = buildStatement(baseStatement, parameters);	// Remains open to not close results
-					
+			openStatements.add(s);
+			
 			if (s.execute())
 				results = new Results(s.getResultSet());
 		} catch (SQLException e) {
@@ -149,6 +153,7 @@ public class DatabaseConnection implements AutoCloseable {
 	 */
 	public int update(String baseStatement, RowEntry... parameters) {
 		assertNotClosed();
+		closeAllStatements();	// Close open resources before modifying
 		
 		int updated = 0;
 		
@@ -220,6 +225,7 @@ public class DatabaseConnection implements AutoCloseable {
 	 */
 	public boolean dropTable(String table) {
 		assertNotClosed();
+		closeAllStatements();
 		
 		boolean success = false;
 		
@@ -301,6 +307,17 @@ public class DatabaseConnection implements AutoCloseable {
 	 */
 	public StatementFactory getStatementFactory() {
 		return statementFactory;
+	}
+	
+	private void closeAllStatements() {
+		for (@SuppressWarnings("resource") Statement statement : openStatements) {
+			try {
+				statement.close();
+			} catch (SQLException e) {
+				throw new UncheckedSQLException(e);
+			}
+		}
+		openStatements.clear();
 	}
 	
 	/**
