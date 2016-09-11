@@ -122,10 +122,10 @@ public class StatementBuilder {
 		log.debug("Adding " + String.valueOf(criteria.length) + " criterion markers to SELECT statement");	// TODO Used for delete, update as well, extract into more generic method
 		
 		StringBuilder selectCriteria = new StringBuilder();
-		String marker = "=?", delimeter = " AND ";
+		String delimeter = " AND ";
 		
 		for (int i = 0; i < criteria.length; i++) {
-			selectCriteria.append(criteria[i].getColumn().getName()).append(marker).append(delimeter);	// Append "<criteria>=? AND " to delimit criteria
+			selectCriteria.append(criteria[i].getSql()).append(delimeter);
 		}
 		replaceFinalDelimeter(selectCriteria, delimeter, "");	// Remove final delimiter
 		

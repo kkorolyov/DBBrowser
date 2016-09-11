@@ -6,6 +6,9 @@ package dev.kkorolyov.sqlob.construct;
  * The value's type must match the column's type.
  */
 public class RowEntry {
+	private static final String SQL_VALUE = "=?",
+															SQL_VALUE_NULL = " IS NULL";
+	
 	private Column column;
 	private Object value;
 	
@@ -18,6 +21,11 @@ public class RowEntry {
 	public RowEntry(Column column, Object value) throws MismatchedTypeException {
 		this.column = column;
 		setValue(value);
+	}
+	
+	/** @return the representation of this entry in a SQL statement */
+	public String getSql() {
+		return value != null ? column.getName() + SQL_VALUE : column.getName() + SQL_VALUE_NULL;
 	}
 	
 	/** @return column */
