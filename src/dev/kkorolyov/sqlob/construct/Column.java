@@ -5,6 +5,8 @@ package dev.kkorolyov.sqlob.construct;
  * Composed of a name and a type.
  */
 public class Column {
+	private static final String NAME_TYPE_DELIMITER = " ";
+	
 	private String name;
 	private SqlType type;
 	
@@ -16,6 +18,11 @@ public class Column {
 	public Column(String name, SqlType type) {
 		this.name = name;
 		this.type = type;
+	}
+	
+	/** @return the representation of this column in a SQL statement */
+	public String getSql() {
+		return name + NAME_TYPE_DELIMITER + type.getTypeName();
 	}
 	
 	/** @return column name */
