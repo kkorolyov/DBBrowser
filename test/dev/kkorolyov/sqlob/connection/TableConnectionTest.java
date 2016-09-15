@@ -217,8 +217,8 @@ public class TableConnectionTest {
 		return dbConn.createTable(table, columns);
 	}
 	
-	private static Column[] buildAllColumns() {
-		SqlType[] allTypes = SqlType.values();
+	private Column[] buildAllColumns() {
+		SqlType[] allTypes = SqlType.values(dbType);
 		Column[] allColumns = new Column[allTypes.length];
 		
 		for (int i = 0; i < allColumns.length; i++)
