@@ -1,5 +1,11 @@
 package dev.kkorolyov.sqlob.construct;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import dev.kkorolyov.sqlob.connection.DatabaseConnection.DatabaseType;
+
 /**
  * A representation of a SQL datatype.
  * Composed of a typecode and String representation of the type.
@@ -43,6 +49,24 @@ public enum SqlType {
 		for (SqlType type : SqlType.values()) {
 			if (type.getTypeCode() == typeCode)
 				return type;
+		}
+		return null;
+	}
+	
+	/**
+	 * Returns all {@code SqlTypes} available to a specific {@code DatabaseType}.
+	 * @param dbType database type to filter by
+	 * @return all {@code SqlTypes} available to {@code dbType}
+	 */
+	public static SqlType[] values(DatabaseType dbType) {
+		switch (dbType) {
+		case POSTGRESQL:
+			return values();
+		case SQLITE:
+			List<SqlType> values = new ArrayList<>(Arrays.asList(values()));
+			values.remove(SqlType.BOOLEAN);	// SQLite boolean is an integer
+			
+			return values.toArray(new SqlType[values.size()]);
 		}
 		return null;
 	}
