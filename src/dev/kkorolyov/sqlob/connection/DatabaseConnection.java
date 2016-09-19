@@ -129,7 +129,7 @@ public class DatabaseConnection implements AutoCloseable {
 	 * @param parameters parameters to substitute in order of declaration
 	 * @return results of statement execution, or {@code null} if statement does not return results
 	 */
-	public Results execute(String baseStatement, RowEntry... parameters) {
+	public Results execute(String baseStatement, List<RowEntry> parameters) {
 		assertNotClosed();
 		
 		Results results = null;
@@ -151,7 +151,7 @@ public class DatabaseConnection implements AutoCloseable {
 	 * @param parameters parameters to substitute in order of declaration
 	 * @return number of rows affected by statement execution
 	 */
-	public int update(String baseStatement, RowEntry... parameters) {
+	public int update(String baseStatement, List<RowEntry> parameters) {
 		assertNotClosed();
 		closeAllStatements();	// Close open resources before modifying
 		
@@ -166,12 +166,12 @@ public class DatabaseConnection implements AutoCloseable {
 		return updated;
 	}
 		
-	private PreparedStatement buildStatement(String baseStatement, RowEntry[] parameters) throws SQLException {	// Inserts appropriate type into statement
+	private PreparedStatement buildStatement(String baseStatement, List<RowEntry> parameters) throws SQLException {	// Inserts appropriate type into statement
 		PreparedStatement statement = conn.prepareStatement(baseStatement);
 		
-		if (parameters != null && parameters.length > 0) {
-			for (int i = 0; i < parameters.length; i++) {	// Prepare with appropriate types
-				Object currentParameter = parameters[i].getValue();
+		if (parameters != null && parameters.size() > 0) {
+			for (int i = 0; i < parameters.size(); i++) {	// Prepare with appropriate types
+				Object currentParameter = parameters.get(i).getValue();
 				
 				if (currentParameter instanceof Boolean)	// TODO Use something other than switching tree
 					statement.setBoolean(i + 1, (boolean) currentParameter);
@@ -206,7 +206,7 @@ public class DatabaseConnection implements AutoCloseable {
 	 * @throws DuplicateTableException if a table of the specified name already exists
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public TableConnection createTable(String name, Column[] columns) throws DuplicateTableException {
+	public TableConnection createTable(String name, List<Column> columns) throws DuplicateTableException {
 		assertNotClosed();
 		
 		if (containsTable(name))	// Can't add a table of the same name
@@ -260,7 +260,7 @@ public class DatabaseConnection implements AutoCloseable {
 	 * @return names of all tables in the database.
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public String[] getTables() {
+	public List<String> getTables() {
 		assertNotClosed();
 		
 		List<String> tables = new LinkedList<>();
@@ -272,7 +272,7 @@ public class DatabaseConnection implements AutoCloseable {
 		} catch (SQLException e) {
 			throw new UncheckedSQLException(e);
 		}
-		return tables.toArray(new String[tables.size()]);
+		return tables;
 	}
 	
 	/**

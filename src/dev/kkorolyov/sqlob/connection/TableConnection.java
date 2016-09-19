@@ -1,5 +1,7 @@
 package dev.kkorolyov.sqlob.connection;
 
+import java.util.List;
+
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.RowEntry;
@@ -41,16 +43,16 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	
 	/**
 	 * Executes a {@code SELECT} statement querying all entries in this table.
-	 * @see #select(Column[], RowEntry[])
+	 * @see #select(List, List)
 	 */
 	public Results select() {
 		return select(null);
 	}
 	/**
 	 * Executes a {@code SELECT} statement without any constraining criteria.
-	 * @see #select(Column[], RowEntry[])
+	 * @see #select(List, List)
 	 */
-	public Results select(Column[] columns) {
+	public Results select(List<Column> columns) {
 		return select(columns, null);
 	}
 	/**
@@ -61,7 +63,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws UncheckedSQLException if specified parameters result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public Results select(Column[] columns, RowEntry[] criteria) {
+	public Results select(List<Column> columns, List<RowEntry> criteria) {
 		return conn.execute(conn.getStatementFactory().getSelect(tableName, columns, criteria));
 	}
 	
@@ -72,7 +74,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws UncheckedSQLException if specified values result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public int insert(RowEntry[] entries) {		
+	public int insert(List<RowEntry> entries) {		
 		return conn.execute(conn.getStatementFactory().getInsert(tableName, entries));
 	}
 	
@@ -83,7 +85,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws UncheckedSQLException if specified values result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public int delete(RowEntry[] criteria) {
+	public int delete(List<RowEntry> criteria) {
 		return conn.execute(conn.getStatementFactory().getDelete(tableName, criteria));
 	}
 	
@@ -95,7 +97,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws UncheckedSQLException if specified values result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public int update(RowEntry[] newEntries, RowEntry[] criteria) {
+	public int update(List<RowEntry> newEntries, List<RowEntry> criteria) {
 		return conn.execute(conn.getStatementFactory().getUpdate(tableName, newEntries, criteria));
 	}
 		
@@ -119,7 +121,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @return all columns in this table
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public Column[] getColumns() {
+	public List<Column> getColumns() {
 		return select().getColumns();
 	}
 	
