@@ -3,6 +3,8 @@ package dev.kkorolyov.sqlob.construct;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.LinkedList;
+import java.util.List;
 
 import dev.kkorolyov.sqlob.connection.ClosedException;
 import dev.kkorolyov.sqlob.logging.Logger;
@@ -19,7 +21,7 @@ public class Results implements AutoCloseable {
 	private static final LoggerInterface log = Logger.getLogger(Results.class.getName());
 	
 	private ResultSet rs;
-	private Column[] columns;
+	private List<Column> columns;
 	
 	/**
 	 * Constructs a new {@code Results} object from a {@code ResultSet}.
@@ -40,7 +42,6 @@ public class Results implements AutoCloseable {
 		try {
 			rs.close();
 			rs = null;
-			columns = null;
 		} catch (SQLException e) {
 			log.exception(e);
 		}
@@ -55,28 +56,32 @@ public class Results implements AutoCloseable {
 	 * @return all columns
 	 * @throws ClosedException if called on a closed resource
 	 */
-	public Column[] getColumns() {
+	public List<Column> getColumns() {
 		if (isClosed())
 			throw new ClosedException();
 		
-		if (columns == null) {	// Not yet cached
-			try {
-				ResultSetMetaData rsmd = rs.getMetaData();
+		if (columns == null)	// Not yet cached
+			columns = extractColumns(rs);
+		
+		return columns;
+	}
+	private static List<Column> extractColumns(ResultSet rs) {
+		List<Column> columns = new LinkedList<>();
+		try {
+			ResultSetMetaData rsmd = rs.getMetaData();
+			
+			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
+				int rsmdColumn = i;	// ResultSet columns start from 1
 				
-				columns = new Column[rsmd.getColumnCount()];
-				for (int i = 0; i < columns.length; i++) {
-					int rsmdColumn = i + 1;	// ResultSet columns start from 1
-					
-					String columnName = rsmd.getColumnName(rsmdColumn);
-					SqlType columnType = SqlType.get(rsmd.getColumnType(rsmdColumn));
+				String columnName = rsmd.getColumnName(rsmdColumn);
+				SqlType columnType = SqlType.get(rsmd.getColumnType(rsmdColumn));
 
-					log.debug("Column name: " + columnName + " type: " + rsmd.getColumnType(rsmdColumn));
-					
-					columns[i] = new Column(columnName, columnType);
-				}
-			} catch (SQLException e) {
-				log.exception(e);
+				log.debug("Column name: " + columnName + " type: " + rsmd.getColumnType(rsmdColumn));
+				
+				columns.add(new Column(columnName, columnType));
 			}
+		} catch (SQLException e) {
+			log.exception(e);	// Exception in private API, log instead of throw
 		}
 		return columns;
 	}
@@ -90,7 +95,7 @@ public class Results implements AutoCloseable {
 		if (isClosed())
 			throw new ClosedException();
 		
-		return getColumns().length;
+		return getColumns().size();
 	}
 	
 	/**
@@ -98,30 +103,30 @@ public class Results implements AutoCloseable {
 	 * @return next row of results, or {@code null} if no more rows
 	 * @throws ClosedException if called on a closed resource
 	 */
-	public RowEntry[] getNextRow() {
+	public List<RowEntry> getNextRow() {
 		if (isClosed())
 			throw new ClosedException();
 			
-		RowEntry[] row = null;
+		List<RowEntry> row = null;
 		try {
 			if (rs.next()) {
-				row = new RowEntry[getNumColumns()];
+				row = new LinkedList<>();
 				
-				for (int i = 0; i < row.length; i++) {
-					row[i] = new RowEntry(getColumns()[i], setValue(rs, i));
-				}
+				int rsCounter = 1;	// rs value index
+				for (Column column : getColumns())
+					row.add(new RowEntry(column, extractValue(rs, rsCounter++, column.getType())));
 			}
 		} catch (SQLException | MismatchedTypeException e) {
 			log.exception(e);
 		}
 		return row;
 	}
-	private Object setValue(ResultSet rs, int columnIndex) {
+	private static Object extractValue(ResultSet rs, int columnIndex, SqlType valueType) {
 		Object value = null;
 		int rsIndex = columnIndex + 1;	// ResultSet index starts 1 ahead of column
 		
 		try {
-			switch (getColumns()[columnIndex].getType()) {
+			switch (valueType) {
 			case BOOLEAN:
 				value = rs.getBoolean(rsIndex);
 				break;
