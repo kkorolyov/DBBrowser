@@ -2,10 +2,7 @@ package dev.kkorolyov.sqlob.connection;
 
 import static org.junit.Assert.*;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import org.junit.After;
 import org.junit.Before;
@@ -89,7 +86,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testExecuteQueryStatement() {
 		String testTable = "TestTable_ExecuteQuery";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
+		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
 		
 		refreshTable(testTable, testColumns);
 		
@@ -102,7 +99,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testExecuteUpdateStatement() {
 		String testTable = "TestTable_ExecuteUpdate";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
+		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
 		
 		refreshTable(testTable, testColumns);
 		
@@ -116,11 +113,11 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testExecute() {	// Mainly for exceptions
 		String testTable = "TestTable_Execute";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
+		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
 		
 		refreshTable(testTable, testColumns);
 
-		String 	returnTestStatement = "SELECT * FROM " + testTable + " WHERE " + testColumns[0].getName() + "=?",
+		String 	returnTestStatement = "SELECT * FROM " + testTable + " WHERE " + testColumns.get(0).getName() + "=?",
 						nullReturnTestStatement = "INSERT INTO " + testTable + " VALUES (?)";
 
 		assertNotNull(conn.execute(returnTestStatement, getStubRowEntries(testColumns)));
@@ -131,7 +128,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testUpdate() throws Exception {
 		String testTable = "TestTable_Update";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
+		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
 		
 		refreshTable(testTable, testColumns);
 		
@@ -146,7 +143,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testCreateTable() throws Exception {
 		String testTable = "TestTable_Create";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
+		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
 
 		conn.dropTable(testTable);
 		
@@ -161,7 +158,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testDropTable() throws Exception {
 		String testTable = "TestTable_Drop";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
+		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
 		
 		conn.dropTable(testTable);
 		
@@ -175,7 +172,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testContainsTable() throws Exception {
 		String testTable = "TestTable_Contains";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", getRandomSqlType())};
+		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
 
 		conn.dropTable(testTable);		
 		assertTrue(!conn.containsTable(testTable));
@@ -191,24 +188,24 @@ public class DatabaseConnectionTest {
 		for (String table : conn.getTables()) {
 			conn.dropTable(table);
 		}
-		assertEquals(0, conn.getTables().length);
+		assertEquals(0, conn.getTables().size());
 		
 		int numTestTables = 5;
 		String[] testTables = new String[numTestTables];
-		Column[][] testColumnses = new Column[numTestTables][];	// What's the plural of "columns"?
+		List<List<Column>> testColumnses = new ArrayList<List<Column>>();	// What's the plural of "columns"?
 		for (int i = 0; i < numTestTables; i++) {
 			testTables[i] = "TestTable_GetTables" + i;
-			testColumnses[i] = new Column[]{new Column("TestColumn1", getRandomSqlType())};
+			testColumnses.get(i).add(new Column("TestColumn1", getRandomSqlType()));
 			
-			conn.createTable(testTables[i], testColumnses[i]);
-			assertEquals(i + 1, conn.getTables().length);
+			conn.createTable(testTables[i], testColumnses.get(i));
+			assertEquals(i + 1, conn.getTables().size());
 		}
-		assertEquals(numTestTables, conn.getTables().length);
+		assertEquals(numTestTables, conn.getTables().size());
 		
 		for (String testTable : testTables)
 			conn.dropTable(testTable);
 		
-		assertEquals(0, conn.getTables().length);
+		assertEquals(0, conn.getTables().size());
 	}
 	
 	@Test
@@ -221,9 +218,9 @@ public class DatabaseConnectionTest {
 	}
 	
 	private void refreshTable(String table) {
-		refreshTable(table, new Column[]{new Column("TestColumn1", getRandomSqlType())});
+		refreshTable(table, Arrays.asList(new Column("TestColumn1", getRandomSqlType())));
 	}
-	private void refreshTable(String table, Column[] columns) {
+	private void refreshTable(String table, List<Column> columns) {
 		conn.dropTable(table);
 		conn.createTable(table, columns);
 	}
@@ -236,11 +233,11 @@ public class DatabaseConnectionTest {
 		return TestAssets.getMatchedType(type);
 	}
 	
-	private static RowEntry[] getStubRowEntries(Column... columns) {
-		RowEntry[] entries = new RowEntry[columns.length];
+	private static List<RowEntry> getStubRowEntries(List<Column> columns) {
+		List<RowEntry> entries = new LinkedList<>();
 		
-		for (int i = 0; i < entries.length; i++)
-			entries[i] = new RowEntry(columns[i], getMatchedType(columns[i].getType()));
+		for (Column column : columns)
+			entries.add(new RowEntry(column, getMatchedType(column.getType())));
 		
 		return entries;
 	}

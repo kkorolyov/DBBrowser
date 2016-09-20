@@ -3,6 +3,7 @@ package dev.kkorolyov.sqlob.connection;
 import static org.junit.Assert.*;
 
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -54,7 +55,7 @@ public class TableConnectionTest {
 	@Test
 	public void testClose() throws SQLException {
 		String testTable = "TestTable_Close";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", SqlType.BOOLEAN));
 		
 		conn = refreshTable(testTable, testColumns);
 		
@@ -75,7 +76,7 @@ public class TableConnectionTest {
 	@Test
 	public void testIsClosed() throws SQLException {
 		String testTable = "TestTable_IsClosed";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", SqlType.BOOLEAN));
 		
 		conn = refreshTable(testTable, testColumns);
 
@@ -91,31 +92,31 @@ public class TableConnectionTest {
 	@Test
 	public void testSelect() throws Exception {
 		String testTable = "TestTable_Select";
-		Column[] testColumns = buildAllColumns();
+		List<Column> testColumns = buildAllColumns();
 		
 		conn = refreshTable(testTable, testColumns);
 		
 		Results results = conn.select(testColumns);
-		Column[] resultColumns = results.getColumns();
+		List<Column> resultColumns = results.getColumns();
 		
-		assertEquals(testColumns.length, resultColumns.length);
+		assertEquals(testColumns.size(), resultColumns.size());
 		
-		for (int i = 0; i < testColumns.length; i++) {
-			assertEquals(testColumns[i], resultColumns[i]);
+		for (int i = 0; i < testColumns.size(); i++) {
+			assertEquals(testColumns.get(i), resultColumns.get(i));
 		}
 		dbConn.dropTable(testTable);
 	}
 	@Test
 	public void testSelectParameters() throws SQLException, MismatchedTypeException {
 		String testTable = "TestTable_SelectParams";
-		Column[] testColumns = new Column[]{new Column("TestColumn1", SqlType.BOOLEAN)};
+		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", SqlType.BOOLEAN));
 		
 		conn = refreshTable(testTable, testColumns);
 		
-		conn.insert(new RowEntry[]{new RowEntry(testColumns[0], true)});
+		conn.insert(Arrays.asList(new RowEntry(testColumns.get(0), true)));
 		
-		RowEntry[] 	criteriaFalse = new RowEntry[]{new RowEntry(testColumns[0], false)},
-								criteriaTrue = new RowEntry[]{new RowEntry(testColumns[0], true)};
+		List<RowEntry> 	criteriaFalse = Arrays.asList(new RowEntry(testColumns.get(0), false)),
+										criteriaTrue = Arrays.asList(new RowEntry(testColumns.get(0), true));
 		
 		Results select0 = conn.select(testColumns, criteriaFalse),
 						select1 = conn.select(testColumns, criteriaTrue);
@@ -129,7 +130,7 @@ public class TableConnectionTest {
 	@Test
 	public void testInsert() throws SQLException, MismatchedTypeException {
 		String testTable = "TestTable_Insert";
-		Column[] testColumns = buildAllColumns();
+		List<Column> testColumns = buildAllColumns();
 		
 		conn = refreshTable(testTable, testColumns);
 		
@@ -142,7 +143,7 @@ public class TableConnectionTest {
 	@Test
 	public void testDelete() throws SQLException, MismatchedTypeException {
 		String testTable = "TestTable_Delete";
-		Column[] testColumns = buildAllColumns();
+		List<Column> testColumns = buildAllColumns();
 		
 		conn = refreshTable(testTable, testColumns);
 		
@@ -154,10 +155,10 @@ public class TableConnectionTest {
 		
 		assertEquals(1, conn.getNumRows());
 		
-		int delete0 = conn.delete(new RowEntry[]{new RowEntry(deleteColumn, notExistsBool)});
+		int delete0 = conn.delete(Arrays.asList(new RowEntry(deleteColumn, notExistsBool)));
 		assertEquals(1, conn.getNumRows());
 		
-		int delete1 = conn.delete(new RowEntry[]{new RowEntry(deleteColumn, existsBool)});
+		int delete1 = conn.delete(Arrays.asList(new RowEntry(deleteColumn, existsBool)));
 		assertEquals(0, conn.getNumRows());
 		
 		assertEquals(0, delete0);
@@ -169,7 +170,7 @@ public class TableConnectionTest {
 	@Test
 	public void testUpdate() throws SQLException, MismatchedTypeException {
 		String testTable = "TestTable_Update";
-		Column[] testColumns = buildAllColumns();
+		List<Column> testColumns = buildAllColumns();
 		
 		conn = refreshTable(testTable, testColumns);
 		
@@ -182,20 +183,20 @@ public class TableConnectionTest {
 							postUpdateEntry = new RowEntry(updateColumn, postUpdate);
 		
 		assertEquals(1, conn.getNumRows());
-		assertNotNull(conn.select(new Column[]{updateColumn}, new RowEntry[]{preUpdateEntry}).getNextRow());
-		assertNull(conn.select(new Column[]{updateColumn}, new RowEntry[]{postUpdateEntry}).getNextRow());
+		assertNotNull(conn.select(Arrays.asList(updateColumn), Arrays.asList(preUpdateEntry)).getNextRow());
+		assertNull(conn.select(Arrays.asList(updateColumn), Arrays.asList(postUpdateEntry)).getNextRow());
 		
-		conn.update(new RowEntry[]{postUpdateEntry}, new RowEntry[]{postUpdateEntry});	// No match
-		
-		assertEquals(1, conn.getNumRows());
-		assertNotNull(conn.select(new Column[]{updateColumn}, new RowEntry[]{preUpdateEntry}).getNextRow());
-		assertNull(conn.select(new Column[]{updateColumn}, new RowEntry[]{postUpdateEntry}).getNextRow());
-		
-		conn.update(new RowEntry[]{postUpdateEntry}, new RowEntry[]{preUpdateEntry});	// Match
+		conn.update(Arrays.asList(postUpdateEntry), Arrays.asList(postUpdateEntry));	// No match
 		
 		assertEquals(1, conn.getNumRows());
-		assertNull(conn.select(new Column[]{updateColumn}, new RowEntry[]{preUpdateEntry}).getNextRow());
-		assertNotNull(conn.select(new Column[]{updateColumn}, new RowEntry[]{postUpdateEntry}).getNextRow());
+		assertNotNull(conn.select(Arrays.asList(updateColumn), Arrays.asList(preUpdateEntry)).getNextRow());
+		assertNull(conn.select(Arrays.asList(updateColumn), Arrays.asList(postUpdateEntry)).getNextRow());
+		
+		conn.update(Arrays.asList(postUpdateEntry), Arrays.asList(preUpdateEntry));	// Match
+		
+		assertEquals(1, conn.getNumRows());
+		assertNull(conn.select(Arrays.asList(updateColumn), Arrays.asList(preUpdateEntry)).getNextRow());
+		assertNotNull(conn.select(Arrays.asList(updateColumn), Arrays.asList(postUpdateEntry)).getNextRow());
 		
 		dbConn.dropTable(testTable);
 	}
@@ -203,35 +204,35 @@ public class TableConnectionTest {
 	@Test
 	public void testGetColumns() {
 		String testTable = "TestTable_GetColumns";
-		Column[] testColumns = buildAllColumns();
+		List<Column> testColumns = buildAllColumns();
 		
 		conn = refreshTable(testTable, testColumns);
 		
-		assertArrayEquals(testColumns, conn.getColumns());
+		assertEquals(testColumns, conn.getColumns());
 		
 		dbConn.dropTable(testTable);
 	}
 	
-	private TableConnection refreshTable(String table, Column[] columns) {
+	private TableConnection refreshTable(String table, List<Column> columns) {
 		dbConn.dropTable(table);
 		return dbConn.createTable(table, columns);
 	}
 	
-	private Column[] buildAllColumns() {
+	private List<Column> buildAllColumns() {
 		SqlType[] allTypes = SqlType.values(dbType);
-		Column[] allColumns = new Column[allTypes.length];
+		List<Column> allColumns = new LinkedList<>();
 		
-		for (int i = 0; i < allColumns.length; i++)
-			allColumns[i] = new Column(allTypes[i].toString(), allTypes[i]);
+		for (SqlType type : allTypes)
+			allColumns.add(new Column(type.toString(), type));
 		
 		return allColumns;
 	}
-	private static RowEntry[] buildMatchingEntries(Column[] columns) throws MismatchedTypeException {
-		RowEntry[] allEntries = new RowEntry[columns.length];
+	private static List<RowEntry> buildMatchingEntries(List<Column> columns) throws MismatchedTypeException {
+		List<RowEntry> allEntries = new LinkedList<>();
 		
-		for (int i = 0; i < allEntries.length; i++) {
-			allEntries[i] = new RowEntry(columns[i], TestAssets.getMatchedType(columns[i].getType()));
-		}
+		for (Column column : columns)
+			allEntries.add(new RowEntry(column, TestAssets.getMatchedType(column.getType())));
+		
 		return allEntries;
 	}
 }

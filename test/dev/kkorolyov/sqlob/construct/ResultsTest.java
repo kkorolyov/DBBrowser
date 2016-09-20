@@ -6,6 +6,8 @@ import static org.junit.Assert.fail;
 
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.AfterClass;
@@ -15,8 +17,8 @@ import org.junit.Test;
 import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.connection.ClosedException;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
-import dev.kkorolyov.sqlob.connection.TableConnection;
 import dev.kkorolyov.sqlob.connection.DatabaseConnection.DatabaseType;
+import dev.kkorolyov.sqlob.connection.TableConnection;
 
 @SuppressWarnings("javadoc")
 public class ResultsTest {
@@ -76,21 +78,21 @@ public class ResultsTest {
 
 	@Test
 	public void testGetColumns() throws SQLException, ClosedException {
-		Column[] inColumns = buildAllColumns();
+		List<Column> inColumns = buildAllColumns();
 		
 		results = tableConn.select(inColumns);
-		Column[] outColumns = results.getColumns();
+		List<Column> outColumns = results.getColumns();
 		
-		for (int i = 0; i < outColumns.length; i++) {
-			assertEquals(inColumns[i].getName().toUpperCase(), outColumns[i].getName().toUpperCase());	// To ignore case
-			assertEquals(inColumns[i].getType(), outColumns[i].getType());
+		for (int i = 0; i < outColumns.size(); i++) {
+			assertEquals(inColumns.get(i).getName().toUpperCase(), outColumns.get(i).getName().toUpperCase());	// To ignore case
+			assertEquals(inColumns.get(i).getType(), outColumns.get(i).getType());
 		}
 	}
 
 	@Test
 	public void testGetNumColumns() throws SQLException, ClosedException {
-		Column[] columns = buildAllColumns();
-		int numColumns = columns.length;
+		List<Column> columns = buildAllColumns();
+		int numColumns = columns.size();
 		
 		results = tableConn.select(columns);
 		
@@ -105,23 +107,23 @@ public class ResultsTest {
 		assertTrue(results.getNextRow() == null);	// Only 1 row
 	}
 
-	private static Column[] buildAllColumns() {
+	private static List<Column> buildAllColumns() {
 		SqlType[] allTypes = SqlType.values();
-		Column[] allColumns = new Column[allTypes.length];
+		List<Column> allColumns = new LinkedList<>();
 		
-		for (int i = 0; i < allColumns.length; i++)
-			allColumns[i] = new Column(allTypes[i].toString(), allTypes[i]);
+		for (SqlType type : allTypes)
+			allColumns.add(new Column(type.toString(), type));
 		
 		return allColumns;
 	}
-	private static RowEntry[] buildAllEntries() throws MismatchedTypeException {
-		Column[] allColumns = buildAllColumns();
-		RowEntry[] allEntries = new RowEntry[allColumns.length];
+	private static List<RowEntry> buildAllEntries() throws MismatchedTypeException {
+		List<Column> allColumns = buildAllColumns();
+		List<RowEntry> allEntries = new LinkedList<>();
 		
 		Map<SqlType, Object> matchedTypes = buildMatchedTypes();
-		for (int i = 0; i < allEntries.length; i++) {
-			allEntries[i] = new RowEntry(allColumns[i], matchedTypes.get(allColumns[i].getType()));
-		}
+		for (Column column : allColumns)
+			allEntries.add(new RowEntry(column, matchedTypes.get(column.getType())));
+		
 		return allEntries;
 	}
 	private static Map<SqlType, Object> buildMatchedTypes() {
