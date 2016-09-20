@@ -1,5 +1,7 @@
 package dev.kkorolyov.sqlob.construct.statement;
 
+import java.util.List;
+
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 
@@ -8,7 +10,7 @@ import dev.kkorolyov.sqlob.construct.RowEntry;
  * @see StatementCommand
  */
 public class UpdateStatement extends StatementCommand {
-	UpdateStatement(String baseStatement, RowEntry[] values, RowEntry[] criteria, DatabaseConnection conn) {
+	UpdateStatement(String baseStatement, List<RowEntry> values, List<RowEntry> criteria, DatabaseConnection conn) {
 		super(baseStatement, values, criteria, conn);
 	}
 	

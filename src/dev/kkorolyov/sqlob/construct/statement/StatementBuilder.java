@@ -1,5 +1,7 @@
 package dev.kkorolyov.sqlob.construct.statement;
 
+import java.util.List;
+
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.RowEntry;
 import dev.kkorolyov.sqlob.logging.Logger;
@@ -28,7 +30,7 @@ public class StatementBuilder {
 	 * @param columns new table columns
 	 * @return formatted CREATE TABLE statement
 	 */
-	public static String buildCreate(String table, Column[] columns) {
+	public static String buildCreate(String table, List<Column> columns) {
 		log.debug("Building CREATE TABLE statement...");
 		
 		String statement = createStatement.replaceFirst(Marker.table, table);	// Set table
@@ -40,11 +42,11 @@ public class StatementBuilder {
 		
 		return statement;
 	}
-	private static String buildCreateColumns(Column[] columns) {
+	private static String buildCreateColumns(List<Column> columns) {
 		StringBuilder createColumns = new StringBuilder("(");	// Column declaration start
 		String delimeterMid = " ", delimeterEnd = ",";	// Mid is in between name and type, end is after column declaration
 		
-		log.debug("Adding " + columns.length + " columns to CREATE statement");
+		log.debug("Adding " + columns.size() + " columns to CREATE statement");
 		
 		for (Column column : columns) {
 			createColumns.append(column.getName()).append(delimeterMid).append(column.getType().getTypeName()).append(delimeterEnd);	// Append "<name> <type>,"
@@ -77,14 +79,14 @@ public class StatementBuilder {
 	 * @param criteria criteria to match when selecting columns; if {@code null} or empty, no criteria is used
 	 * @return formatted SELECT statement
 	 */
-	public static String buildSelect(String table, Column[] columns, RowEntry[] criteria) {
+	public static String buildSelect(String table, List<Column> columns, List<RowEntry> criteria) {
 		log.debug("Building SELECT statement...");
 		
 		String statement = selectStatement.replaceFirst(Marker.table, table);	// Set table
 		
 		statement = statement.replaceFirst(Marker.columns, buildSelectColumns(columns));	// Set columns
 		
-		if (criteria != null && criteria.length > 0) {
+		if (criteria != null && criteria.size() > 0) {
 			statement += criteriaAddOn;
 			statement = statement.replaceFirst(Marker.criteria, buildSelectCriteriaMarkers(criteria));	// Set criteria '?'s
 		}
@@ -93,39 +95,39 @@ public class StatementBuilder {
 		
 		return statement;
 	}
-	private static String buildSelectColumns(Column[] columns) {
-		if (columns == null || columns.length <= 0) {
+	private static String buildSelectColumns(List<Column> columns) {
+		if (columns == null || columns.size() <= 0) {
 			log.debug("No columns to add, returning wildcard '" + wildcard + "'");
 			return wildcard;
 		}
 		
-		log.debug("Adding " + String.valueOf(columns.length) + " columns to SELECT statement");
+		log.debug("Adding " + String.valueOf(columns.size()) + " columns to SELECT statement");
 		
 		StringBuilder selectColumns = new StringBuilder();
 		String delimeter = ",";
 		
-		for (int i = 0; i < columns.length; i++) {
-			String columnName = columns[i].getName();
+		for (Column column : columns) {
+			String columnName = column.getName();
 			
 			if (columnName.equals(wildcard)) {
-				log.debug("Found wildcard '" + columns[i] + "', returning");
+				log.debug("Found wildcard '" + column + "', returning");
 
 				return wildcard;	// If any column is a wildcard, use a wildcard for statement
 			}
-			selectColumns.append(columns[i].getName()).append(delimeter);	// Append "<column>," to delimit columns
+			selectColumns.append(columnName).append(delimeter);	// Append "<column>," to delimit columns
 		}
 		replaceFinalDelimeter(selectColumns, delimeter, "");	// Remove final delimiter
 		
 		return selectColumns.toString();
 	}
-	private static String buildSelectCriteriaMarkers(RowEntry[] criteria) {
-		log.debug("Adding " + String.valueOf(criteria.length) + " criterion markers to SELECT statement");	// TODO Used for delete, update as well, extract into more generic method
+	private static String buildSelectCriteriaMarkers(List<RowEntry> criteria) {
+		log.debug("Adding " + String.valueOf(criteria.size()) + " criterion markers to SELECT statement");	// TODO Used for delete, update as well, extract into more generic method
 		
 		StringBuilder selectCriteria = new StringBuilder();
 		String delimeter = " AND ";
 		
-		for (int i = 0; i < criteria.length; i++) {
-			selectCriteria.append(criteria[i].getSql()).append(delimeter);
+		for (RowEntry criterion : criteria) {
+			selectCriteria.append(criterion.getSql()).append(delimeter);
 		}
 		replaceFinalDelimeter(selectCriteria, delimeter, "");	// Remove final delimiter
 		
@@ -138,7 +140,7 @@ public class StatementBuilder {
 	 * @param entries entries to add
 	 * @return formatted INSERT statement
 	 */
-	public static String buildInsert(String table, RowEntry[] entries) {
+	public static String buildInsert(String table, List<RowEntry> entries) {
 		log.debug("Building INSERT statement...");
 		
 		String statement = insertStatement.replaceFirst(Marker.table, table);	// Set table
@@ -153,15 +155,15 @@ public class StatementBuilder {
 		
 		return statement;
 	}
-	private static String[] buildInsertColumnsValues(RowEntry[] entries) {	// TODO Used for update as well, extract into more generic method
-		log.debug("Adding " + String.valueOf(entries.length) + " values to INSERT statement");
+	private static String[] buildInsertColumnsValues(List<RowEntry> entries) {	// TODO Used for update as well, extract into more generic method
+		log.debug("Adding " + String.valueOf(entries.size()) + " values to INSERT statement");
 		
 		StringBuilder insertColumns = new StringBuilder("("), insertValues = new StringBuilder("(");	// Columns, values declared within parentheses
 
 		String marker = "?", delimeter = ",";
 		
-		for (int i = 0; i < entries.length; i++) {
-			insertColumns.append(entries[i].getColumn().getName()).append(delimeter);	// Append "<column>," to delimit columns
+		for (RowEntry entry : entries) {
+			insertColumns.append(entry.getColumn().getName()).append(delimeter);	// Append "<column>," to delimit columns
 			insertValues.append(marker).append(delimeter);	// Append "?," to delimit values
 		}
 		replaceFinalDelimeter(insertColumns, delimeter, ")");	// Replace final delimiter with closing parenthesis
@@ -176,7 +178,7 @@ public class StatementBuilder {
 	 * @param criteria criteria to match when deleting rows; if {@code null} or empty, no criteria is used
 	 * @return formatted DELETE statement
 	 */
-	public static String buildDelete(String table, RowEntry[] criteria) {
+	public static String buildDelete(String table, List<RowEntry> criteria) {
 		log.debug("Building DELETE statement...");
 		
 		String statement = deleteStatement.replace(Marker.table, table);
@@ -196,7 +198,7 @@ public class StatementBuilder {
 	 * @param criteria criteria to match when updating entries; if {@code null} or empty, no criteria is used
 	 * @return formatted UPDATE statement
 	 */
-	public static String buildUpdate(String table, RowEntry[] newEntries, RowEntry[] criteria) {
+	public static String buildUpdate(String table, List<RowEntry> newEntries, List<RowEntry> criteria) {
 		log.debug("Building UPDATE statement...");
 		
 		String statement = updateStatement.replaceFirst(Marker.table, table);
