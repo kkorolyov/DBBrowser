@@ -121,10 +121,8 @@ public class Results implements AutoCloseable {
 		}
 		return row;
 	}
-	private static Object extractValue(ResultSet rs, int columnIndex, SqlType valueType) {
+	private static Object extractValue(ResultSet rs, int rsIndex, SqlType valueType) {
 		Object value = null;
-		int rsIndex = columnIndex + 1;	// ResultSet index starts 1 ahead of column
-		
 		try {
 			switch (valueType) {
 			case BOOLEAN:

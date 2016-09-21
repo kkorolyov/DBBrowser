@@ -192,12 +192,11 @@ public class DatabaseConnectionTest {
 		
 		int numTestTables = 5;
 		String[] testTables = new String[numTestTables];
-		List<List<Column>> testColumnses = new ArrayList<List<Column>>();	// What's the plural of "columns"?
+		
 		for (int i = 0; i < numTestTables; i++) {
 			testTables[i] = "TestTable_GetTables" + i;
-			testColumnses.get(i).add(new Column("TestColumn1", getRandomSqlType()));
 			
-			conn.createTable(testTables[i], testColumnses.get(i));
+			conn.createTable(testTables[i], Arrays.asList(new Column("TestColumn1", getRandomSqlType())));
 			assertEquals(i + 1, conn.getTables().size());
 		}
 		assertEquals(numTestTables, conn.getTables().size());

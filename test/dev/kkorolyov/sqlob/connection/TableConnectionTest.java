@@ -115,11 +115,8 @@ public class TableConnectionTest {
 		
 		conn.insert(Arrays.asList(new RowEntry(testColumns.get(0), true)));
 		
-		List<RowEntry> 	criteriaFalse = Arrays.asList(new RowEntry(testColumns.get(0), false)),
-										criteriaTrue = Arrays.asList(new RowEntry(testColumns.get(0), true));
-		
-		Results select0 = conn.select(testColumns, criteriaFalse),
-						select1 = conn.select(testColumns, criteriaTrue);
+		Results select0 = conn.select(testColumns, Arrays.asList(new RowEntry(testColumns.get(0), false))),
+						select1 = conn.select(testColumns, Arrays.asList(new RowEntry(testColumns.get(0), true)));
 		
 		assertNull(select0.getNextRow());
 		assertNotNull(select1.getNextRow());
