@@ -62,7 +62,7 @@ public abstract class StatementCommand {
 		String result = baseStatement;
 		
 		for (RowEntry parameter : getParameters())
-			result = result.replaceFirst(parameterMarker, parameter.getValue().toString());
+			result = result.replaceFirst(parameterMarker, (parameter.getValue() == null ? "NULL" : parameter.getValue().toString()));
 		
 		return result;
 	}
