@@ -37,17 +37,17 @@ public abstract class StatementCommand {
 	public List<RowEntry> getCriteria() {
 		return criteria;
 	}
-	/** @return all statement parameters in the order: {@code values}, {@code criteria}, or an empty list if this statement has no parameters */
+	/** @return all statement parameters not specified in the base string in the order: {@code values}, {@code criteria}, or an empty list if this statement has no parameters not specified in the base string */
 	public List<RowEntry> getParameters() {
 		List<RowEntry> parameters = new LinkedList<>();
 		
-		if (values != null) {
-			for (RowEntry value : values)
-				parameters.add(value);
-		}
+		if (values != null)
+			parameters.addAll(values);
 		if (criteria != null) {
-			for (RowEntry criterion : criteria)
-				parameters.add(criterion);
+			for (RowEntry criterion : criteria) {
+				if (criterion.getValue() != null)	// Specified in base string as 'IS NULL'
+					parameters.add(criterion);
+			}
 		}
 		return parameters;
 	}
