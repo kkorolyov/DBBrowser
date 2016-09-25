@@ -170,29 +170,12 @@ public class DatabaseConnection implements AutoCloseable {
 		PreparedStatement statement = conn.prepareStatement(baseStatement);
 		
 		if (parameters != null && parameters.size() > 0) {
-			for (int i = 0; i < parameters.size(); i++) {	// Prepare with appropriate types
-				Object currentParameter = parameters.get(i).getValue();
-				
-				if (currentParameter instanceof Boolean)	// TODO Use something other than switching tree
-					statement.setBoolean(i + 1, (boolean) currentParameter);
-				
-				else if (currentParameter instanceof Short)
-					statement.setShort(i + 1, (short) currentParameter);
-				else if (currentParameter instanceof Integer)
-					statement.setInt(i + 1, (int) currentParameter);
-				else if (currentParameter instanceof Long)
-					statement.setLong(i + 1, (long) currentParameter);
-				else if (currentParameter instanceof Float)
-					statement.setFloat(i + 1, (float) currentParameter);
-				else if (currentParameter instanceof Double)
-					statement.setDouble(i + 1, (double) currentParameter);
-				
-				else if (currentParameter instanceof Character)
-					statement.setString(i + 1, String.valueOf((char) currentParameter));
-				else if (currentParameter instanceof String)
-					statement.setString(i + 1, (String) currentParameter);
-				
-				log.debug("Adding parameter " + i + ": " + currentParameter.toString());
+			int parameterIndex = 1;	// Index of set parameter in statement
+
+			for (RowEntry parameter : parameters) {	// Prepare with appropriate types
+				log.debug("Adding parameter " + parameterIndex + ": " + parameter.getValue());
+
+				statement.setObject(parameterIndex++, parameter.getValue(), parameter.getColumn().getType().getTypeCode());	// Set + increment index
 			}
 		}
 		return statement;
