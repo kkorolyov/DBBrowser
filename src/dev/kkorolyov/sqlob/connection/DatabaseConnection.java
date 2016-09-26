@@ -1,9 +1,9 @@
 package dev.kkorolyov.sqlob.connection;
 import java.sql.*;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
@@ -23,11 +23,19 @@ public class DatabaseConnection implements AutoCloseable {
 
 	private final String database;
 	private final DatabaseType databaseType;
+	private final boolean autoClose;
 	private Connection conn;
-	private Set<Statement> openStatements = new HashSet<>();
+	private Map<String, PreparedStatement> openStatements = new HashMap<>();
 	private StatementLog statementLog = new StatementLog();
 	private StatementFactory statementFactory = new StatementFactory(this);
 	
+	/**
+	 * Opens a new connection with {@code autoClose} disabled.
+	 * @see #DatabaseConnection(String, String, DatabaseType, String, String, boolean)
+	 */
+	public DatabaseConnection(String host, String database, DatabaseType databaseType, String user, String password) throws SQLException {
+		this(host, database, databaseType, user, password, true);
+	}
 	/**
 	 * Opens a new connection to the specified host and database residing on it.
 	 * @param host IP or hostname of host to connect to
@@ -35,11 +43,13 @@ public class DatabaseConnection implements AutoCloseable {
 	 * @param databaseType type of database to connect to
 	 * @param user user for database connection
 	 * @param password password for database connection
+	 * @param autoClose if {@code true} the connection will close any open statements before performing an {@link #update(String, List)}
 	 * @throws SQLException if the URL specified is faulty or {@code null}
 	 */
-	public DatabaseConnection(String host, String database, DatabaseType databaseType, String user, String password) throws SQLException {
+	public DatabaseConnection(String host, String database, DatabaseType databaseType, String user, String password, boolean autoClose) throws SQLException {
 		this.database = database;
 		this.databaseType = databaseType;
+		this.autoClose = autoClose;
 		
 		initDriver(databaseType);
 		String url = databaseType.getURL(host, database);
@@ -136,9 +146,7 @@ public class DatabaseConnection implements AutoCloseable {
 		
 		try {
 			PreparedStatement s = buildStatement(baseStatement, parameters);	// Remains open to not close results
-			openStatements.add(s);
-			
-			if (s.execute())
+			if (s.execute())	// Returns results
 				results = new Results(s.getResultSet());
 		} catch (SQLException e) {
 			throw new UncheckedSQLException(e);
@@ -153,7 +161,9 @@ public class DatabaseConnection implements AutoCloseable {
 	 */
 	public int update(String baseStatement, List<RowEntry> parameters) {
 		assertNotClosed();
-		closeAllStatements();	// Close open resources before modifying
+		
+		if (autoClose)
+			closeAllStatements();	// Close open resources before modifying
 		
 		int updated = 0;
 		
@@ -167,7 +177,7 @@ public class DatabaseConnection implements AutoCloseable {
 	}
 		
 	private PreparedStatement buildStatement(String baseStatement, List<RowEntry> parameters) throws SQLException {	// Inserts appropriate type into statement
-		PreparedStatement statement = conn.prepareStatement(baseStatement);
+		PreparedStatement statement = getStatement(baseStatement);
 		
 		if (parameters != null && parameters.size() > 0) {
 			int parameterIndex = 1;	// Index of set parameter in statement
@@ -177,6 +187,25 @@ public class DatabaseConnection implements AutoCloseable {
 
 				statement.setObject(parameterIndex++, parameter.getValue(), parameter.getColumn().getType().getTypeCode());	// Set + increment index
 			}
+		}
+		return statement;
+	}
+	@SuppressWarnings("resource")
+	private PreparedStatement getStatement(String baseStatement) throws SQLException {
+		log.debug("Getting PreparedStatement for: " + baseStatement);
+
+		PreparedStatement statement = null;
+		
+		if (openStatements.containsKey(baseStatement) && !openStatements.get(baseStatement).isClosed()) {
+			statement = openStatements.get(baseStatement);
+			
+			log.debug("Found existing PreparedStatement: " + statement);
+		}
+		else {
+			statement = conn.prepareStatement(baseStatement);
+			openStatements.put(baseStatement, statement);
+			
+			log.debug("Created new PreparedStatement: " + statement);
 		}
 		return statement;
 	}
@@ -293,7 +322,7 @@ public class DatabaseConnection implements AutoCloseable {
 	}
 	
 	private void closeAllStatements() {
-		for (@SuppressWarnings("resource") Statement statement : openStatements) {
+		for (@SuppressWarnings("resource") Statement statement : openStatements.values()) {
 			try {
 				statement.close();
 			} catch (SQLException e) {

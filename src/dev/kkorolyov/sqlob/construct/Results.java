@@ -48,6 +48,11 @@ public class Results implements AutoCloseable {
 	}
 	/** @return	{@code true} if this resource is closed, {@code false} if otherwise */
 	public boolean isClosed() {
+		try {
+			rs.getMetaData();
+		} catch (SQLException e) {
+			close();
+		}
 		return (rs == null);
 	}
 	
