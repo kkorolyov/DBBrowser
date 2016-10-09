@@ -22,7 +22,7 @@ public class DatabaseConnection implements AutoCloseable {
 	private static final LoggerInterface log = Logger.getLogger(DatabaseConnection.class.getName());
 
 	private final String database;
-	private final DatabaseType databaseType;
+	private final DatabaseAttributes attributes;
 	private final boolean autoClose;
 	private Connection conn;
 	private Map<String, PreparedStatement> openStatements = new HashMap<>();

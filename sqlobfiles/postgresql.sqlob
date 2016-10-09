@@ -1,0 +1,11 @@
+DRIVER=org.postgresql.Driver
+URL=jdbc:postgresql://HOST/DATABASE
+
+Boolean=BIT
+Short=SMALLINT
+Integer=INTEGER
+Long=BIGINT
+Float=REAL
+Double=DOUBLE PRECISION
+Character=CHAR
+String=VARCHAR
