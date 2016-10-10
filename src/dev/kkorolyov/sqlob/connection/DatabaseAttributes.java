@@ -3,8 +3,9 @@ package dev.kkorolyov.sqlob.connection;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.sql.Types;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 import dev.kkorolyov.simpleprops.Properties;
 
@@ -38,6 +39,12 @@ public class DatabaseAttributes {
 		
 		if (driverName == null || baseUrl == null)
 			throw new IllegalArgumentException("Incomplete sqlobfile: " + sqlobfilePathname);
+		
+		try {	// Init JDBC driver
+			Class.forName(driverName);
+		} catch (ClassNotFoundException e) {
+			throw new IllegalArgumentException("Invalid driver: " + driverName);
+		}
 		
 		return new DatabaseAttributes(sqlobFile);
 	}
@@ -76,10 +83,10 @@ public class DatabaseAttributes {
 	/**
 	 * Represents all types mutually supported by both Java and a database.
 	 */
-	public static class DatabaseTypes {
+	public static class DatabaseTypes implements Iterable<SqlobType> {
 		private static final String CLASS_NAME_PREFIX = "java.lang.";
 		
-		private final Map<Class<?>, Integer> relationMap = new HashMap<>();
+		private final Set<SqlobType> types = new HashSet<>();
 		
 		private DatabaseTypes() {
 			// No public instantiation
@@ -87,7 +94,7 @@ public class DatabaseAttributes {
 		private DatabaseTypes(Properties props) {
 			for (String key : props.keys()) {
 				try {
-					relationMap.put(Class.forName(CLASS_NAME_PREFIX + key), getTypeCode(props.get(key).split("\\s+")[0]));
+					types.add(new SqlobType(Class.forName(CLASS_NAME_PREFIX + key), props.get(key), getTypeCode(props.get(key).split("\\s+")[0])));
 				} catch (ClassNotFoundException e) {
 					throw new IllegalArgumentException("Not a valid Java class: " + key);
 				}
@@ -106,6 +113,47 @@ public class DatabaseAttributes {
 			throw new IllegalArgumentException("Unsupported SQL type: " + typeName);
 		}
 		
+		/**
+		 * @param typeClass class to get matching type for
+		 * @return {@code true} if this {@code DatabaseTypes} contains a {@code SqlobType} for the specified class
+		 */
+		public boolean contains(Class<?> typeClass) {
+			return get(typeClass) != null;
+		}
+		/**
+		 * @param typeCode JDBC constant to get matching type for
+		 * @return {@code true} if this {@code DatabaseTypes} contains a {@code SqlobType} for the specified JDBC constant
+		 */
+		public boolean contains(int typeCode) {
+			return get(typeCode) != null;
+		}
 		
+		/**
+		 * @param typeClass class to get matching type for
+		 * @return matching {@code SqlobType}, or {@code null} if no such type
+		 */
+		public SqlobType get(Class<?> typeClass) {
+			for (SqlobType type : types) {
+				if (type.getTypeClass() == typeClass)
+					return type;
+			}
+			return null;
+		}
+		/**
+		 * @param typeCode JDBC constant to get matching type for
+		 * @return matching {@code SqlobType}, or {@code null} if no such type
+		 */
+		public SqlobType get(int typeCode) {
+			for (SqlobType type : types) {
+				if (type.getTypeCode() == typeCode)
+					return type;
+			}
+			return null;
+		}
+
+		@Override
+		public Iterator<SqlobType> iterator() {
+			return types.iterator(); 
+		}
 	}
 }

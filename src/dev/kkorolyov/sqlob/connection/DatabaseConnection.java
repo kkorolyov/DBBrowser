@@ -31,38 +31,30 @@ public class DatabaseConnection implements AutoCloseable {
 	
 	/**
 	 * Opens a new connection with {@code autoClose} disabled.
-	 * @see #DatabaseConnection(String, String, DatabaseType, String, String, boolean)
+	 * @see #DatabaseConnection(String, String, DatabaseAttributes, String, String, boolean)
 	 */
-	public DatabaseConnection(String host, String database, DatabaseType databaseType, String user, String password) throws SQLException {
-		this(host, database, databaseType, user, password, true);
+	public DatabaseConnection(String host, String database, DatabaseAttributes attributes, String user, String password) throws SQLException {
+		this(host, database, attributes, user, password, true);
 	}
 	/**
 	 * Opens a new connection to the specified host and database residing on it.
 	 * @param host IP or hostname of host to connect to
 	 * @param database name of database to connect to
-	 * @param databaseType type of database to connect to
+	 * @param attributes attributes of database service to connect to
 	 * @param user user for database connection
 	 * @param password password for database connection
 	 * @param autoClose if {@code true} the connection will close any open statements before performing an {@link #update(String, List)}
 	 * @throws SQLException if the URL specified is faulty or {@code null}
 	 */
-	public DatabaseConnection(String host, String database, DatabaseType databaseType, String user, String password, boolean autoClose) throws SQLException {
+	public DatabaseConnection(String host, String database, DatabaseAttributes attributes, String user, String password, boolean autoClose) throws SQLException {
 		this.database = database;
-		this.databaseType = databaseType;
+		this.attributes = attributes;
 		this.autoClose = autoClose;
 		
-		initDriver(databaseType);
-		String url = databaseType.getURL(host, database);
+		String url = attributes.getURL(host, database);
 		conn = DriverManager.getConnection(url, user, password);
 			
-		log.debug("Successfully initialized " + databaseType + " " + getClass().getSimpleName() + ": " + hashCode() + " for database at: " + url);
-	}
-	private static void initDriver(DatabaseType type) {
-		try {
-			Class.forName(type.getDriverClassName());
-		} catch (ClassNotFoundException e) {
-			log.exception(e);
-		}
+		log.debug("Successfully initialized " + getClass().getSimpleName() + ": " + hashCode() + " for database at: " + url);
 	}
 	
 	/**
@@ -92,7 +84,7 @@ public class DatabaseConnection implements AutoCloseable {
 		}
 		conn = null;
 		
-		log.debug("Closed " + databaseType + " " + getClass().getSimpleName() + ": " + hashCode());
+		log.debug("Closed " + getClass().getSimpleName() + ": " + hashCode());
 	}
 	
 	/** @return {@code true} if this connection is closed */
@@ -296,12 +288,12 @@ public class DatabaseConnection implements AutoCloseable {
 		return database;
 	}
 	/**
-	 * Returns the type of the database.
+	 * Returns attributes of this database.
 	 * May be called on a closed connection.
 	 * @return type of database
 	 */
-	public DatabaseType getDatabaseType() {
-		return databaseType;
+	public DatabaseAttributes getAttributes() {
+		return attributes;
 	}
 	
 	/**

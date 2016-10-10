@@ -1,5 +1,7 @@
 package dev.kkorolyov.sqlob.connection;
 
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
 
 @SuppressWarnings("javadoc")
@@ -12,9 +14,10 @@ public class DatabaseAttributesTest {
 		for (String filename : validFiles) {
 			DatabaseAttributes attr = DatabaseAttributes.get(filename);
 			
-			System.out.println(filename);
-			System.out.println(attr.getDriverName());
-			System.out.println(attr.getURL("h", "d"));
+			for (SqlobType supportedType : attr.getTypes()) {
+				assertEquals(supportedType, attr.getTypes().get(supportedType.getTypeClass()));
+				assertEquals(supportedType, attr.getTypes().get(supportedType.getTypeCode()));
+			}
 		}
 	}
 }
