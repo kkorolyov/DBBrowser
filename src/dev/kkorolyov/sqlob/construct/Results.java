@@ -7,6 +7,9 @@ import java.util.LinkedList;
 import java.util.List;
 
 import dev.kkorolyov.sqlob.connection.ClosedException;
+import dev.kkorolyov.sqlob.connection.DatabaseAttributes.DatabaseTypes;
+import dev.kkorolyov.sqlob.connection.SqlobType;
+import dev.kkorolyov.sqlob.connection.UncheckedSQLException;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.logging.LoggerInterface;
 
@@ -20,15 +23,18 @@ import dev.kkorolyov.sqlob.logging.LoggerInterface;
 public class Results implements AutoCloseable {
 	private static final LoggerInterface log = Logger.getLogger(Results.class.getName());
 	
+	private DatabaseTypes types;
 	private ResultSet rs;
 	private List<Column> columns;
 	
 	/**
 	 * Constructs a new {@code Results} object from a {@code ResultSet}.
 	 * @param resultSet result set to wrap
+	 * @param types defined SQL to object mappings
 	 */
-	public Results(ResultSet resultSet) {
+	public Results(ResultSet resultSet, DatabaseTypes types) {
 		this.rs = resultSet;
+		this.types = types;
 	}
 	
 	/**
@@ -70,7 +76,7 @@ public class Results implements AutoCloseable {
 		
 		return columns;
 	}
-	private static List<Column> extractColumns(ResultSet rs) {
+	private List<Column> extractColumns(ResultSet rs) {
 		List<Column> columns = new LinkedList<>();
 		try {
 			ResultSetMetaData rsmd = rs.getMetaData();
@@ -79,7 +85,7 @@ public class Results implements AutoCloseable {
 				int rsmdColumn = i;	// ResultSet columns start from 1
 				
 				String columnName = rsmd.getColumnName(rsmdColumn);
-				SqlType columnType = SqlType.get(rsmd.getColumnType(rsmdColumn));
+				SqlobType columnType = types.get(rsmd.getColumnType(rsmdColumn));
 
 				log.debug("Column name: " + columnName + " type: " + rsmd.getColumnType(rsmdColumn));
 				
@@ -119,45 +125,11 @@ public class Results implements AutoCloseable {
 				
 				int rsCounter = 1;	// rs value index
 				for (Column column : getColumns())
-					row.add(new RowEntry(column, extractValue(rs, rsCounter++, column.getType())));
-			}
-		} catch (SQLException | MismatchedTypeException e) {
-			log.exception(e);
-		}
-		return row;
-	}
-	private static Object extractValue(ResultSet rs, int rsIndex, SqlType valueType) {
-		Object value = null;
-		try {
-			switch (valueType) {
-			case BOOLEAN:
-				value = rs.getBoolean(rsIndex);
-				break;
-			case SMALLINT:
-				value = rs.getShort(rsIndex);
-				break;
-			case INTEGER:
-				value = rs.getInt(rsIndex);
-				break;
-			case BIGINT:
-				value = rs.getLong(rsIndex);
-				break;
-			case REAL:
-				value = rs.getFloat(rsIndex);
-				break;
-			case DOUBLE:
-				value = rs.getDouble(rsIndex);
-				break;
-			case CHAR:
-				value = rs.getString(rsIndex).charAt(0);
-				break;
-			case VARCHAR:
-				value = rs.getString(rsIndex);
-				break;
+					row.add(new RowEntry(column, rs.getObject(rsCounter++, column.getType().getTypeClass())));
 			}
 		} catch (SQLException e) {
-			log.exception(e);
+			throw new UncheckedSQLException(e);
 		}
-		return value;
+		return row;
 	}
 }

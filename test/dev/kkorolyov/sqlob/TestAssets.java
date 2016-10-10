@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import dev.kkorolyov.simpleprops.Properties;
-import dev.kkorolyov.sqlob.construct.SqlType;
+import dev.kkorolyov.sqlob.connection.SqlobType;
 
 @SuppressWarnings("javadoc")
 public class TestAssets {
@@ -16,21 +16,19 @@ public class TestAssets {
 															USER = "USER",
 															PASSWORD = "PASSWORD";	
 	private static final Properties props = new Properties(new File("TestSQLOb.ini"), buildDefaults());
-	private static final Map<SqlType, Object> matchedTypes = new HashMap<>();
+	private static final Map<Class<?>, Object> matchedTypes = new HashMap<>();
 	
 	static {
-		matchedTypes.put(SqlType.BOOLEAN, false);
+		matchedTypes.put(Boolean.class, false);
 		
-		matchedTypes.put(SqlType.SMALLINT, (short) 0);
-		matchedTypes.put(SqlType.INTEGER, 0);
-		matchedTypes.put(SqlType.BIGINT, (long) 0);
-		matchedTypes.put(SqlType.REAL, (float) 0.0);
-		matchedTypes.put(SqlType.DOUBLE, 0.0);
+		matchedTypes.put(Short.class, (short) 0);
+		matchedTypes.put(Integer.class, 0);
+		matchedTypes.put(Long.class, (long) 0);
+		matchedTypes.put(Float.class, (float) 0.0);
+		matchedTypes.put(Double.class, 0.0);
 		
-		matchedTypes.put(SqlType.CHAR, 'A');
-		matchedTypes.put(SqlType.VARCHAR, "String");
-		
-		assert (matchedTypes.size() == SqlType.values().length);
+		matchedTypes.put(Character.class, 'A');
+		matchedTypes.put(String.class, "String");
 		
 		try {
 			props.saveFile();
@@ -52,8 +50,8 @@ public class TestAssets {
 		return props.get(PASSWORD);
 	}
 	
-	public static Object getMatchedType(SqlType type) {
-		return matchedTypes.get(type);
+	public static Object getMatchedType(SqlobType type) {
+		return matchedTypes.get(type.getTypeClass());
 	}
 	
 	private static Properties buildDefaults() {

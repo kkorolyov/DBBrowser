@@ -1,5 +1,7 @@
 package dev.kkorolyov.sqlob.construct;
 
+import dev.kkorolyov.sqlob.connection.SqlobType;
+
 /**
  * A representation of a column in a SQL database.
  * Composed of a name and a type.
@@ -8,14 +10,14 @@ public class Column {
 	private static final String NAME_TYPE_DELIMITER = " ";
 	
 	private String name;
-	private SqlType type;
+	private SqlobType type;
 	
 	/**
 	 * Creates a column of the specified name and type.
 	 * @param name column name
 	 * @param type column type
 	 */
-	public Column(String name, SqlType type) {
+	public Column(String name, SqlobType type) {
 		this.name = name;
 		this.type = type;
 	}
@@ -30,7 +32,7 @@ public class Column {
 		return name;
 	}
 	/** @return column type */
-	public SqlType getType() {
+	public SqlobType getType() {
 		return type;
 	}
 	

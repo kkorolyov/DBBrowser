@@ -23,37 +23,27 @@ public class DatabaseAttributes {
 	private DatabaseTypes types;
 	
 	/**
-	 * Returns a {@code DatabaseAttributes} matching the configuration specified by a sqlobfile.
-	 * @param sqlobfilePathname path to sqlobfile
-	 * @return {@code DatabaseAttributes} instance configured according to the sqlobfile at {@code sqlobFilePathname}
-	 * @throws IllegalArgumentException if the file specified by {@code sqlobfilePathname} is not a valid sqlobfile
+	 * Constructs attributes matching the configuration specified by a SQLObFile.
+	 * @param sqlobFile configuration file
+	 * @throws IllegalArgumentException if the file specified by {@code sqlobfilePathname} is not a valid SQLObFile
 	 */
-	public static DatabaseAttributes get(String sqlobfilePathname) {
-		File sqlobFile = new File(sqlobfilePathname);
+	@SuppressWarnings("synthetic-access")
+	public DatabaseAttributes(File sqlobFile) {
 		if (!sqlobFile.isFile())
-			throw new IllegalArgumentException("Not a file: " + sqlobfilePathname);
+			throw new IllegalArgumentException("Not a file: " + sqlobFile.getPath());
 		
 		Properties sqlobProps = new Properties(sqlobFile);
 		String 	driverName = sqlobProps.get(KEY_DRIVER),
 						baseUrl = sqlobProps.get(KEY_URL);
 		
 		if (driverName == null || baseUrl == null)
-			throw new IllegalArgumentException("Incomplete sqlobfile: " + sqlobfilePathname);
+			throw new IllegalArgumentException("Incomplete sqlobfile: " + sqlobFile.getPath());
 		
 		try {	// Init JDBC driver
 			Class.forName(driverName);
 		} catch (ClassNotFoundException e) {
 			throw new IllegalArgumentException("Invalid driver: " + driverName);
 		}
-		
-		return new DatabaseAttributes(sqlobFile);
-	}
-	
-	private DatabaseAttributes() {
-		// No public instantiation
-	}
-	@SuppressWarnings("synthetic-access")
-	private DatabaseAttributes(File sqlobFile) {
 		Properties props = new Properties(sqlobFile);
 		
 		driverName = props.remove(KEY_DRIVER);	// Remove before parsing types
@@ -84,17 +74,12 @@ public class DatabaseAttributes {
 	 * Represents all types mutually supported by both Java and a database.
 	 */
 	public static class DatabaseTypes implements Iterable<SqlobType> {
-		private static final String CLASS_NAME_PREFIX = "java.lang.";
-		
 		private final Set<SqlobType> types = new HashSet<>();
 		
-		private DatabaseTypes() {
-			// No public instantiation
-		}
 		private DatabaseTypes(Properties props) {
 			for (String key : props.keys()) {
 				try {
-					types.add(new SqlobType(Class.forName(CLASS_NAME_PREFIX + key), props.get(key), getTypeCode(props.get(key).split("\\s+")[0])));
+					types.add(new SqlobType(Class.forName(key), props.get(key), getTypeCode(props.get(key).split("\\s+")[0])));
 				} catch (ClassNotFoundException e) {
 					throw new IllegalArgumentException("Not a valid Java class: " + key);
 				}
@@ -149,6 +134,11 @@ public class DatabaseAttributes {
 					return type;
 			}
 			return null;
+		}
+		
+		/** @return number of types */
+		public int size() {
+			return types.size();
 		}
 
 		@Override

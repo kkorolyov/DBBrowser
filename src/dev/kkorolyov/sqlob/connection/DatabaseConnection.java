@@ -139,7 +139,7 @@ public class DatabaseConnection implements AutoCloseable {
 		try {
 			PreparedStatement s = buildStatement(baseStatement, parameters);	// Remains open to not close results
 			if (s.execute())	// Returns results
-				results = new Results(s.getResultSet());
+				results = new Results(s.getResultSet(), attributes.getTypes());
 		} catch (SQLException e) {
 			throw new UncheckedSQLException(e);
 		}
@@ -322,43 +322,5 @@ public class DatabaseConnection implements AutoCloseable {
 			}
 		}
 		openStatements.clear();
-	}
-	
-	/**
-	 * Represents a specific database type.
-	 */
-	public static enum DatabaseType {
-		/** The {@code PostgreSQL} database */
-		POSTGRESQL("org.postgresql.Driver", "jdbc:postgresql://" + Marker.HOST + "/" + Marker.DATABASE),
-		/** The {@code SQLite} database */
-		SQLITE("org.sqlite.JDBC", "jdbc:sqlite:" + Marker.DATABASE);
-		
-		private String 	driverClassName,
-										baseURL;
-		
-		private DatabaseType(String driverClassName, String header) {
-			this.driverClassName = driverClassName;
-			this.baseURL = header;
-		}
-		
-		/**
-		 * Returns a type-specific URL to a database.
-		 * @param host hostname or address of database host, may be empty
-		 * @param database database name
-		 * @return appropriate URL
-		 */
-		public String getURL(String host, String database) {
-			return baseURL.replaceFirst(Marker.HOST, host).replaceFirst(Marker.DATABASE, database);
-		}
-		
-		/** @return name of the JDBC driver class for this database type */
-		public String getDriverClassName() {
-			return driverClassName;
-		}
-		
-		private static class Marker {
-			private static final String HOST = "<HOST>",
-																	DATABASE = "<DATABASE>";
-		}
 	}
 }

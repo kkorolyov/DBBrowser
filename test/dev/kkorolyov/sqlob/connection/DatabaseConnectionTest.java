@@ -2,6 +2,7 @@ package dev.kkorolyov.sqlob.connection;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
 import java.util.*;
 
 import org.junit.After;
@@ -12,21 +13,23 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import dev.kkorolyov.sqlob.TestAssets;
-import dev.kkorolyov.sqlob.connection.DatabaseConnection.DatabaseType;
+import dev.kkorolyov.sqlob.connection.DatabaseAttributes.DatabaseTypes;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.RowEntry;
-import dev.kkorolyov.sqlob.construct.SqlType;
 import dev.kkorolyov.sqlob.construct.statement.QueryStatement;
 import dev.kkorolyov.sqlob.construct.statement.UpdateStatement;
 
 @SuppressWarnings("javadoc")
 @RunWith(Parameterized.class)
 public class DatabaseConnectionTest {
+	private static final File[] sqlobFiles = new File[]{new File("sqlobfiles/postgresql.sqlob"),
+																											new File("sqlobfiles/sqlite.sqlob")};
 	@Parameters
 	public static Collection<Object[]> data() {
 		List<Object[]> data = new LinkedList<>();
-		for (DatabaseType dbType : DatabaseType.values())
-			data.add(new Object[]{dbType, dbType});
+		
+		for (File file : sqlobFiles)
+			data.add(new Object[]{file, file});
 		
 		return data;
 	}
@@ -35,16 +38,16 @@ public class DatabaseConnectionTest {
 															USER = TestAssets.user(),
 															PASSWORD = TestAssets.password();	
 
-	private final DatabaseType dbType;
+	private DatabaseAttributes attributes;
 	private DatabaseConnection conn;
 	
-	public DatabaseConnectionTest(DatabaseType input, DatabaseType expected) {
-		dbType = input;
+	public DatabaseConnectionTest(File input, File expected) {
+		attributes = new DatabaseAttributes(input);
 	}
 	
 	@Before
 	public void setUp() throws Exception {
-		conn = new DatabaseConnection(HOST, DATABASE, dbType, USER, PASSWORD);	// Use a fresh connection for each test
+		conn = new DatabaseConnection(HOST, DATABASE, attributes, USER, PASSWORD);	// Use a fresh connection for each test
 	}
 	@After
 	public void tearDown() throws Exception {
@@ -212,8 +215,8 @@ public class DatabaseConnectionTest {
 		assertEquals(DATABASE, conn.getDatabaseName());
 	}
 	@Test
-	public void testGetDatabaseType() {
-		assertEquals(dbType, conn.getDatabaseType());
+	public void testGetAttributes() {
+		assertEquals(attributes, conn.getAttributes());
 	}
 	
 	private void refreshTable(String table) {
@@ -224,11 +227,19 @@ public class DatabaseConnectionTest {
 		conn.createTable(table, columns);
 	}
 	
-	private static SqlType getRandomSqlType() {
-		return SqlType.values()[new Random().nextInt(SqlType.values().length)];
+	private SqlobType getRandomSqlType() {
+		DatabaseTypes types = attributes.getTypes();
+		int random = new Random().nextInt(types.size());
+		
+		int counter = 0;
+		for (SqlobType type : types) {
+			if (counter++ == random)
+				return type;
+		}
+		return null;
 	}
 	
-	private static Object getMatchedType(SqlType type) {
+	private static Object getMatchedType(SqlobType type) {
 		return TestAssets.getMatchedType(type);
 	}
 	
