@@ -8,7 +8,7 @@ import dev.kkorolyov.sqlob.connection.DatabaseConnectionTest;
 import dev.kkorolyov.sqlob.connection.TableConnectionTest;
 import dev.kkorolyov.sqlob.construct.ColumnTest;
 import dev.kkorolyov.sqlob.construct.ResultsTest;
-import dev.kkorolyov.sqlob.construct.RowEntryTest;
+import dev.kkorolyov.sqlob.construct.EntryTest;
 import dev.kkorolyov.sqlob.construct.SqlTypeTest;
 import dev.kkorolyov.sqlob.statement.StatementBuilderTest;
 
@@ -19,7 +19,7 @@ import dev.kkorolyov.sqlob.statement.StatementBuilderTest;
 								TableConnectionTest.class,
 								ColumnTest.class, 
 								ResultsTest.class,
-								RowEntryTest.class,
+								EntryTest.class,
 								SqlTypeTest.class,
 								StatementBuilderTest.class})
 

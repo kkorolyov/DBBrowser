@@ -66,7 +66,7 @@ public class ColumnTest {
 						name = "NAME";
 		Column 	column1 = new Column(table, name, type),
 						column2 = new Column(table, name, type),
-						columnNot = new Column("", "", type);
+						columnNot = new Column(null, null, type);
 		
 		assertEquals(column1, column2);
 		assertNotEquals(column1, columnNot);

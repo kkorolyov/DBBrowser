@@ -8,7 +8,8 @@ import java.util.regex.Pattern;
  * The value's type must match the column's type.
  */
 public class Entry {
-	private static final String VALUE_MARKER = "?";
+	private static final String VALUE_MARKER = "?",
+															NULL_MARKER = " IS NULL";
 
 	private Column column;
 	private Operator operator;
@@ -41,12 +42,12 @@ public class Entry {
 	
 	/** @return the representation of this entry in a SQL statement */
 	public String getSql() {
-		String operatorValue = operator.getSql();
+		String valueSql = value != null ? operator.getSql() : NULL_MARKER;
 		
 		if (value != null && value instanceof Column)
-			operatorValue.replaceFirst(Pattern.quote(VALUE_MARKER), ((Column) value).getSql());
+			valueSql = valueSql.replaceFirst(Pattern.quote(VALUE_MARKER), ((Column) value).getSql());
 		
-		return column.getSql() + operatorValue;
+		return column.getSql() + valueSql;
 	}
 	
 	/** @return column */
@@ -110,7 +111,6 @@ public class Entry {
 	 */
 	@SuppressWarnings("javadoc")
 	public static enum Operator {
-		NULL(" IS NULL"),
 		EQUALS("=" + VALUE_MARKER),
 		GREATER(">" + VALUE_MARKER),
 		GREATER_EQUALS(">=" + VALUE_MARKER),
