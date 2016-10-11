@@ -13,7 +13,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 @SuppressWarnings("javadoc")
 public class ColumnTest {
-	@Parameters
+	@Parameters(name = "SqlobType({0})")
 	public static Object[] data() {
 		return new Object[]{new SqlobType(Boolean.class, "BOOLEAN", Types.BOOLEAN),
 												new SqlobType(Short.class, "SMALLINT", Types.SMALLINT),

@@ -31,7 +31,7 @@ public class ResultsTest {	// Requires DB connection
 															USER = TestAssets.user(),
 															PASSWORD = TestAssets.password();
 	
-	@Parameters(name = "{0}")
+	@Parameters(name = "SqlobFile({0})")
 	public static Object[] data() {
 		return new Object[]{new File("sqlobfiles/postgresql.sqlob"),
 												new File("sqlobfiles/sqlite.sqlob")};

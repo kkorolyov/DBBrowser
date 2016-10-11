@@ -10,7 +10,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 @SuppressWarnings("javadoc")
 public class SqlobTypeTest {
-	@Parameters
+	@Parameters(name = "Class({0})")
 	public static Object[] data() {
 		return new Object[]{Boolean.class,
 												Short.class,
