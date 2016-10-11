@@ -3,7 +3,7 @@ package dev.kkorolyov.sqlob.construct;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import dev.kkorolyov.sqlob.connection.ClosedException;
@@ -78,7 +78,7 @@ public class Results implements AutoCloseable {
 		return columns;
 	}
 	private List<Column> extractColumns(ResultSet rs) {
-		List<Column> columns = new LinkedList<>();
+		List<Column> columns = new ArrayList<>();
 		try {
 			ResultSetMetaData rsmd = rs.getMetaData();
 			
@@ -123,7 +123,7 @@ public class Results implements AutoCloseable {
 		List<Entry> row = null;
 		try {
 			if (rs.next()) {
-				row = new LinkedList<>();
+				row = new ArrayList<>();
 				
 				int rsCounter = 1;	// rs value index
 				for (Column column : getColumns())
