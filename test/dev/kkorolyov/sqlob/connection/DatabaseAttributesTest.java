@@ -6,6 +6,8 @@ import java.io.File;
 
 import org.junit.Test;
 
+import dev.kkorolyov.sqlob.construct.SqlobType;
+
 @SuppressWarnings("javadoc")
 public class DatabaseAttributesTest {
 	private static final String[] validFiles = new String[]{"sqlobfiles/postgresql.sqlob",

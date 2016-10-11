@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.connection;
+package dev.kkorolyov.sqlob.construct;
 
 /**
  * Denotes a mapping between a Java object class and a relational database SQL type.
@@ -38,8 +38,8 @@ public class SqlobType {
 		int result = 1,
 				prime = 31;
 		
-		result = result * prime + typeClass.hashCode();
-		result = result * prime + typeName.hashCode();
+		result = result * prime + ((typeClass != null) ? typeClass.hashCode() : 0);
+		result = result * prime + ((typeName != null) ? typeName.hashCode() : 0);
 		result = result * prime + typeCode;
 		
 		return result;

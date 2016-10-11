@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import dev.kkorolyov.simpleprops.Properties;
+import dev.kkorolyov.sqlob.construct.SqlobType;
 
 /**
  * Represents unique attributes of a database.
@@ -33,23 +34,19 @@ public class DatabaseAttributes {
 			throw new IllegalArgumentException("Not a file: " + sqlobFile.getPath());
 		
 		Properties sqlobProps = new Properties(sqlobFile);
-		String 	driverName = sqlobProps.get(KEY_DRIVER),
-						baseUrl = sqlobProps.get(KEY_URL);
 		
-		if (driverName == null || baseUrl == null)
+		driverName = sqlobProps.remove(KEY_DRIVER);
+		baseURL = sqlobProps.remove(KEY_URL);
+		
+		if (driverName == null || baseURL == null)
 			throw new IllegalArgumentException("Incomplete sqlobfile: " + sqlobFile.getPath());
 		
-		try {	// Init JDBC driver
+		try {	// Init JDBC
 			Class.forName(driverName);
 		} catch (ClassNotFoundException e) {
 			throw new IllegalArgumentException("Invalid driver: " + driverName);
-		}
-		Properties props = new Properties(sqlobFile);
-		
-		driverName = props.remove(KEY_DRIVER);	// Remove before parsing types
-		baseURL = props.remove(KEY_URL);
-		
-		types = new DatabaseTypes(props);
+		}		
+		types = new DatabaseTypes(sqlobProps);
 	}
 	
 	/** @return name of the JDBC driver class for the database represented by these attributes */

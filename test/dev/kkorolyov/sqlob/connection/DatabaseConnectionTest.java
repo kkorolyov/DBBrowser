@@ -16,6 +16,7 @@ import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.connection.DatabaseAttributes.DatabaseTypes;
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.construct.SqlobType;
 import dev.kkorolyov.sqlob.construct.statement.QueryStatement;
 import dev.kkorolyov.sqlob.construct.statement.UpdateStatement;
 
@@ -89,7 +90,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testExecuteQueryStatement() {
 		String testTable = "TestTable_ExecuteQuery";
-		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
+		List<Column> testColumns = Arrays.asList(new Column(testTable, "TestColumn1", getRandomSqlType()));
 		
 		refreshTable(testTable, testColumns);
 		
@@ -102,7 +103,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testExecuteUpdateStatement() {
 		String testTable = "TestTable_ExecuteUpdate";
-		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
+		List<Column> testColumns = Arrays.asList(new Column(testTable, "TestColumn1", getRandomSqlType()));
 		
 		refreshTable(testTable, testColumns);
 		
@@ -116,7 +117,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testExecute() {	// Mainly for exceptions
 		String testTable = "TestTable_Execute";
-		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
+		List<Column> testColumns = Arrays.asList(new Column(testTable, "TestColumn1", getRandomSqlType()));
 		
 		refreshTable(testTable, testColumns);
 
@@ -131,7 +132,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testUpdate() throws Exception {
 		String testTable = "TestTable_Update";
-		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
+		List<Column> testColumns = Arrays.asList(new Column(testTable, "TestColumn1", getRandomSqlType()));
 		
 		refreshTable(testTable, testColumns);
 		
@@ -146,7 +147,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testCreateTable() throws Exception {
 		String testTable = "TestTable_Create";
-		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
+		List<Column> testColumns = Arrays.asList(new Column(testTable, "TestColumn1", getRandomSqlType()));
 
 		conn.dropTable(testTable);
 		
@@ -161,7 +162,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testDropTable() throws Exception {
 		String testTable = "TestTable_Drop";
-		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
+		List<Column> testColumns = Arrays.asList(new Column(testTable, "TestColumn1", getRandomSqlType()));
 		
 		conn.dropTable(testTable);
 		
@@ -175,7 +176,7 @@ public class DatabaseConnectionTest {
 	@Test
 	public void testContainsTable() throws Exception {
 		String testTable = "TestTable_Contains";
-		List<Column> testColumns = Arrays.asList(new Column("TestColumn1", getRandomSqlType()));
+		List<Column> testColumns = Arrays.asList(new Column(testTable, "TestColumn1", getRandomSqlType()));
 
 		conn.dropTable(testTable);		
 		assertTrue(!conn.containsTable(testTable));
@@ -199,7 +200,7 @@ public class DatabaseConnectionTest {
 		for (int i = 0; i < numTestTables; i++) {
 			testTables[i] = "TestTable_GetTables" + i;
 			
-			conn.createTable(testTables[i], Arrays.asList(new Column("TestColumn1", getRandomSqlType())));
+			conn.createTable(testTables[i], Arrays.asList(new Column(testTables[i], "TestColumn1", getRandomSqlType())));
 			assertEquals(i + 1, conn.getTables().size());
 		}
 		assertEquals(numTestTables, conn.getTables().size());
@@ -220,7 +221,7 @@ public class DatabaseConnectionTest {
 	}
 	
 	private void refreshTable(String table) {
-		refreshTable(table, Arrays.asList(new Column("TestColumn1", getRandomSqlType())));
+		refreshTable(table, Arrays.asList(new Column(table, "TestColumn1", getRandomSqlType())));
 	}
 	private void refreshTable(String table, List<Column> columns) {
 		conn.dropTable(table);

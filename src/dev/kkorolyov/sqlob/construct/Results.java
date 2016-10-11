@@ -8,7 +8,6 @@ import java.util.List;
 
 import dev.kkorolyov.sqlob.connection.ClosedException;
 import dev.kkorolyov.sqlob.connection.DatabaseAttributes.DatabaseTypes;
-import dev.kkorolyov.sqlob.connection.SqlobType;
 import dev.kkorolyov.sqlob.connection.UncheckedSQLException;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.logging.LoggerInterface;
@@ -84,12 +83,13 @@ public class Results implements AutoCloseable {
 			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
 				int rsmdColumn = i;	// ResultSet columns start from 1
 				
+				String tableName = rsmd.getTableName(rsmdColumn);
 				String columnName = rsmd.getColumnName(rsmdColumn);
 				SqlobType columnType = types.get(rsmd.getColumnType(rsmdColumn));
 
 				log.debug("Column name: " + columnName + " type: " + rsmd.getColumnType(rsmdColumn));
 				
-				columns.add(new Column(columnName, columnType));
+				columns.add(new Column(tableName, columnName, columnType));
 			}
 		} catch (SQLException e) {
 			log.exception(e);	// Exception in private API, log instead of throw

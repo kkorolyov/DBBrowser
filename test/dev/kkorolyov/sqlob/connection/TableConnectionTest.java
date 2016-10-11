@@ -2,6 +2,7 @@ package dev.kkorolyov.sqlob.connection;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,17 +17,19 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import dev.kkorolyov.sqlob.TestAssets;
-import dev.kkorolyov.sqlob.connection.DatabaseConnection.DatabaseType;
 import dev.kkorolyov.sqlob.construct.*;
 
 @SuppressWarnings("javadoc")
 @RunWith(Parameterized.class)
 public class TableConnectionTest {
+	private static final File[] sqlobFiles = new File[]{new File("sqlobfiles/postgresql.sqlob"),
+																											new File("sqlobfiles/sqlite.sqlob")};
 	@Parameters
 	public static Collection<Object[]> data() {
 		List<Object[]> data = new LinkedList<>();
-		for (DatabaseType dbType : DatabaseType.values())
-			data.add(new Object[]{dbType, dbType});
+		
+		for (File file : sqlobFiles)
+		data.add(new Object[]{file, file});
 		
 		return data;
 	}
@@ -35,17 +38,17 @@ public class TableConnectionTest {
 															USER = TestAssets.user(),
 															PASSWORD = TestAssets.password();	
 	
-	private final DatabaseType dbType;
+	private final DatabaseAttributes attributes;
 	private DatabaseConnection dbConn;
 	private TableConnection conn;
 	
-	public TableConnectionTest(DatabaseType input, DatabaseType expected) {
-		dbType = input;
+	public TableConnectionTest(File input, File expected) {
+		attributes = new DatabaseAttributes(input);
 	}
 	
 	@Before
 	public void setUp() throws Exception {
-		dbConn = new DatabaseConnection(HOST, DATABASE, dbType, USER, PASSWORD);
+		dbConn = new DatabaseConnection(HOST, DATABASE, attributes, USER, PASSWORD);
 	}
 	@After
 	public void tearDown() {

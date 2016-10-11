@@ -1,32 +1,36 @@
 package dev.kkorolyov.sqlob.construct;
 
-import dev.kkorolyov.sqlob.connection.SqlobType;
-
 /**
- * A representation of a column in a SQL database.
- * Composed of a name and a type.
+ * A single table column in a SQL database.
  */
 public class Column {
-	private static final String NAME_TYPE_DELIMITER = " ";
+	private static final String TABLE_NAME_DELIMETER = ".";
 	
-	private String name;
+	private String 	table,
+									name;
 	private SqlobType type;
 	
 	/**
-	 * Creates a column of the specified name and type.
+	 * Creates a column of the specified table, name and type.
+	 * @param table table name
 	 * @param name column name
 	 * @param type column type
 	 */
-	public Column(String name, SqlobType type) {
+	public Column(String table, String name, SqlobType type) {
+		this.table = table;
 		this.name = name;
 		this.type = type;
 	}
 	
 	/** @return the representation of this column in a SQL statement */
 	public String getSql() {
-		return name + NAME_TYPE_DELIMITER + type.getTypeName();
+		return table + TABLE_NAME_DELIMETER + name;
 	}
 	
+	/** @return table name */
+	public String getTable() {
+		return table;
+	}
 	/** @return column name */
 	public String getName() {
 		return name;
@@ -40,7 +44,8 @@ public class Column {
 	public int hashCode() {
 		int result = 1, prime = 31;
 		
-		result = result * prime + ((name != null) ? name.toUpperCase().hashCode() : 0);
+		result = result * prime + ((table != null) ? table.hashCode() : 0);
+		result = result * prime + ((name != null) ? name.hashCode() : 0);
 		result = result * prime + ((type != null) ? type.hashCode() : 0);
 		
 		return result;
@@ -58,10 +63,15 @@ public class Column {
 			return false;
 		
 		Column o = (Column) obj;
+		if (table == null) {
+			if (o.table != null)
+				return false;
+		} else if (!table.equals(o.table))
+			return false;
 		if (name == null) {
 			if (o.name != null)
 				return false;
-		} else if (!name.equalsIgnoreCase(o.name))
+		} else if (!name.equals(o.name))
 			return false;
 		if (type == null) {
 			if (o.type != null)

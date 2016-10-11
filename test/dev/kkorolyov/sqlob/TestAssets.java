@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import dev.kkorolyov.simpleprops.Properties;
-import dev.kkorolyov.sqlob.connection.SqlobType;
+import dev.kkorolyov.sqlob.construct.SqlobType;
 
 @SuppressWarnings("javadoc")
 public class TestAssets {
