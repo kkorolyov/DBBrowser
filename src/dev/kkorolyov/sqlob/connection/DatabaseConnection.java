@@ -7,7 +7,7 @@ import java.util.Map;
 
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
-import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.construct.Entry;
 import dev.kkorolyov.sqlob.construct.statement.QueryStatement;
 import dev.kkorolyov.sqlob.construct.statement.StatementFactory;
 import dev.kkorolyov.sqlob.construct.statement.UpdateStatement;
@@ -131,7 +131,7 @@ public class DatabaseConnection implements AutoCloseable {
 	 * @param parameters parameters to substitute in order of declaration
 	 * @return results of statement execution, or {@code null} if statement does not return results
 	 */
-	public Results execute(String baseStatement, List<RowEntry> parameters) {
+	public Results execute(String baseStatement, List<Entry> parameters) {
 		assertNotClosed();
 		
 		Results results = null;
@@ -151,7 +151,7 @@ public class DatabaseConnection implements AutoCloseable {
 	 * @param parameters parameters to substitute in order of declaration
 	 * @return number of rows affected by statement execution
 	 */
-	public int update(String baseStatement, List<RowEntry> parameters) {
+	public int update(String baseStatement, List<Entry> parameters) {
 		assertNotClosed();
 		
 		if (autoClose)
@@ -168,13 +168,13 @@ public class DatabaseConnection implements AutoCloseable {
 		return updated;
 	}
 		
-	private PreparedStatement buildStatement(String baseStatement, List<RowEntry> parameters) throws SQLException {	// Inserts appropriate type into statement
+	private PreparedStatement buildStatement(String baseStatement, List<Entry> parameters) throws SQLException {	// Inserts appropriate type into statement
 		PreparedStatement statement = getStatement(baseStatement);
 		
 		if (parameters != null && parameters.size() > 0) {
 			int parameterIndex = 1;	// Index of set parameter in statement
 
-			for (RowEntry parameter : parameters) {	// Prepare with appropriate types
+			for (Entry parameter : parameters) {	// Prepare with appropriate types
 				log.debug("Adding parameter " + parameterIndex + ": " + parameter.getValue());
 
 				statement.setObject(parameterIndex++, parameter.getValue(), parameter.getColumn().getType().getTypeCode());	// Set + increment index

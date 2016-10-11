@@ -1,20 +1,24 @@
 package dev.kkorolyov.sqlob.construct;
 
+import java.util.regex.Pattern;
+
 /**
- * A representation of a single entry in a SQL database table row.
- * Composed of a column, operator, and a value.
+ * A self-contained value for use in SQL statements or results.
+ * Consists of a column, operator, and a value.
  * The value's type must match the column's type.
  */
-public class RowEntry {
+public class Entry {
+	private static final String VALUE_MARKER = "?";
+
 	private Column column;
 	private Operator operator;
 	private Object value;
 	
 	/**
 	 * Constructs a new entry with a default operator of {@code Operator.EQUALS}.
-	 * @see #RowEntry(Column, Operator, Object)
+	 * @see #Entry(Column, Operator, Object)
 	 */
-	public RowEntry(Column column, Object value) {
+	public Entry(Column column, Object value) {
 		this(column, Operator.EQUALS, value);
 	}
 	/**
@@ -24,15 +28,25 @@ public class RowEntry {
 	 * @param value entry's value, may be another {@link Column}
 	 * @throws IllegalArgumentException if the value's type does not match the column's type
 	 */
-	public RowEntry(Column column, Operator operator, Object value) {
+	public Entry(Column column, Operator operator, Object value) {
 		this.column = column;
 		this.operator = operator;
 		setValue(value);
 	}
 	
+	/** @return {@code true} if this entry has a parameter value which must be set explicitly */
+	public boolean hasParameter() {
+		return !(value == null || value instanceof Column);
+	}
+	
 	/** @return the representation of this entry in a SQL statement */
 	public String getSql() {
-		return column.getSql() + operator.getSql();
+		String operatorValue = operator.getSql();
+		
+		if (value != null && value instanceof Column)
+			operatorValue.replaceFirst(Pattern.quote(VALUE_MARKER), ((Column) value).getSql());
+		
+		return column.getSql() + operatorValue;
 	}
 	
 	/** @return column */
@@ -49,7 +63,7 @@ public class RowEntry {
 	}
 	
 	private void setValue(Object value) {
-		if (value != null && value.getClass() != Column.class && value.getClass() != column.getType().getTypeClass())
+		if (value != null && !(value instanceof Column) && value.getClass() != column.getType().getTypeClass())
 			throw new IllegalArgumentException("Column type: " + column.getType().getTypeClass() + " does not match value type: " + value.getClass());
 		
 		this.value = value;
@@ -73,10 +87,10 @@ public class RowEntry {
 		if (obj == null)
 			return false;
 		
-		if (!(obj instanceof RowEntry))
+		if (!(obj instanceof Entry))
 			return false;
 		
-		RowEntry o = (RowEntry) obj;
+		Entry o = (Entry) obj;
 		if (column == null) {
 			if (o.column != null)
 				return false;
@@ -92,17 +106,17 @@ public class RowEntry {
 	}
 	
 	/**
-	 * An operator of a {@code RowEntry}.
+	 * An operator of an {@link Entry}.
 	 */
 	@SuppressWarnings("javadoc")
 	public static enum Operator {
 		NULL(" IS NULL"),
-		EQUALS("=?"),
-		GREATER(">?"),
-		GREATER_EQUALS(">=?"),
-		LESS("<?"),
-		LESS_EQUALS("<=?"),
-		LIKE("LIKE %?%");
+		EQUALS("=" + VALUE_MARKER),
+		GREATER(">" + VALUE_MARKER),
+		GREATER_EQUALS(">=" + VALUE_MARKER),
+		LESS("<" + VALUE_MARKER),
+		LESS_EQUALS("<=" + VALUE_MARKER),
+		LIKE("LIKE %" + VALUE_MARKER + "%");
 		
 		private String sql;
 		

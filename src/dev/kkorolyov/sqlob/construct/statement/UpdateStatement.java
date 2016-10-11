@@ -3,14 +3,14 @@ package dev.kkorolyov.sqlob.construct.statement;
 import java.util.List;
 
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
-import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.construct.Entry;
 
 /**
  * A {@code StatementCommand} which returns an {@code int} result on execution.
  * @see StatementCommand
  */
 public class UpdateStatement extends StatementCommand {
-	UpdateStatement(String baseStatement, List<RowEntry> values, List<RowEntry> criteria, DatabaseConnection conn) {
+	UpdateStatement(String baseStatement, List<Entry> values, List<Entry> criteria, DatabaseConnection conn) {
 		super(baseStatement, values, criteria, conn);
 	}
 	

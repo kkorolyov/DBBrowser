@@ -3,7 +3,7 @@ package dev.kkorolyov.sqlob.construct.statement;
 import java.util.List;
 
 import dev.kkorolyov.sqlob.construct.Column;
-import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.construct.Entry;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.logging.LoggerInterface;
 
@@ -79,7 +79,7 @@ public class StatementBuilder {
 	 * @param criteria criteria to match when selecting columns; if {@code null} or empty, no criteria is used
 	 * @return formatted SELECT statement
 	 */
-	public static String buildSelect(String table, List<Column> columns, List<RowEntry> criteria) {
+	public static String buildSelect(String table, List<Column> columns, List<Entry> criteria) {
 		log.debug("Building SELECT statement...");
 		
 		String statement = selectStatement.replaceFirst(Marker.table, table);	// Set table
@@ -120,13 +120,13 @@ public class StatementBuilder {
 		
 		return selectColumns.toString();
 	}
-	private static String buildSelectCriteriaMarkers(List<RowEntry> criteria) {
+	private static String buildSelectCriteriaMarkers(List<Entry> criteria) {
 		log.debug("Adding " + String.valueOf(criteria.size()) + " criterion markers to SELECT statement");	// TODO Used for delete, update as well, extract into more generic method
 		
 		StringBuilder selectCriteria = new StringBuilder();
 		String delimeter = " AND ";
 		
-		for (RowEntry criterion : criteria) {
+		for (Entry criterion : criteria) {
 			selectCriteria.append(criterion.getSql()).append(delimeter);
 		}
 		replaceFinalDelimeter(selectCriteria, delimeter, "");	// Remove final delimiter
@@ -140,7 +140,7 @@ public class StatementBuilder {
 	 * @param entries entries to add
 	 * @return formatted INSERT statement
 	 */
-	public static String buildInsert(String table, List<RowEntry> entries) {
+	public static String buildInsert(String table, List<Entry> entries) {
 		log.debug("Building INSERT statement...");
 		
 		String statement = insertStatement.replaceFirst(Marker.table, table);	// Set table
@@ -155,14 +155,14 @@ public class StatementBuilder {
 		
 		return statement;
 	}
-	private static String[] buildInsertColumnsValues(List<RowEntry> entries) {	// TODO Used for update as well, extract into more generic method
+	private static String[] buildInsertColumnsValues(List<Entry> entries) {	// TODO Used for update as well, extract into more generic method
 		log.debug("Adding " + String.valueOf(entries.size()) + " values to INSERT statement");
 		
 		StringBuilder insertColumns = new StringBuilder("("), insertValues = new StringBuilder("(");	// Columns, values declared within parentheses
 
 		String marker = "?", delimeter = ",";
 		
-		for (RowEntry entry : entries) {
+		for (Entry entry : entries) {
 			insertColumns.append(entry.getColumn().getName()).append(delimeter);	// Append "<column>," to delimit columns
 			insertValues.append(marker).append(delimeter);	// Append "?," to delimit values
 		}
@@ -178,7 +178,7 @@ public class StatementBuilder {
 	 * @param criteria criteria to match when deleting rows; if {@code null} or empty, no criteria is used
 	 * @return formatted DELETE statement
 	 */
-	public static String buildDelete(String table, List<RowEntry> criteria) {
+	public static String buildDelete(String table, List<Entry> criteria) {
 		log.debug("Building DELETE statement...");
 		
 		String statement = deleteStatement.replace(Marker.table, table);
@@ -198,7 +198,7 @@ public class StatementBuilder {
 	 * @param criteria criteria to match when updating entries; if {@code null} or empty, no criteria is used
 	 * @return formatted UPDATE statement
 	 */
-	public static String buildUpdate(String table, List<RowEntry> newEntries, List<RowEntry> criteria) {
+	public static String buildUpdate(String table, List<Entry> newEntries, List<Entry> criteria) {
 		log.debug("Building UPDATE statement...");
 		
 		String statement = updateStatement.replaceFirst(Marker.table, table);

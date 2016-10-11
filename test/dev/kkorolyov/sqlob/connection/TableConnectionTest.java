@@ -116,10 +116,10 @@ public class TableConnectionTest {
 		
 		conn = refreshTable(testTable, testColumns);
 		
-		conn.insert(Arrays.asList(new RowEntry(testColumns.get(0), true)));
+		conn.insert(Arrays.asList(new Entry(testColumns.get(0), true)));
 		
-		Results select0 = conn.select(testColumns, Arrays.asList(new RowEntry(testColumns.get(0), false))),
-						select1 = conn.select(testColumns, Arrays.asList(new RowEntry(testColumns.get(0), true)));
+		Results select0 = conn.select(testColumns, Arrays.asList(new Entry(testColumns.get(0), false))),
+						select1 = conn.select(testColumns, Arrays.asList(new Entry(testColumns.get(0), true)));
 		
 		assertNull(select0.getNextRow());
 		assertNotNull(select1.getNextRow());
@@ -155,10 +155,10 @@ public class TableConnectionTest {
 		
 		assertEquals(1, conn.getNumRows());
 		
-		int delete0 = conn.delete(Arrays.asList(new RowEntry(deleteColumn, notExistsBool)));
+		int delete0 = conn.delete(Arrays.asList(new Entry(deleteColumn, notExistsBool)));
 		assertEquals(1, conn.getNumRows());
 		
-		int delete1 = conn.delete(Arrays.asList(new RowEntry(deleteColumn, existsBool)));
+		int delete1 = conn.delete(Arrays.asList(new Entry(deleteColumn, existsBool)));
 		assertEquals(0, conn.getNumRows());
 		
 		assertEquals(0, delete0);
@@ -179,8 +179,8 @@ public class TableConnectionTest {
 		Column updateColumn = new Column(SqlType.BOOLEAN.toString(), SqlType.BOOLEAN);
 		boolean preUpdate = (boolean) TestAssets.getMatchedType(updateColumn.getType()),
 						postUpdate = !preUpdate;
-		RowEntry 	preUpdateEntry = new RowEntry(updateColumn, preUpdate),
-							postUpdateEntry = new RowEntry(updateColumn, postUpdate);
+		Entry 	preUpdateEntry = new Entry(updateColumn, preUpdate),
+							postUpdateEntry = new Entry(updateColumn, postUpdate);
 		
 		assertEquals(1, conn.getNumRows());
 		assertNotNull(conn.select(Arrays.asList(updateColumn), Arrays.asList(preUpdateEntry)).getNextRow());
@@ -227,11 +227,11 @@ public class TableConnectionTest {
 		
 		return allColumns;
 	}
-	private static List<RowEntry> buildMatchingEntries(List<Column> columns) throws MismatchedTypeException {
-		List<RowEntry> allEntries = new LinkedList<>();
+	private static List<Entry> buildMatchingEntries(List<Column> columns) throws MismatchedTypeException {
+		List<Entry> allEntries = new LinkedList<>();
 		
 		for (Column column : columns)
-			allEntries.add(new RowEntry(column, TestAssets.getMatchedType(column.getType())));
+			allEntries.add(new Entry(column, TestAssets.getMatchedType(column.getType())));
 		
 		return allEntries;
 	}

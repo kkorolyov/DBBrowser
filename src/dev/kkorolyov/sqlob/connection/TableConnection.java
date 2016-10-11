@@ -4,7 +4,7 @@ import java.util.List;
 
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.Results;
-import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.construct.Entry;
 
 /**
  * A filter for a {@code DatabaseConnection} providing for table-oriented actions.
@@ -63,7 +63,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws UncheckedSQLException if specified parameters result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public Results select(List<Column> columns, List<RowEntry> criteria) {
+	public Results select(List<Column> columns, List<Entry> criteria) {
 		return conn.execute(conn.getStatementFactory().getSelect(tableName, columns, criteria));
 	}
 	
@@ -74,7 +74,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws UncheckedSQLException if specified values result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public int insert(List<RowEntry> entries) {		
+	public int insert(List<Entry> entries) {		
 		return conn.execute(conn.getStatementFactory().getInsert(tableName, entries));
 	}
 	
@@ -85,7 +85,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws UncheckedSQLException if specified values result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public int delete(List<RowEntry> criteria) {
+	public int delete(List<Entry> criteria) {
 		return conn.execute(conn.getStatementFactory().getDelete(tableName, criteria));
 	}
 	
@@ -97,7 +97,7 @@ public class TableConnection implements AutoCloseable {	// TODO Single-column st
 	 * @throws UncheckedSQLException if specified values result in an invalid statement
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public int update(List<RowEntry> newEntries, List<RowEntry> criteria) {
+	public int update(List<Entry> newEntries, List<Entry> criteria) {
 		return conn.execute(conn.getStatementFactory().getUpdate(tableName, newEntries, criteria));
 	}
 		

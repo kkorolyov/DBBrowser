@@ -116,13 +116,13 @@ public class ResultsTest {
 		
 		return allColumns;
 	}
-	private static List<RowEntry> buildAllEntries() throws MismatchedTypeException {
+	private static List<Entry> buildAllEntries() throws MismatchedTypeException {
 		List<Column> allColumns = buildAllColumns();
-		List<RowEntry> allEntries = new LinkedList<>();
+		List<Entry> allEntries = new LinkedList<>();
 		
 		Map<SqlType, Object> matchedTypes = buildMatchedTypes();
 		for (Column column : allColumns)
-			allEntries.add(new RowEntry(column, matchedTypes.get(column.getType())));
+			allEntries.add(new Entry(column, matchedTypes.get(column.getType())));
 		
 		return allEntries;
 	}

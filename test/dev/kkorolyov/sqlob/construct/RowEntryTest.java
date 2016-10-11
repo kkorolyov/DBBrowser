@@ -8,7 +8,7 @@ import java.util.Map;
 import org.junit.Test;
 
 import dev.kkorolyov.sqlob.construct.Column;
-import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.construct.Entry;
 import dev.kkorolyov.sqlob.construct.SqlType;
 
 @SuppressWarnings("javadoc")
@@ -33,7 +33,7 @@ public class RowEntryTest {
 	@Test
 	public void testConstructorMatchedType() throws MismatchedTypeException {
 		for (SqlType type : SqlType.values())
-			new RowEntry(new Column(type.getTypeName(), type), matchedTypes.get(type));
+			new Entry(new Column(type.getTypeName(), type), matchedTypes.get(type));
 	}
 	@Test
 	public void testConstructorMismatchedType() {
@@ -44,7 +44,7 @@ public class RowEntryTest {
 			Object testValue = i < testTypes.length / 2 ? matchedTypes.get(testTypes[i + 1]) : matchedTypes.get(testTypes[i - 1]);	// Avoid out of bounds exceptions
 			
 			try {
-				new RowEntry(new Column(testType.getTypeName(), testType), testValue);
+				new Entry(new Column(testType.getTypeName(), testType), testValue);
 			} catch (MismatchedTypeException e) {
 				continue;
 			}
@@ -56,7 +56,7 @@ public class RowEntryTest {
 	public void testGetColumn() throws MismatchedTypeException {
 		for (SqlType type : SqlType.values()) {
 			Column expectedColumn = new Column(type.getTypeName(), type);
-			Column actualColumn = new RowEntry(expectedColumn, matchedTypes.get(type)).getColumn();
+			Column actualColumn = new Entry(expectedColumn, matchedTypes.get(type)).getColumn();
 			
 			assertEquals(expectedColumn, actualColumn);
 		}
@@ -66,7 +66,7 @@ public class RowEntryTest {
 	public void testGetValue() throws MismatchedTypeException {
 		for (SqlType type : SqlType.values()) {
 			Object expectedValue = matchedTypes.get(type);
-			Object actualValue = new RowEntry(new Column(type.getTypeName(), type), expectedValue).getValue();
+			Object actualValue = new Entry(new Column(type.getTypeName(), type), expectedValue).getValue();
 			
 			assertEquals(expectedValue, actualValue);
 		}
@@ -77,7 +77,7 @@ public class RowEntryTest {
 		Column testColumn = new Column("TestColumn", SqlType.BOOLEAN);
 		Boolean testValue = false;
 		
-		RowEntry entry1 = new RowEntry(testColumn, testValue), entry2 = new RowEntry(testColumn, testValue);
+		Entry entry1 = new Entry(testColumn, testValue), entry2 = new Entry(testColumn, testValue);
 		assertEquals(entry1, entry2);
 	}
 	@Test
@@ -85,7 +85,7 @@ public class RowEntryTest {
 		Column testColumn = new Column("TestColumn", SqlType.BOOLEAN);
 		Boolean testValue = false, testValue2 = true;
 		
-		RowEntry entry1 = new RowEntry(testColumn, testValue), entry2 = new RowEntry(testColumn, testValue), entry3 = new RowEntry(testColumn, testValue2);
+		Entry entry1 = new Entry(testColumn, testValue), entry2 = new Entry(testColumn, testValue), entry3 = new Entry(testColumn, testValue2);
 		assertEquals(entry1, entry2);
 		assertEquals(entry1.hashCode(), entry2.hashCode());
 		

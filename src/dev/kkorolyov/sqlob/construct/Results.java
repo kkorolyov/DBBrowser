@@ -14,10 +14,10 @@ import dev.kkorolyov.sqlob.logging.LoggerInterface;
 
 /**
  * Results obtained from a SQL query.
- * Wraps a {@code ResultSet} object and converts its results to a list of {@code RowEntry[]} objects with values converted to the appropriate Java type.
+ * Wraps a {@code ResultSet} object and converts its results to a list of {@code Entry[]} objects with values converted to the appropriate Java type.
  * Maintains a cursor initially positioned directly before the first row of results.
  * @see ResultSet
- * @see RowEntry
+ * @see Entry
  */
 public class Results implements AutoCloseable {
 	private static final LoggerInterface log = Logger.getLogger(Results.class.getName());
@@ -114,18 +114,18 @@ public class Results implements AutoCloseable {
 	 * @return next row of results, or {@code null} if no more rows
 	 * @throws ClosedException if called on a closed resource
 	 */
-	public List<RowEntry> getNextRow() {
+	public List<Entry> getNextRow() {
 		if (isClosed())
 			throw new ClosedException();
 			
-		List<RowEntry> row = null;
+		List<Entry> row = null;
 		try {
 			if (rs.next()) {
 				row = new LinkedList<>();
 				
 				int rsCounter = 1;	// rs value index
 				for (Column column : getColumns())
-					row.add(new RowEntry(column, rs.getObject(rsCounter++, column.getType().getTypeClass())));
+					row.add(new Entry(column, rs.getObject(rsCounter++, column.getType().getTypeClass())));
 			}
 		} catch (SQLException e) {
 			throw new UncheckedSQLException(e);

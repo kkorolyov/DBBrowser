@@ -2,22 +2,23 @@ package dev.kkorolyov.sqlob.construct.statement;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
-import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.construct.Entry;
 
 /**
  * A SQL statement encapsulated as an executable command.
  */
 public abstract class StatementCommand {
-	private static final String parameterMarker = "\\?";
+	private static final String parameterMarker = "?";
 	
 	private final String baseStatement;
-	private final List<RowEntry> 	values,
+	private final List<Entry> 	values,
 																criteria;
 	private final DatabaseConnection conn;
 
-	StatementCommand(String baseStatement, List<RowEntry> values, List<RowEntry> criteria, DatabaseConnection conn) {
+	StatementCommand(String baseStatement, List<Entry> values, List<Entry> criteria, DatabaseConnection conn) {
 		this.baseStatement = baseStatement;
 		this.values = values;
 		this.criteria = criteria;
@@ -30,22 +31,22 @@ public abstract class StatementCommand {
 	}
 	
 	/** @return statement values */
-	public List<RowEntry> getValues() {
+	public List<Entry> getValues() {
 		return values;
 	}
 	/** @return statement criteria */
-	public List<RowEntry> getCriteria() {
+	public List<Entry> getCriteria() {
 		return criteria;
 	}
 	/** @return all statement parameters not specified in the base string in the order: {@code values}, {@code criteria}, or an empty list if this statement has no parameters not specified in the base string */
-	public List<RowEntry> getParameters() {
-		List<RowEntry> parameters = new LinkedList<>();
+	public List<Entry> getParameters() {
+		List<Entry> parameters = new LinkedList<>();
 		
 		if (values != null)
 			parameters.addAll(values);
 		if (criteria != null) {
-			for (RowEntry criterion : criteria) {
-				if (criterion.getValue() != null)	// Specified in base string as 'IS NULL'
+			for (Entry criterion : criteria) {
+				if (criterion.hasParameter())
 					parameters.add(criterion);
 			}
 		}
@@ -61,8 +62,8 @@ public abstract class StatementCommand {
 	public String toString() {
 		String result = baseStatement;
 		
-		for (RowEntry parameter : getParameters())
-			result = result.replaceFirst(parameterMarker, (parameter.getValue() == null ? "NULL" : parameter.getValue().toString()));
+		for (Entry parameter : getParameters())
+			result = result.replaceFirst(Pattern.quote(parameterMarker), (parameter.getValue() == null ? "NULL" : parameter.getValue().toString()));
 		
 		return result;
 	}

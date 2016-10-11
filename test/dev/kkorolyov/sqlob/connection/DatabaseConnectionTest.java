@@ -15,7 +15,7 @@ import org.junit.runners.Parameterized.Parameters;
 import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.connection.DatabaseAttributes.DatabaseTypes;
 import dev.kkorolyov.sqlob.construct.Column;
-import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.construct.Entry;
 import dev.kkorolyov.sqlob.construct.SqlobType;
 import dev.kkorolyov.sqlob.construct.statement.QueryStatement;
 import dev.kkorolyov.sqlob.construct.statement.UpdateStatement;
@@ -244,11 +244,11 @@ public class DatabaseConnectionTest {
 		return TestAssets.getMatchedType(type);
 	}
 	
-	private static List<RowEntry> getStubRowEntries(List<Column> columns) {
-		List<RowEntry> entries = new LinkedList<>();
+	private static List<Entry> getStubRowEntries(List<Column> columns) {
+		List<Entry> entries = new LinkedList<>();
 		
 		for (Column column : columns)
-			entries.add(new RowEntry(column, getMatchedType(column.getType())));
+			entries.add(new Entry(column, getMatchedType(column.getType())));
 		
 		return entries;
 	}

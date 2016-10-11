@@ -1,64 +1,75 @@
 package dev.kkorolyov.sqlob.construct;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
+import java.sql.Types;
 
 import org.junit.Test;
-
-import dev.kkorolyov.sqlob.construct.Column;
-import dev.kkorolyov.sqlob.construct.SqlType;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 @SuppressWarnings("javadoc")
+@RunWith(Parameterized.class)
 public class ColumnTest {
-
-	@Test
-	public void testColumn() {	// Sanity test for each possible type
-		for (SqlType type : SqlType.values())
-			new Column(type.getTypeName(), type);
+	@Parameters
+	public static Object[] data() {
+		return new Object[]{new SqlobType(Boolean.class, "BOOLEAN", Types.BOOLEAN),
+												new SqlobType(Short.class, "SMALLINT", Types.SMALLINT),
+												new SqlobType(Integer.class, "INTEGER", Types.INTEGER),
+												new SqlobType(Long.class, "BIGINT", Types.BIGINT),
+												new SqlobType(Float.class, "REAL", Types.REAL),
+												new SqlobType(Double.class, "DOUBLE PRECISION", Types.DOUBLE),
+												new SqlobType(Character.class, "CHAR", Types.CHAR),
+												new SqlobType(String.class, "VARCHAR", Types.VARCHAR)};
 	}
-
+	private final SqlobType type;
+	
+	public ColumnTest(SqlobType input) {
+		type = input;
+	}
+	
+	@Test
+	public void testGetSql() {
+		// TODO Nothing to assert
+	}
+	
+	@Test
+	public void testGetTable() {
+		String table = "TABLE";
+		assertEquals(table, new Column(table, "", type).getTable());
+	}
+	
 	@Test
 	public void testGetName() {
-		String[] testNames = {"test", "TEST", "Test"};
-		
-		for (String testName : testNames) {
-			for (SqlType type : SqlType.values())
-				assertEquals(testName, new Column(testName, type).getName());
-		}
+		String name = "NAME";
+		assertEquals(name, new Column("", name, type).getName());
 	}
 
 	@Test
 	public void testGetType() {
-		String testName = "Test";
-		
-		for (SqlType type : SqlType.values())
-			assertEquals(type, new Column(testName, type).getType());
+		assertEquals(type, new Column("", "", type).getType());
 	}
 
 	@Test
 	public void testHashCode() {
-		String testName = "HashTest";
-		
-		for (SqlType testType : SqlType.values()) {
-			Column column1 = new Column(testName, testType), column2 = new Column(testName, testType);
-			assertEquals(column1.hashCode(), column2.hashCode());
-		}
+		String 	table = "TABLE",
+						name = "NAME";
+		Column 	column1 = new Column(table, name, type),
+						column2 = new Column(table, name, type);
+		assertEquals(column1.hashCode(), column2.hashCode());
 	}
 	@Test
 	public void testEquals() {
-		String testName = "EqualsTest", testNameLower = testName.toLowerCase(), testNameUpper = testName.toUpperCase(), testName2 = "EqualsTest2";
+		String 	table = "TABLE",
+						name = "NAME";
+		Column 	column1 = new Column(table, name, type),
+						column2 = new Column(table, name, type),
+						columnNot = new Column("", "", type);
 		
-		for (SqlType testType : SqlType.values()) {
-			Column column1 = new Column(testName, testType), column2 = new Column(testName, testType), column3 = new Column(testName2, testType);
-			Column columnLower = new Column(testNameLower, testType), columnUpper = new Column(testNameUpper, testType);
-			assertEquals(column1, column2);
-			assertEquals(column1.hashCode(), column2.hashCode());	// Test equals-hashcode contract 
-			assertEquals(column1, columnLower);
-			assertEquals(column1.hashCode(), columnLower.hashCode());
-			assertEquals(column1, columnUpper);
-			assertEquals(column1.hashCode(), columnUpper.hashCode());
-			
-			assertNotEquals(column1, column3);
-			assertNotEquals(column2, column3);
-		}
+		assertEquals(column1, column2);
+		assertNotEquals(column1, columnNot);
+		assertNotEquals(column2, columnNot);
 	}
 }

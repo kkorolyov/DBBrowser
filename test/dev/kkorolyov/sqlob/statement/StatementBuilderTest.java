@@ -11,7 +11,7 @@ import org.junit.Test;
 
 import dev.kkorolyov.sqlob.construct.Column;
 import dev.kkorolyov.sqlob.construct.MismatchedTypeException;
-import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.construct.Entry;
 import dev.kkorolyov.sqlob.construct.SqlType;
 import dev.kkorolyov.sqlob.construct.statement.StatementBuilder;
 
@@ -73,7 +73,7 @@ public class StatementBuilderTest {
 	public void testBuildSelectColumnsCriteria() throws MismatchedTypeException {
 		String testTable = "Test Table";
 		List<Column> testColumns = buildAllColumns();
-		List<RowEntry> testCriteria = buildAllCriteria();
+		List<Entry> testCriteria = buildAllCriteria();
 		
 		String columnsMarker = "<COLUMNS>", criteriaMarker = "<CRITERIA>";
 		String expectedStatement = insertSelectCriteria(insertSelectColumns("SELECT " + columnsMarker + " FROM " + testTable + " WHERE " + criteriaMarker, columnsMarker, testColumns), criteriaMarker, testCriteria);
@@ -89,10 +89,10 @@ public class StatementBuilderTest {
 
 		return baseStatement.replaceFirst(columnsMarker, columnsString.substring(0, columnsString.length() - 1));	// Removes trailing ","
 	}
-	private static String insertSelectCriteria(String baseStatement, String criteriaMarker, List<RowEntry> criteria) {
+	private static String insertSelectCriteria(String baseStatement, String criteriaMarker, List<Entry> criteria) {
 		StringBuilder criteriaString = new StringBuilder();
 		
-		for (RowEntry criterion : criteria)
+		for (Entry criterion : criteria)
 			criteriaString.append(criterion.getColumn().getName()).append("=? AND ");
 
 		return baseStatement.replaceFirst(criteriaMarker, criteriaString.substring(0, criteriaString.length() - 5));	// Removes trailing " AND "
@@ -101,7 +101,7 @@ public class StatementBuilderTest {
 	@Test
 	public void testBuildInsert() throws MismatchedTypeException {
 		String testTable = "Test Table";
-		List<RowEntry> testEntries = buildAllCriteria();
+		List<Entry> testEntries = buildAllCriteria();
 		
 		String columnsMarker = "<COLUMNS>", valuesMarker = "<VALUES>";
 		String expectedStatment = insertSelectColumnsValues("INSERT INTO " + testTable + " " + columnsMarker + " VALUES " + valuesMarker, columnsMarker, valuesMarker, testEntries);
@@ -109,7 +109,7 @@ public class StatementBuilderTest {
 		
 		assertEquals(expectedStatment, actualStatement);
 	}
-	private static String insertSelectColumnsValues(String baseStatement, String columnsMarker, String valuesMarker, List<RowEntry> entries) {
+	private static String insertSelectColumnsValues(String baseStatement, String columnsMarker, String valuesMarker, List<Entry> entries) {
 		StringBuilder columnsString = new StringBuilder("("), valuesString = new StringBuilder("(");
 		
 		for (int i = 0; i < entries.size() - 1; i++) {
@@ -125,7 +125,7 @@ public class StatementBuilderTest {
 	@Test
 	public void testBuildDelete() throws MismatchedTypeException {
 		String testTable = "Test Table";
-		List<RowEntry> criteria = buildAllCriteria();
+		List<Entry> criteria = buildAllCriteria();
 		
 		String criteriaMarker = "<CRITERIA>";
 		String expectedStatement = insertSelectCriteria("DELETE FROM " + testTable + " WHERE " + criteriaMarker, criteriaMarker, criteria);	// TODO Generalize insertSelectCriteria()
@@ -137,8 +137,8 @@ public class StatementBuilderTest {
 	@Test
 	public void testBuildUpdate() throws MismatchedTypeException {
 		String testTable = "Test Table";
-		List<RowEntry> newEntries = buildAllCriteria();	// TODO Use different entries from criteria
-		List<RowEntry> criteria = buildAllCriteria();
+		List<Entry> newEntries = buildAllCriteria();	// TODO Use different entries from criteria
+		List<Entry> criteria = buildAllCriteria();
 		
 		String columnsMarker = "<COLUMNS>", valuesMarker = "<VALUES>", criteriaMarker = "<CRITERIA>";
 		String expectedStatement = insertSelectCriteria(insertSelectColumnsValues("UPDATE " + testTable + " SET " + columnsMarker + "=" + valuesMarker + " WHERE " + criteriaMarker, columnsMarker, valuesMarker, newEntries), criteriaMarker, criteria);
@@ -157,14 +157,14 @@ public class StatementBuilderTest {
 		return columns;
 	}
 	
-	private static List<RowEntry> buildAllCriteria() throws MismatchedTypeException {
+	private static List<Entry> buildAllCriteria() throws MismatchedTypeException {
 		List<Column> columns = buildAllColumns();
-		List<RowEntry> criteria = new LinkedList<>();
+		List<Entry> criteria = new LinkedList<>();
 		
 		Map<SqlType, Object> matchedTypes = buildMatchingTypesMap();
 		
 		for (Column column : columns)
-			criteria.add(new RowEntry(column, matchedTypes.get(column.getType())));
+			criteria.add(new Entry(column, matchedTypes.get(column.getType())));
 
 		return criteria;
 	}

@@ -4,7 +4,7 @@ import java.util.List;
 
 import dev.kkorolyov.sqlob.connection.DatabaseConnection;
 import dev.kkorolyov.sqlob.construct.Column;
-import dev.kkorolyov.sqlob.construct.RowEntry;
+import dev.kkorolyov.sqlob.construct.Entry;
 
 /**
  * Produces {@code StatementCommands} for execution by a single {@code DatabaseConnection}.
@@ -27,7 +27,7 @@ public class StatementFactory {
 	 * @param baseStatement base SQL statement, with {@code ?} denoting areas of substitution with parameters
 	 * @param parameters parameters to utilize in statement, will be substituted into the base statement in order of declaration
 	 */
-	public QueryStatement getCustomQuery(String baseStatement, List<RowEntry> parameters) {
+	public QueryStatement getCustomQuery(String baseStatement, List<Entry> parameters) {
 		return new QueryStatement(baseStatement, parameters, null, conn);
 	}
 	
@@ -37,7 +37,7 @@ public class StatementFactory {
 	 * @param columns columns to select
 	 * @param criteria selection criteria, if {@code null} or empty, no criteria is used
 	 */
-	public QueryStatement getSelect(String table, List<Column> columns, List<RowEntry> criteria) {
+	public QueryStatement getSelect(String table, List<Column> columns, List<Entry> criteria) {
 		return new QueryStatement(StatementBuilder.buildSelect(table, columns, criteria), null, criteria, conn);
 	}
 	
@@ -46,7 +46,7 @@ public class StatementFactory {
 	 * @param baseStatement base SQL statement, with {@code ?} denoting areas of substitution with parameters
 	 * @param parameters parameters to utilize in statement, will be substituted into the base statement in order of declaration
 	 */
-	public UpdateStatement getCustomUpdate(String baseStatement, List<RowEntry> parameters) {
+	public UpdateStatement getCustomUpdate(String baseStatement, List<Entry> parameters) {
 		return new UpdateStatement(baseStatement, parameters, null, conn);
 	}
 	
@@ -83,7 +83,7 @@ public class StatementFactory {
 	 * @param table table to insert into
 	 * @param values values to insert
 	 */
-	public UpdateStatement getInsert(String table, List<RowEntry> values) {
+	public UpdateStatement getInsert(String table, List<Entry> values) {
 		return new UpdateStatement(StatementBuilder.buildInsert(table, values), values, null, conn) {
 			@Override
 			public UpdateStatement getInverseStatement() {
@@ -96,7 +96,7 @@ public class StatementFactory {
 	 * @param table table to delete from
 	 * @param criteria criteria to match when deleting rows
 	 */
-	public UpdateStatement getDelete(String table, List<RowEntry> criteria) {
+	public UpdateStatement getDelete(String table, List<Entry> criteria) {
 		return new UpdateStatement(StatementBuilder.buildDelete(table, criteria), null, criteria, conn) {
 			@Override
 			public UpdateStatement getInverseStatement() {
@@ -110,7 +110,7 @@ public class StatementFactory {
 	 * @param values new values to set
 	 * @param criteria criteria to match
 	 */
-	public UpdateStatement getUpdate(String table, List<RowEntry> values, List<RowEntry> criteria) {
+	public UpdateStatement getUpdate(String table, List<Entry> values, List<Entry> criteria) {
 		return new UpdateStatement(StatementBuilder.buildUpdate(table, values, criteria), values, criteria, conn) {
 			@Override
 			public UpdateStatement getInverseStatement() {
