@@ -89,7 +89,7 @@ public class Results implements AutoCloseable {
 				String columnName = rsmd.getColumnName(rsmdColumn);
 				SqlobType columnType = types.get(rsmd.getColumnType(rsmdColumn));
 
-				log.debug("Column name: " + columnName + " type: " + rsmd.getColumnType(rsmdColumn));
+				log.debug("Column name: " + columnName + ", type: " + rsmd.getColumnType(rsmdColumn));
 				
 				columns.add(new Column(tableName, columnName, columnType));
 			}
