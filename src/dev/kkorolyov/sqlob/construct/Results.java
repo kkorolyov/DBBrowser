@@ -56,7 +56,7 @@ public class Results implements AutoCloseable {
 		try {
 			rs.getMetaData();
 		} catch (SQLException e) {
-			close();
+			rs = null;
 		}
 		return (rs == null);
 	}
