@@ -48,15 +48,17 @@ public class Results implements AutoCloseable {
 			rs.close();
 			rs = null;
 		} catch (SQLException e) {
-			log.exception(e);
+			throw new UncheckedSQLException(e);
 		}
 	}
 	/** @return	{@code true} if this resource is closed, {@code false} if otherwise */
 	public boolean isClosed() {
-		try {
-			rs.getMetaData();
-		} catch (SQLException e) {
-			rs = null;
+		if (rs != null) {
+			try {
+				rs.getMetaData();
+			} catch (SQLException e) {	// Thrown by closed ResultSet
+				rs = null;
+			}
 		}
 		return (rs == null);
 	}
