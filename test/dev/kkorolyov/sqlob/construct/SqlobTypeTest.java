@@ -21,7 +21,7 @@ public class SqlobTypeTest {
 												Character.class,
 												String.class};
 	}
-	private Class<?> typeClass;
+	private final Class<?> typeClass;
 	
 	public SqlobTypeTest(Class<?> input) {
 		typeClass = input;

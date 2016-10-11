@@ -39,7 +39,7 @@ public class DatabaseConnectionTest {
 															USER = TestAssets.user(),
 															PASSWORD = TestAssets.password();	
 
-	private DatabaseAttributes attributes;
+	private final DatabaseAttributes attributes;
 	private DatabaseConnection conn;
 	
 	public DatabaseConnectionTest(File input, File expected) {
