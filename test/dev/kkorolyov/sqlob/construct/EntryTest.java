@@ -10,8 +10,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-@SuppressWarnings("javadoc")
 @RunWith(Parameterized.class)
+@SuppressWarnings("javadoc")
 public class EntryTest {
 	@Parameters
 	public static Object[] data() {

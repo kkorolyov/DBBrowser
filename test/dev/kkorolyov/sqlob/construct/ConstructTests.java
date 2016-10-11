@@ -10,7 +10,7 @@ import org.junit.runners.Suite.SuiteClasses;
 @SuiteClasses({	ColumnTest.class, 
 								ResultsTest.class,
 								EntryTest.class,
-								SqlTypeTest.class})
+								SqlobTypeTest.class})
 
 public class ConstructTests {
 	// Suite

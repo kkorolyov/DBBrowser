@@ -20,8 +20,8 @@ import dev.kkorolyov.sqlob.construct.SqlobType;
 import dev.kkorolyov.sqlob.construct.statement.QueryStatement;
 import dev.kkorolyov.sqlob.construct.statement.UpdateStatement;
 
-@SuppressWarnings("javadoc")
 @RunWith(Parameterized.class)
+@SuppressWarnings("javadoc")
 public class DatabaseConnectionTest {
 	private static final File[] sqlobFiles = new File[]{new File("sqlobfiles/postgresql.sqlob"),
 																											new File("sqlobfiles/sqlite.sqlob")};
