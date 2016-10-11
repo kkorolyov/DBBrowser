@@ -3,6 +3,8 @@ package dev.kkorolyov.sqlob;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,6 +36,14 @@ public class TestAssets {
 			props.saveFile();
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
+		}
+	}
+	
+	public static void clean() {
+		try {
+			Files.delete(Paths.get(database()));	// Delete SQLite DB
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
