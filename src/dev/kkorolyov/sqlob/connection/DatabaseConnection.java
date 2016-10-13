@@ -1,13 +1,13 @@
 package dev.kkorolyov.sqlob.connection;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import dev.kkorolyov.sqlob.construct.Column;
-import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.Entry;
+import dev.kkorolyov.sqlob.construct.Results;
 import dev.kkorolyov.sqlob.construct.statement.QueryStatement;
 import dev.kkorolyov.sqlob.construct.statement.StatementFactory;
 import dev.kkorolyov.sqlob.construct.statement.UpdateStatement;
@@ -55,18 +55,6 @@ public class DatabaseConnection implements AutoCloseable {
 		conn = DriverManager.getConnection(url, user, password);
 			
 		log.debug("Successfully initialized " + getClass().getSimpleName() + ": " + hashCode() + " for database at: " + url);
-	}
-	
-	/**
-	 * Connects to a table on this database, if it exists.
-	 * @param table name of table to connect to
-	 * @return connection to the table, if it exists, {@code null} if otherwise
-	 * @throws ClosedException if called on a closed connection
-	 */
-	public TableConnection connect(String table) {
-		assertNotClosed();
-		
-		return containsTable(table) ? new TableConnection(this, table) : null;
 	}
 	
 	/**
@@ -182,17 +170,13 @@ public class DatabaseConnection implements AutoCloseable {
 		}
 		return statement;
 	}
-	@SuppressWarnings("resource")
 	private PreparedStatement getStatement(String baseStatement) throws SQLException {
 		log.debug("Getting PreparedStatement for: " + baseStatement);
 
-		PreparedStatement statement = null;
+		PreparedStatement statement = openStatements.get(baseStatement);
 		
-		if (openStatements.containsKey(baseStatement) && !openStatements.get(baseStatement).isClosed()) {
-			statement = openStatements.get(baseStatement);
-			
+		if (statement != null && !statement.isClosed())
 			log.debug("Found existing PreparedStatement: " + statement);
-		}
 		else {
 			statement = conn.prepareStatement(baseStatement);
 			openStatements.put(baseStatement, statement);
@@ -206,19 +190,16 @@ public class DatabaseConnection implements AutoCloseable {
 	 * Creates a table with the specifed name and columns.
 	 * @param name new table name
 	 * @param columns new table columns in the order they should appear
-	 * @return connection to the created table
-	 * @throws DuplicateTableException if a table of the specified name already exists
+	 * @throws IllegalArgumentException if a table of the specified name already exists
 	 * @throws ClosedException if called on a closed connection
 	 */
-	public TableConnection createTable(String name, List<Column> columns) throws DuplicateTableException {
+	public void createTable(String name, List<Column> columns) {
 		assertNotClosed();
 		
 		if (containsTable(name))	// Can't add a table of the same name
-			throw new DuplicateTableException(database, name);
+			throw new IllegalArgumentException("Database already contains table: " + name);
 				
 		execute(statementFactory.getCreateTable(name, columns));
-		
-		return new TableConnection(this, name);
 	}
 	
 	/**
@@ -261,13 +242,13 @@ public class DatabaseConnection implements AutoCloseable {
 	}
 	
 	/**
-	 * @return names of all tables in the database.
+	 * @return names of all tables in the database
 	 * @throws ClosedException if called on a closed connection
 	 */
 	public List<String> getTables() {
 		assertNotClosed();
 		
-		List<String> tables = new LinkedList<>();
+		List<String> tables = new ArrayList<>();
 		try (ResultSet tableSet = conn.getMetaData().getTables(null, null, "%", new String[]{"TABLE"})) {
 			while (tableSet.next()) {
 				tables.add(tableSet.getString(3));
@@ -277,6 +258,21 @@ public class DatabaseConnection implements AutoCloseable {
 			throw new UncheckedSQLException(e);
 		}
 		return tables;
+	}
+	
+	/**
+	 * @param table name of table to retrieve columns from
+	 * @return all columns from {@code table}, in original order
+	 * @throws IllegalArgumentException if {@code table} is not found in the database
+	 * @throws ClosedException if called on a closed connection
+	 */
+	public List<Column> getColumns(String table) {
+		assertNotClosed();
+		
+		if (!containsTable(table))
+			throw new IllegalArgumentException("Table not found in this database: " + table);
+		
+		return execute(statementFactory.getSelect(table, null, null)).getColumns();	// Retrieves all
 	}
 	
 	/**
