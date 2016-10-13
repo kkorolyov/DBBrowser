@@ -69,7 +69,7 @@ public class StatementFactory {
 	 */
 	public UpdateStatement getDropTable(String table) {
 		return new UpdateStatement(StatementBuilder.buildDrop(table), null, null, conn) {
-			List<Column> columns = getConn().connect(table).getColumns();
+			List<Column> columns = getConn().getColumns(table);
 			
 			@Override
 			public UpdateStatement getInverseStatement() {
