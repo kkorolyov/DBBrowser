@@ -36,6 +36,12 @@ public class Connection {
 	}
 	
 	/**
+	 * Convenience method for {@link #get(Class, BigInteger)}.
+	 */
+	public <T> T get(Class<T> c, long id) throws SQLException {
+		return get(c, BigInteger.valueOf(id));
+	}
+	/**
 	 * Retrieves an instance of a class matching an ID.
 	 * @param c type to retrieve
 	 * @param id instance id
@@ -55,10 +61,10 @@ public class Connection {
 		if (storage != null) {
 			if (storage.table() != null) 
 				table = storage.table();
-			
-			if (!tableExists(table))
-				initTable(table, storage.init() != null ? storage.init() : buildDefaultInit(c));
 		}
+		if (!tableExists(table))
+			initTable(table, storage != null && storage.init() != null ? storage.init() : buildDefaultInit(c));
+		
 		return table;
 	}
 	
@@ -72,8 +78,10 @@ public class Connection {
 	}
 	
 	private void initTable(String table, String init) throws SQLException {
+		System.out.println("Init table: " + table + " with " + init);
 		try (Statement s = conn.createStatement()) {
 			s.executeUpdate(init);
+			conn.commit();
 		} catch (SQLException e) {
 			conn.rollback();
 			throw e;
@@ -87,17 +95,20 @@ public class Connection {
 		builder.append("id BIGINT UNSIGNED PRIMARY KEY,");
 		
 		for (Field field : c.getDeclaredFields()) {
-			if (field.getAnnotation(Transient.class) == null) {	// Not transient
-				builder.append(field.getName());
-				builder.append(field.getAnnotation(Reference.class) != null ? buildReference(field.getClass()) : field.getAnnotation(Sql.class).value());
+			Sql sql = field.getAnnotation(Sql.class);
+			Reference reference = field.getAnnotation(Reference.class);
+			
+			if (sql != null || reference != null) {	// Not transient
+				builder.append(field.getName()).append(" ");
+				builder.append(reference != null ? buildReference(field.getType()) : sql.value());
 				builder.append(",");
 			}
 		}
-		builder.append(")");
+		builder.replace(builder.length() - 1, builder.length(), ")");
 		
 		return builder.toString();
 	}
 	private String buildReference(Class<?> c) throws SQLException {
-		return "BIGINT UNSIGNED FOREIGN KEY REFERENCES " + getTable(c) + " (id)";
+		return "BIGINT UNSIGNED REFERENCES " + getTable(c) + " (id)";
 	}
 }
