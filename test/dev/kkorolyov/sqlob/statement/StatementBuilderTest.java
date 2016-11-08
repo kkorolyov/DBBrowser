@@ -10,9 +10,7 @@ import java.util.Map;
 import org.junit.Test;
 
 import dev.kkorolyov.sqlob.construct.Column;
-import dev.kkorolyov.sqlob.construct.MismatchedTypeException;
 import dev.kkorolyov.sqlob.construct.Entry;
-import dev.kkorolyov.sqlob.construct.SqlType;
 import dev.kkorolyov.sqlob.construct.statement.StatementBuilder;
 
 @SuppressWarnings("javadoc")

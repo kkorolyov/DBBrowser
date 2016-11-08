@@ -100,7 +100,7 @@ public class StatementFactory {
 		return new UpdateStatement(StatementBuilder.buildDelete(table, criteria), null, criteria, conn) {
 			@Override
 			public UpdateStatement getInverseStatement() {
-				return getInsert(table, getCriteria());
+				return getInsert(table, getConditions());
 			}
 		};
 	}
@@ -114,7 +114,7 @@ public class StatementFactory {
 		return new UpdateStatement(StatementBuilder.buildUpdate(table, values, criteria), values, criteria, conn) {
 			@Override
 			public UpdateStatement getInverseStatement() {
-				return getUpdate(table, getCriteria(), getValues());
+				return getUpdate(table, getConditions(), getValues());
 			}
 		};
 	}

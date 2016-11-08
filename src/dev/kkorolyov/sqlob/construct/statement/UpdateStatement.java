@@ -10,8 +10,8 @@ import dev.kkorolyov.sqlob.construct.Entry;
  * @see StatementCommand
  */
 public class UpdateStatement extends StatementCommand {
-	UpdateStatement(String baseStatement, List<Entry> values, List<Entry> criteria, DatabaseConnection conn) {
-		super(baseStatement, values, criteria, conn);
+	UpdateStatement(String baseStatement, List<Entry> values, List<Entry> conditions, DatabaseConnection conn) {
+		super(baseStatement, values, conditions, conn);
 	}
 	
 	/**
@@ -19,7 +19,7 @@ public class UpdateStatement extends StatementCommand {
 	 * @return number of rows updated by statement execution
 	 */
 	public int execute() {
-		return getConn().update(getBaseStatement(), getParameters());
+		return getConn().update(getSql(), getParameters());
 	}
 	
 	/** @return a statement which accomplishes the inverse of this statement, or {@code null} if this statement has no inverse */

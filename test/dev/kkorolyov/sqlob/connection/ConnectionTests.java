@@ -7,8 +7,8 @@ import org.junit.runners.Suite.SuiteClasses;
 @SuppressWarnings("javadoc")
 @RunWith(Suite.class)
 
-@SuiteClasses({ DatabaseConnectionTest.class,
-								TableConnectionTest.class})
+@SuiteClasses({ DatabaseAttributesTest.class,
+								DatabaseConnectionTest.class})
 
 public class ConnectionTests {
 	// Suite

@@ -56,17 +56,6 @@ public class DatabaseConnectionTest {
 	}
 	
 	@Test
-	public void testConnect() {
-		String testTable = "TestTable_Connect";
-		
-		refreshTable(testTable);
-		
-		assertTrue(conn.connect(testTable) != null);
-		
-		conn.dropTable(testTable);	// Clean up
-	}
-	
-	@Test
 	public void testClose() throws Exception {
 		conn.close();
 		
@@ -220,9 +209,6 @@ public class DatabaseConnectionTest {
 		assertEquals(attributes, conn.getAttributes());
 	}
 	
-	private void refreshTable(String table) {
-		refreshTable(table, Arrays.asList(new Column(table, "TestColumn1", getRandomSqlType())));
-	}
 	private void refreshTable(String table, List<Column> columns) {
 		conn.dropTable(table);
 		conn.createTable(table, columns);
