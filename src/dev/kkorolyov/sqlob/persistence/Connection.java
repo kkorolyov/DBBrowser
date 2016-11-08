@@ -2,7 +2,6 @@ package dev.kkorolyov.sqlob.persistence;
 
 import java.lang.reflect.Field;
 import java.math.BigInteger;
-import java.sql.JDBCType;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -11,7 +10,6 @@ import javax.sql.DataSource;
 
 import dev.kkorolyov.sqlob.annotation.Reference;
 import dev.kkorolyov.sqlob.annotation.Sql;
-import dev.kkorolyov.sqlob.annotation.Storage;
 import dev.kkorolyov.sqlob.annotation.Transient;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.logging.LoggerInterface;
@@ -49,19 +47,14 @@ public class Connection {
 	}
 	
 	private String getTable(Class<?> c) throws SQLException {
-		String table = c.getSimpleName();	// Default to class name
-		
-		Storage storage = c.getAnnotation(Storage.class);
-		if (storage != null) {
-			if (storage.table() != null) 
-				table = storage.table();
+		Sql override = c.getAnnotation(Sql.class);
+		String table = override != null ? override.value() : c.getSimpleName();
 			
-			if (!tableExists(table))
-				initTable(table, storage.init() != null ? storage.init() : buildDefaultInit(c));
-		}
+		if (!tableExists(table))
+			initTable(buildDefaultInit(table, c.getDeclaredFields()));
+		
 		return table;
 	}
-	
 	private boolean tableExists(String table) throws SQLException {
 		try (ResultSet rs = conn.getMetaData().getTables(null, null, table, null)) {
 			return rs.next();	// Table exists
@@ -70,8 +63,7 @@ public class Connection {
 			throw e;
 		}
 	}
-	
-	private void initTable(String table, String init) throws SQLException {
+	private void initTable(String init) throws SQLException {
 		try (Statement s = conn.createStatement()) {
 			s.executeUpdate(init);
 		} catch (SQLException e) {
@@ -80,20 +72,24 @@ public class Connection {
 		}
 	}
 	
-	private String buildDefaultInit(Class<?> c) throws SQLException {
+	private String buildDefaultInit(String table, Field[] fields) throws SQLException {
 		StringBuilder builder = new StringBuilder("CREATE TABLE");
 		
-		builder.append(" ").append(c.getSimpleName()).append(" (");
+		builder.append(" ").append(table).append(" (");
 		builder.append("id BIGINT UNSIGNED PRIMARY KEY,");
 		
-		for (Field field : c.getDeclaredFields()) {
-			if (field.getAnnotation(Transient.class) == null) {	// Not transient
+		for (Field field : fields) {
+			Transient transientAnnotation = field.getAnnotation(Transient.class);
+			Reference reference = field.getAnnotation(Reference.class);
+			Sql sql = field.getAnnotation(Sql.class);
+			
+			if (transientAnnotation == null && (reference != null || sql != null)) {	// Not transient
 				builder.append(field.getName());
-				builder.append(field.getAnnotation(Reference.class) != null ? buildReference(field.getClass()) : field.getAnnotation(Sql.class).value());
+				builder.append(reference != null ? buildReference(field.getClass()) : sql.value());
 				builder.append(",");
 			}
 		}
-		builder.append(")");
+		builder.replace(builder.length() - 1, builder.length(), ")");
 		
 		return builder.toString();
 	}

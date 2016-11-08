@@ -19,6 +19,7 @@ public class ConnectionTest {
 		@Sql("INT")
 		int num;
 	}
+	@Sql("SS")
 	class SmartStub {
 		@Reference
 		DumbStub stub;
