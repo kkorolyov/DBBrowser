@@ -2,6 +2,7 @@ package dev.kkorolyov.sqlob.persistence;
 
 import java.lang.reflect.Field;
 import java.math.BigInteger;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -18,19 +19,17 @@ import dev.kkorolyov.sqlob.logging.LoggerInterface;
  * Persists objects using an external SQL database.
  * Allows for retrieval of objects by ID or by an arbitrary set of conditions.
  */
-public class Connection {
-	private static final LoggerInterface log = Logger.getLogger(Connection.class.getName());
+public class Session {
+	private static final LoggerInterface log = Logger.getLogger(Session.class.getName());
 	
-	private final java.sql.Connection conn;
+	private final DataSource ds;
 
 	/**
 	 * Constructs a new connection to a {@code Datasource}.
 	 * @param ds datasource to SQL database
-	 * @throws SQLException if a database error occurs
 	 */
-	public Connection(DataSource ds) throws SQLException {
-		conn = ds.getConnection();
-		conn.setAutoCommit(false);
+	public Session(DataSource ds) {
+		this.ds = ds;
 	}
 	
 	/**
@@ -62,20 +61,24 @@ public class Connection {
 		return table;
 	}
 	private boolean tableExists(String table) throws SQLException {
-		try (ResultSet rs = conn.getMetaData().getTables(null, null, table, null)) {
-			return rs.next();	// Table exists
-		} catch (SQLException e) {
-			conn.rollback();
-			throw e;
+		try (Connection conn = getConn()) {
+			try (ResultSet rs = conn.getMetaData().getTables(null, null, table, null)) {
+				return rs.next();	// Table exists
+			} catch (SQLException e) {
+				conn.rollback();
+				throw e;
+			}
 		}
 	}
 	private void initTable(String init) throws SQLException {
-		try (Statement s = conn.createStatement()) {
-			s.executeUpdate(init);
-			conn.commit();
-		} catch (SQLException e) {
-			conn.rollback();
-			throw e;
+		try (Connection conn = getConn()) {
+			try (Statement s = conn.createStatement()) {
+				s.executeUpdate(init);
+				conn.commit();
+			} catch (SQLException e) {
+				conn.rollback();
+				throw e;
+			}
 		}
 	}
 	
@@ -91,16 +94,26 @@ public class Connection {
 			Sql sql = field.getAnnotation(Sql.class);
 			
 			if (transientAnnotation == null && (reference != null || sql != null)) {	// Not transient
-				builder.append(field.getName());
+				builder.append(field.getName()).append(" ");
 				builder.append(reference != null ? buildReference(field.getType()) : sql.value());
 				builder.append(",");
 			}
 		}
 		builder.replace(builder.length() - 1, builder.length(), ")");
 		
-		return builder.toString();
+		String result = builder.toString();
+		log.debug("Built default table init statement for " + table + ": " + result);
+		
+		return result;
 	}
 	private String buildReference(Class<?> c) throws SQLException {
 		return "BIGINT UNSIGNED REFERENCES " + getTable(c) + " (id)";
+	}
+	
+	private Connection getConn() throws SQLException {
+		Connection conn = ds.getConnection();
+		conn.setAutoCommit(false);
+		
+		return conn;
 	}
 }

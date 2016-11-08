@@ -1,14 +1,17 @@
 package dev.kkorolyov.sqlob.persistence;
 
+import java.io.File;
 import java.sql.SQLException;
 import java.util.Arrays;
 
 import javax.sql.DataSource;
 
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteDataSource;
 
 import dev.kkorolyov.sqlob.annotation.Reference;
@@ -23,10 +26,18 @@ public class ConnectionTest {
 	
 	@Parameters(name = "{index}({0})")
 	public static Iterable<DataSource> data() {
-		SQLiteDataSource sqliteDS = new SQLiteDataSource();
+		SQLiteConfig config = new SQLiteConfig();
+		config.enforceForeignKeys(true);
+		
+		SQLiteDataSource sqliteDS = new SQLiteDataSource(config);
 		sqliteDS.setUrl("jdbc:sqlite:" + SQLITE_FILE);
 		
 		return Arrays.asList(sqliteDS);
+	}
+	
+	@AfterClass
+	public static void tearDownAfterClass() {
+		System.out.println(new File(SQLITE_FILE).delete());
 	}
 	
 	public ConnectionTest(DataSource input) {
@@ -35,11 +46,12 @@ public class ConnectionTest {
 	
 	@Test
 	public void testGet() throws SQLException {
-		Connection conn = new Connection(ds);
+		Session conn = new Session(ds);
 		conn.get(DumbStub.class, 0);
 		conn.get(SmartStub.class, 0);
 	}
 	
+	@Sql("DS")
 	class DumbStub {
 		@Sql("INT")
 		int num;
