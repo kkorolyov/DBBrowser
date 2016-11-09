@@ -153,7 +153,6 @@ public class Session {
 		List<Field> fields = new ArrayList<>();
 		
 		for (Field field : c.getDeclaredFields()) {
-			System.out.println(field);
 			Transient transientAnnotation = field.getAnnotation(Transient.class);
 			Reference reference = field.getAnnotation(Reference.class);
 			Sql sql = field.getAnnotation(Sql.class);

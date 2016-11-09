@@ -28,7 +28,6 @@ public class SessionTest {
 	public static Iterable<DataSource> data() {
 		SQLiteConfig config = new SQLiteConfig();
 		config.enforceForeignKeys(true);
-		
 		SQLiteDataSource sqliteDS = new SQLiteDataSource(config);
 		sqliteDS.setUrl("jdbc:sqlite:" + SQLITE_FILE);
 		
@@ -37,7 +36,7 @@ public class SessionTest {
 	
 	@AfterClass
 	public static void tearDownAfterClass() {
-		System.out.println(new File(SQLITE_FILE).delete());
+		System.out.println((new File(SQLITE_FILE).delete() ? "Deleted " : "Failed to delete ") + "test SQLite file: " + SQLITE_FILE);
 	}
 	
 	public SessionTest(DataSource input) {
