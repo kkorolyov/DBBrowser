@@ -45,20 +45,30 @@ public class ConnectionTest {
 	}
 	
 	@Test
-	public void testGet() throws SQLException {
+	public void testGet() throws SQLException, InstantiationException, IllegalAccessException {
 		Session conn = new Session(ds);
-		conn.get(DumbStub.class, 0);
-		conn.get(SmartStub.class, 0);
+		System.out.println(conn.get(DumbStub.class, 1));
+		System.out.println(conn.get(SmartStub.class, 1));
 	}
 	
 	@Sql("DS")
 	class DumbStub {
 		@Sql("INT")
 		int num;
+		
+		@Override
+		public String toString() {
+			return getClass().getName() + "(" + num + ")";
+		}
 	}
 	@Sql("SS")
 	class SmartStub {
 		@Reference
 		DumbStub stub;
+		
+		@Override
+		public String toString() {
+			return getClass().getName() + "(" + stub + ")";
+		}
 	}
 }

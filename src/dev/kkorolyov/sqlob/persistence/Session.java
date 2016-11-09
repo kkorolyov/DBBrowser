@@ -2,10 +2,9 @@ package dev.kkorolyov.sqlob.persistence;
 
 import java.lang.reflect.Field;
 import java.math.BigInteger;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.sql.DataSource;
 
@@ -33,22 +32,42 @@ public class Session {
 	}
 	
 	/**
-	 * Convenience method for {@link #get(Class, BigInteger)}.
-	 */
-	public <T> T get(Class<T> c, long id) throws SQLException {
-		return get(c, BigInteger.valueOf(id));
-	}
-	/**
 	 * Retrieves an instance of a class matching an ID.
 	 * @param c type to retrieve
 	 * @param id instance id
 	 * @return persisted instance of class {@code c} matching {@code id}, or {@code null} if no such instance
 	 * @throws SQLException if a database error occurs
+	 * @throws InstantiationException 
+	 * @throws IllegalAccessException 
 	 */
-	public <T> T get(Class<T> c, BigInteger id) throws SQLException {
+	public <T> T get(Class<T> c, long id) throws SQLException, InstantiationException, IllegalAccessException {
+		T result = null;		
 		String table = getTable(c);	// Get appropriate table, create if needed
 		
-		return null;	// TODO
+		try (Connection conn = getConn()) {
+			try (PreparedStatement s = conn.prepareStatement(buildGetId(table))) {
+				s.setLong(1, id);
+				
+				ResultSet rs = s.executeQuery();
+				if (rs.next()) {	// Found result
+					result = c.newInstance();
+					
+					for (Field field : getPersistentFields(c)) {
+						field.set(result, field.getAnnotation(Reference.class) != null ? get(field.getType(), rs.getLong(field.getName())) : rs.getObject(field.getName()));
+					}
+				}
+			} catch (SQLException e) {
+				conn.rollback();
+				throw e;
+			} catch (InstantiationException e) {
+				conn.rollback();
+				throw e;
+			} catch (IllegalAccessException e) {
+				conn.rollback();
+				throw e;
+			}
+		}
+		return result;
 	}
 	
 	private String getTable(Class<?> c) throws SQLException {
@@ -56,7 +75,7 @@ public class Session {
 		String table = override != null ? override.value() : c.getSimpleName();
 			
 		if (!tableExists(table))
-			initTable(buildDefaultInit(table, c.getDeclaredFields()));
+			initTable(buildDefaultInit(table, getPersistentFields(c)));
 		
 		return table;
 	}
@@ -82,22 +101,15 @@ public class Session {
 		}
 	}
 	
-	private String buildDefaultInit(String table, Field[] fields) throws SQLException {
-		StringBuilder builder = new StringBuilder("CREATE TABLE");
-		
-		builder.append(" ").append(table).append(" (");
-		builder.append("id BIGINT UNSIGNED PRIMARY KEY,");
-		
+	private String buildDefaultInit(String table, Iterable<Field> fields) throws SQLException {
+		StringBuilder builder = new StringBuilder("CREATE TABLE ").append(table).append(" (id BIGINT UNSIGNED PRIMARY KEY, ");
 		for (Field field : fields) {
-			Transient transientAnnotation = field.getAnnotation(Transient.class);
 			Reference reference = field.getAnnotation(Reference.class);
 			Sql sql = field.getAnnotation(Sql.class);
 			
-			if (transientAnnotation == null && (reference != null || sql != null)) {	// Not transient
-				builder.append(field.getName()).append(" ");
-				builder.append(reference != null ? buildReference(field.getType()) : sql.value());
-				builder.append(",");
-			}
+			builder.append(field.getName()).append(" ");
+			builder.append(reference != null ? buildReference(field.getType()) : sql.value());
+			builder.append(",");
 		}
 		builder.replace(builder.length() - 1, builder.length(), ")");
 		
@@ -108,6 +120,27 @@ public class Session {
 	}
 	private String buildReference(Class<?> c) throws SQLException {
 		return "BIGINT UNSIGNED REFERENCES " + getTable(c) + " (id)";
+	}
+	private static String buildGetId(String table) {
+		StringBuilder builder = new StringBuilder("SELECT * FROM ");
+		builder.append(table).append(" WHERE id=? LIMIT 1");
+		
+		return builder.toString();
+	}
+	
+	private static Iterable<Field> getPersistentFields(Class<?> c) {
+		List<Field> fields = new ArrayList<>();
+		
+		for (Field field : c.getDeclaredFields()) {
+			System.out.println(field);
+			Transient transientAnnotation = field.getAnnotation(Transient.class);
+			Reference reference = field.getAnnotation(Reference.class);
+			Sql sql = field.getAnnotation(Sql.class);
+			
+			if (transientAnnotation == null && (reference != null || sql != null))	// Not transient
+				fields.add(field);
+		}
+		return fields;
 	}
 	
 	private Connection getConn() throws SQLException {
