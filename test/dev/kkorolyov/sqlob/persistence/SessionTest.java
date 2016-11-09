@@ -19,7 +19,7 @@ import dev.kkorolyov.sqlob.annotation.Sql;
 
 @SuppressWarnings("javadoc")
 @RunWith(Parameterized.class)
-public class ConnectionTest {
+public class SessionTest {
 	private static final String SQLITE_FILE = "test/sqlite.db";
 	
 	private DataSource ds;
@@ -40,18 +40,17 @@ public class ConnectionTest {
 		System.out.println(new File(SQLITE_FILE).delete());
 	}
 	
-	public ConnectionTest(DataSource input) {
+	public SessionTest(DataSource input) {
 		this.ds = input;
 	}
 	
 	@Test
-	public void testGet() throws SQLException, InstantiationException, IllegalAccessException {
+	public void testGet() throws SQLException {
 		Session conn = new Session(ds);
 		System.out.println(conn.get(DumbStub.class, 1));
 		System.out.println(conn.get(SmartStub.class, 1));
 	}
 	
-	@Sql("DS")
 	class DumbStub {
 		@Sql("INT")
 		int num;

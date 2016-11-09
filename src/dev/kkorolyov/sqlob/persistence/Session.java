@@ -1,10 +1,11 @@
 package dev.kkorolyov.sqlob.persistence;
 
 import java.lang.reflect.Field;
-import java.math.BigInteger;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.sql.DataSource;
 
@@ -32,42 +33,62 @@ public class Session {
 	}
 	
 	/**
-	 * Retrieves an instance of a class matching an ID.
+	 * Retrieves the instance of a class matching an ID.
 	 * @param c type to retrieve
 	 * @param id instance id
-	 * @return persisted instance of class {@code c} matching {@code id}, or {@code null} if no such instance
+	 * @return instance matching {@code id}, or {@code null} if no such instance
 	 * @throws SQLException if a database error occurs
-	 * @throws InstantiationException 
-	 * @throws IllegalAccessException 
+	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
-	public <T> T get(Class<T> c, long id) throws SQLException, InstantiationException, IllegalAccessException {
-		T result = null;		
+	public <T> T get(Class<T> c, long id) throws SQLException {
+		Set<T> matches = get(c, new Condition("id", "=", id));
+		
+		log.debug((matches.isEmpty() ? "Failed to find " : "Found ") + c.getName() + " with id: " + id); 
+		return matches.isEmpty() ? null : matches.iterator().next();
+	}
+	/**
+	 * Retrieves all instances of a class matching a condition.
+	 * @param c type to retrieve
+	 * @param condition condition to match
+	 * @return all matching instances
+	 * @throws SQLException if a database error occurs
+	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 */
+	public <T> Set<T> get(Class<T> c, Condition condition) throws SQLException {
+		Set<T> results = new HashSet<>();		
 		String table = getTable(c);	// Get appropriate table, create if needed
 		
 		try (Connection conn = getConn()) {
-			try (PreparedStatement s = conn.prepareStatement(buildGetId(table))) {
-				s.setLong(1, id);
+			try (PreparedStatement s = conn.prepareStatement(buildGet(table, condition))) {
+				int counter = 1;
+				for (Object value : condition.values())
+					s.setObject(counter++, value);
 				
 				ResultSet rs = s.executeQuery();
-				if (rs.next()) {	// Found result
-					result = c.newInstance();
-					
-					for (Field field : getPersistentFields(c)) {
-						field.set(result, field.getAnnotation(Reference.class) != null ? get(field.getType(), rs.getLong(field.getName())) : rs.getObject(field.getName()));
+				while (rs.next()) {	// Found result
+					try {
+						T result = c.newInstance();
+						
+						for (Field field : getPersistentFields(c)) {
+							try {
+								field.set(result, field.getAnnotation(Reference.class) != null ? get(field.getType(), rs.getLong(field.getName())) : rs.getObject(field.getName()));
+							} catch (IllegalAccessException e) {
+								throw new NonPersistableException(field.getName() + " is innaccessible");
+							}
+						}
+						results.add(result);
+					} catch (InstantiationException | IllegalAccessException e) {
+						throw new NonPersistableException(c.getName() + " does not provide an accessible nullary constructor");
 					}
 				}
 			} catch (SQLException e) {
-				conn.rollback();
 				throw e;
-			} catch (InstantiationException e) {
+			} finally {
 				conn.rollback();
-				throw e;
-			} catch (IllegalAccessException e) {
-				conn.rollback();
-				throw e;
 			}
 		}
-		return result;
+		log.debug("Found " + results.size() + " results matching condition: " + condition);
+		return results;
 	}
 	
 	private String getTable(Class<?> c) throws SQLException {
@@ -102,30 +123,30 @@ public class Session {
 	}
 	
 	private String buildDefaultInit(String table, Iterable<Field> fields) throws SQLException {
-		StringBuilder builder = new StringBuilder("CREATE TABLE ").append(table).append(" (id BIGINT UNSIGNED PRIMARY KEY, ");
+		StringBuilder builder = new StringBuilder("CREATE TABLE ").append(table).append(" (id BIGINT UNSIGNED PRIMARY KEY");
 		for (Field field : fields) {
 			Reference reference = field.getAnnotation(Reference.class);
 			Sql sql = field.getAnnotation(Sql.class);
 			
-			builder.append(field.getName()).append(" ");
+			builder.append(", ").append(field.getName()).append(" ");
 			builder.append(reference != null ? buildReference(field.getType()) : sql.value());
-			builder.append(",");
 		}
-		builder.replace(builder.length() - 1, builder.length(), ")");
+		builder.append(")");
 		
 		String result = builder.toString();
 		log.debug("Built default table init statement for " + table + ": " + result);
-		
 		return result;
 	}
 	private String buildReference(Class<?> c) throws SQLException {
 		return "BIGINT UNSIGNED REFERENCES " + getTable(c) + " (id)";
 	}
-	private static String buildGetId(String table) {
+	private static String buildGet(String table, Condition condition) {
 		StringBuilder builder = new StringBuilder("SELECT * FROM ");
-		builder.append(table).append(" WHERE id=? LIMIT 1");
+		builder.append(table).append(" WHERE ").append(condition);
 		
-		return builder.toString();
+		String result = builder.toString();
+		log.debug("Built get for " + table + ": " + result);
+		return result;
 	}
 	
 	private static Iterable<Field> getPersistentFields(Class<?> c) {
