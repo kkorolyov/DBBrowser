@@ -4,22 +4,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
-import dev.kkorolyov.sqlob.connection.DatabaseConnectionTest;
-import dev.kkorolyov.sqlob.construct.ColumnTest;
-import dev.kkorolyov.sqlob.construct.EntryTest;
-import dev.kkorolyov.sqlob.construct.ResultsTest;
-import dev.kkorolyov.sqlob.construct.SqlobTypeTest;
-import dev.kkorolyov.sqlob.statement.StatementBuilderTest;
+import dev.kkorolyov.sqlob.persistence.SessionTest;
 
 @SuppressWarnings("javadoc")
 @RunWith(Suite.class)
 
-@SuiteClasses({ DatabaseConnectionTest.class,
-								ColumnTest.class, 
-								ResultsTest.class,
-								EntryTest.class,
-								SqlobTypeTest.class,
-								StatementBuilderTest.class})
+@SuiteClasses({ SessionTest.class})
 
 public class AllTests {
 	// Suite

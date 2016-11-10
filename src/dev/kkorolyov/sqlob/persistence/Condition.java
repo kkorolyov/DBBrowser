@@ -17,8 +17,10 @@ public class Condition {
 	 * @param value value to match
 	 */
 	public Condition(String attribute, String operator, Object value) {
-		values.add(value);
-		sql = new StringBuilder(attribute).append(operator).append("?");
+		if (value != null)
+			values.add(value);
+		
+		sql = new StringBuilder(attribute).append(" ").append(operator).append(" ").append(value == null ? "NULL" : "?");
 	}
 	
 	/**

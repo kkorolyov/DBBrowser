@@ -44,10 +44,18 @@ public class SessionTest {
 	}
 	
 	@Test
-	public void testGet() throws SQLException {
+	public void testGetId() throws SQLException {
 		Session conn = new Session(ds);
+		
 		System.out.println(conn.get(DumbStub.class, 1));
 		System.out.println(conn.get(SmartStub.class, 1));
+	}
+	@Test
+	public void testGetCondition() throws SQLException {
+		Session conn = new Session(ds);
+		Condition cond = new Condition("num", "IS", null).or("num", "IS NOT", null);
+		
+		System.out.println(conn.get(DumbStub.class, cond));
 	}
 	
 	class DumbStub {
