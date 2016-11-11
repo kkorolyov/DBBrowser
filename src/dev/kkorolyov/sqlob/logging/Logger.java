@@ -8,7 +8,7 @@ public class Logger {
 	private static LoggerInterface stub;
 	
 	/**
-	 * Returns the appropriate logger for a specified name or a stub if the {@code SimpleLogs} API is not found.
+	 * Returns the appropriate logger for a specified name or a stub if the {@code SimpleLogs} library is not found.
 	 * @param name name of logger to get
 	 * @return appropriate logger
 	 */

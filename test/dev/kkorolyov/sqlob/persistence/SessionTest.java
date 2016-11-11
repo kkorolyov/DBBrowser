@@ -5,7 +5,8 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Objects;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.UUID;
 
 import javax.sql.DataSource;
@@ -45,6 +46,49 @@ public class SessionTest {
 	
 	public SessionTest(DataSource input) {
 		this.ds = input;
+	}
+	
+	@Test
+	public void testPerformanceDumbStub() throws SQLException {
+		Session session = new Session(ds);
+		int tests = 100;
+		
+		List<UUID> uuids = new LinkedList<>();
+		
+		long start = System.nanoTime();
+		for (int i = 0; i < tests; i++)
+			uuids.add(session.put(new DumbStub(i)));
+		long ms = (System.nanoTime() - start) / 1000000;
+		
+		System.out.println(ms + "ms to PUT " + tests + " DumbStubs");
+		
+		start = System.nanoTime();
+		for (UUID uuid : uuids)
+			session.get(DumbStub.class, uuid);
+		ms = (System.nanoTime() - start) / 1000000;
+		
+		System.out.println(ms + " ms to GET " + tests + " DumbStubs");
+	}
+	@Test
+	public void testPerformanceSmartStub() throws SQLException {
+		Session session = new Session(ds);
+		int tests = 100;
+		
+		List<UUID> uuids = new LinkedList<>();
+		
+		long start = System.nanoTime();
+		for (int i = 0; i < tests; i++)
+			uuids.add(session.put(new SmartStub(new DumbStub(i))));
+		long ms = (System.nanoTime() - start) / 1000000;
+		
+		System.out.println(ms + "ms to PUT " + tests + " SmartStubs");
+		
+		start = System.nanoTime();
+		for (UUID uuid : uuids)
+			session.get(SmartStub.class, uuid);
+		ms = (System.nanoTime() - start) / 1000000;
+		
+		System.out.println(ms + " ms to GET " + tests + " SmartStubs");
 	}
 	
 	@Test

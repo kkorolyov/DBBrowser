@@ -18,6 +18,7 @@ import dev.kkorolyov.sqlob.logging.LoggerInterface;
  */
 public class Session {
 	private static final LoggerInterface log = Logger.getLogger(Session.class.getName());
+	private static final boolean LOGGING_ENABLED = !(log instanceof dev.kkorolyov.sqlob.logging.LoggerStub);
 	private static final String ID_NAME = "uuid",
 															ID_TYPE = "CHAR(32)";
 	
@@ -42,7 +43,8 @@ public class Session {
 	public <T> T get(Class<T> c, UUID uuid) throws SQLException {
 		Set<T> matches = get(c, new Condition(ID_NAME, "=", uuid.toString()));
 		
-		log.debug((matches.isEmpty() ? "Failed to find " : "Found ") + c.getName() + " with " + ID_NAME + ": " + uuid); 
+		if (LOGGING_ENABLED)
+			log.debug((matches.isEmpty() ? "Failed to find " : "Found ") + c.getName() + " with " + ID_NAME + ": " + uuid);
 		return matches.isEmpty() ? null : matches.iterator().next();
 	}
 	/**
@@ -56,7 +58,8 @@ public class Session {
 	public <T> Set<T> get(Class<T> c, Condition condition) throws SQLException {
 		Set<T> results = new HashSet<>(getMap(c, condition).values());	// Discard IDs and duplicates
 		
-		log.debug("Found " + results.size() + " results for " + c.getName() + " matching condition: " + condition);
+		if (LOGGING_ENABLED)
+			log.debug("Found " + results.size() + " results for " + c.getName() + " matching condition: " + condition);
 		return results;
 	}
 	
@@ -76,7 +79,8 @@ public class Session {
 		if (!map.isEmpty()) {	// Equivalent object already saved
 			UUID uuid = map.keySet().iterator().next();
 			
-			log.debug("Found equivalent instance of (" + o.getClass().getName() + ") " + o + " at " + ID_NAME + ": " + uuid);
+			if (LOGGING_ENABLED)
+				log.debug("Found equivalent instance of (" + o.getClass().getName() + ") " + o + " at " + ID_NAME + ": " + uuid);
 			return uuid;
 		}
 		try (Connection conn = getConn()) {
@@ -106,7 +110,8 @@ public class Session {
 		}
 		UUID uuid = getMap(o.getClass(), equals).keySet().iterator().next();
 		
-		log.debug("Saved (" + o.getClass().getName() + ") " + o + " at " + ID_NAME + ": " + uuid);
+		if (LOGGING_ENABLED)
+			log.debug("Saved (" + o.getClass().getName() + ") " + o + " at " + ID_NAME + ": " + uuid);
 		return uuid;
 	}
 	
@@ -140,7 +145,6 @@ public class Session {
 						}
 						results.put(uuid, result);
 					} catch (InstantiationException | IllegalAccessException e) {
-						log.exception(e);
 						throw new NonPersistableException(c.getName() + " does not provide an accessible nullary constructor");
 					}
 				}
@@ -196,7 +200,9 @@ public class Session {
 		builder.append(")");
 		
 		String result = builder.toString();
-		log.debug("Built default table init statement for " + table + ": " + result);
+		
+		if (LOGGING_ENABLED)
+			log.debug("Built default table init statement for " + table + ": " + result);
 		return result;
 	}
 	private String buildReference(Class<?> c) throws SQLException {
@@ -211,7 +217,9 @@ public class Session {
 			builder.append(" WHERE ").append(condition);
 		
 		String result = builder.toString();
-		log.debug("Built GET for " + table + ": " + result);
+		
+		if (LOGGING_ENABLED)
+			log.debug("Built GET for " + table + ": " + result);
 		return result;
 	}
 	private static String buildPut(String table, Iterable<Field> fields) {
@@ -226,7 +234,9 @@ public class Session {
 		builder.replace(builder.length() - 1, builder.length(), ") ").append(values.toString());
 		
 		String result = builder.toString();
-		log.debug("Built PUT for " + table + ": " + result);
+		
+		if (LOGGING_ENABLED)
+			log.debug("Built PUT for " + table + ": " + result);
 		return result;
 	}
 	
@@ -249,7 +259,8 @@ public class Session {
 				throw new NonPersistableException(field.getName() + " is innaccessible");
 			}
 		}
-		log.debug("Built equals condition for " + o + ": " + cond);
+		if (LOGGING_ENABLED)
+			log.debug("Built equals condition for " + o + ": " + cond);
 		return cond;
 	}
 	
