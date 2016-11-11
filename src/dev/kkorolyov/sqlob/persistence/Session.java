@@ -2,10 +2,7 @@ package dev.kkorolyov.sqlob.persistence;
 
 import java.lang.reflect.Field;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import javax.sql.DataSource;
 
@@ -55,7 +52,39 @@ public class Session {
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
 	public <T> Set<T> get(Class<T> c, Condition condition) throws SQLException {
-		Set<T> results = new HashSet<>();		
+		Set<T> results = new HashSet<>(getMap(c, condition).values());	// Discard IDs and duplicates
+		
+		log.debug("Found " + results.size() + " results for " + c.getName() + " matching condition: " + condition);
+		return results;
+	}
+	
+	public long put(Object o) throws SQLException {
+		Condition equals = buildEqualsCondition(o);
+		Map<Long, ?> map = getMap(o.getClass(), equals);
+		
+		if (!map.isEmpty()) {	// Equivalent object already saved
+			long id = map.keySet().iterator().next();
+			
+			log.debug(o.getClass() + " " + o + " is already saved at id: " + id);
+			return id;
+		}
+		try (Connection conn = getConn()) {
+			Iterable<Field> fields = getPersistentFields(o.getClass());
+			try (PreparedStatement s = conn.prepareStatement(buildPut(getTable(o.getClass()), fields))) {
+				int counter = 1;
+				for (Field field : fields) {
+					if (field.getAnnotation(Reference.class) == null)	// Primitive
+						s.setObject(counter++, field.get(o));
+				}
+			} catch (SQLException e) {
+				conn.rollback();
+				throw e;
+			}
+		}
+	}
+	
+	private <T> Map<Long, T> getMap(Class<T> c, Condition condition) throws SQLException {	// Return ID mapped to object
+		Map<Long, T> results = new HashMap<>();
 		String table = getTable(c);	// Get appropriate table, create if needed
 		
 		try (Connection conn = getConn()) {
@@ -67,16 +96,17 @@ public class Session {
 				ResultSet rs = s.executeQuery();
 				while (rs.next()) {	// Found result
 					try {
+						long id = rs.getLong("id");
 						T result = c.newInstance();
 						
 						for (Field field : getPersistentFields(c)) {
 							try {
-								field.set(result, field.getAnnotation(Reference.class) != null ? get(field.getType(), rs.getLong(field.getName())) : rs.getObject(field.getName()));
+								field.set(result, field.getAnnotation(Reference.class) == null ? rs.getObject(field.getName()) : get(field.getType(), rs.getLong(field.getName())));
 							} catch (IllegalAccessException e) {
 								throw new NonPersistableException(field.getName() + " is innaccessible");
 							}
 						}
-						results.add(result);
+						results.put(id, result);
 					} catch (InstantiationException | IllegalAccessException e) {
 						throw new NonPersistableException(c.getName() + " does not provide an accessible nullary constructor");
 					}
@@ -87,7 +117,6 @@ public class Session {
 				conn.rollback();
 			}
 		}
-		log.debug("Found " + results.size() + " results matching condition: " + condition);
 		return results;
 	}
 	
@@ -123,7 +152,7 @@ public class Session {
 	}
 	
 	private String buildDefaultInit(String table, Iterable<Field> fields) throws SQLException {
-		StringBuilder builder = new StringBuilder("CREATE TABLE ").append(table).append(" (id BIGINT UNSIGNED PRIMARY KEY");
+		StringBuilder builder = new StringBuilder("CREATE TABLE ").append(table).append(" (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT");
 		for (Field field : fields) {
 			Reference reference = field.getAnnotation(Reference.class);
 			Sql sql = field.getAnnotation(Sql.class);
@@ -145,8 +174,43 @@ public class Session {
 		builder.append(table).append(" WHERE ").append(condition);
 		
 		String result = builder.toString();
-		log.debug("Built get for " + table + ": " + result);
+		log.debug("Built GET for " + table + ": " + result);
 		return result;
+	}
+	private static String buildPut(String table, Iterable<Field> fields) {
+		StringBuilder builder = new StringBuilder("INSERT INTO ").append(table).append("("),
+									values = new StringBuilder("VALUES (");
+		
+		for (Field field : fields)  {
+			builder.append(field.getName()).append(",");
+			values.append("?,");
+		}
+		values.replace(values.length() - 1, values.length(), ")");
+		builder.replace(builder.length() - 1, builder.length(), ")").append(values.toString());
+		
+		String result = builder.toString();
+		log.debug("Built PUT for " + table + ": " + result);
+		return result;
+	}
+	
+	private static Condition buildEqualsCondition(Object o) {
+		Condition cond = null;
+		for (Field field : getPersistentFields(o.getClass())) {
+			try {
+				Object value = field.get(o);
+				String 	attribute = field.getName(),
+								operator = (o == null ? "IS" : "=");
+				
+				if (cond == null)
+					cond = new Condition(attribute, operator, value);
+				else
+					cond.and(attribute, operator, value);
+			} catch (IllegalAccessException e) {
+				throw new NonPersistableException(field.getName() + " is innaccessible");
+			}
+		}
+		log.debug("Built equals condition for " + o + ": " + cond);
+		return cond;
 	}
 	
 	private static Iterable<Field> getPersistentFields(Class<?> c) {
