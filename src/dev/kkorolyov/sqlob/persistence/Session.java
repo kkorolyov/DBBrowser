@@ -20,7 +20,7 @@ public class Session {
 	private static final LoggerInterface log = Logger.getLogger(Session.class.getName());
 	private static final boolean LOGGING_ENABLED = !(log instanceof dev.kkorolyov.sqlob.logging.LoggerStub);
 	private static final String ID_NAME = "uuid",
-															ID_TYPE = "CHAR(32)";
+															ID_TYPE = "CHAR(36)";
 	
 	private final DataSource ds;
 
@@ -40,7 +40,7 @@ public class Session {
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
-	public <T> T get(Class<T> c, UUID uuid) throws SQLException {
+	public <T> T get(Class<T> c, UUID uuid) throws SQLException {	// TODO Reuse connection for less overhead
 		Set<T> matches = get(c, new Condition(ID_NAME, "=", uuid.toString()));
 		
 		if (LOGGING_ENABLED)
@@ -189,13 +189,13 @@ public class Session {
 	}
 	
 	private String buildDefaultInit(String table, Iterable<Field> fields) throws SQLException {
-		StringBuilder builder = new StringBuilder("CREATE TABLE ").append(table).append(" (").append(ID_NAME).append(" ").append(ID_TYPE).append(" PRIMARY KEY");	// Use type 4 UUID
+		StringBuilder builder = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(table).append(" (").append(ID_NAME).append(" ").append(ID_TYPE).append(" PRIMARY KEY");	// Use type 4 UUID
 		for (Field field : fields) {
 			Reference reference = field.getAnnotation(Reference.class);
 			Sql sql = field.getAnnotation(Sql.class);
 			
 			builder.append(", ").append(field.getName()).append(" ");
-			builder.append(reference != null ? buildReference(field.getType()) : sql.value());
+			builder.append(reference == null ? sql.value() : buildReference(field));
 		}
 		builder.append(")");
 		
@@ -205,8 +205,8 @@ public class Session {
 			log.debug("Built default table init statement for " + table + ": " + result);
 		return result;
 	}
-	private String buildReference(Class<?> c) throws SQLException {
-		return ID_TYPE + " REFERENCES " + getTable(c) + " (" + ID_NAME + ")";
+	private String buildReference(Field f) throws SQLException {
+		return ID_TYPE + ", FOREIGN KEY (" + f.getName() + ") REFERENCES " + getTable(f.getType()) + " (" + ID_NAME + ")";
 	}
 	
 	private static String buildGet(String table, Condition condition) {
