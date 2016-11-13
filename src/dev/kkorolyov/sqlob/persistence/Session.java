@@ -16,7 +16,7 @@ import dev.kkorolyov.sqlob.logging.LoggerInterface;
  * Persists objects using an external SQL database.
  * Allows for retrieval of objects by ID or by an arbitrary set of conditions.
  */
-public class Session {
+public class Session implements AutoCloseable {
 	private static final LoggerInterface log = Logger.getLogger(Session.class.getName());
 	private static final boolean LOGGING_ENABLED = !(log instanceof dev.kkorolyov.sqlob.logging.LoggerStub);
 	private static final String ID_NAME = "uuid",
@@ -27,13 +27,25 @@ public class Session {
 	private static final Map<Class<?>, LinkedList<SqlField>> sqlFields = new HashMap<>();
 	
 	private final DataSource ds;
+	private SessionWorker worker;
+	private final int bufferSize;
+	private int bufferCounter = 0;
 
 	/**
-	 * Constructs a new connection to a {@code Datasource}.
-	 * @param ds datasource to SQL database
+	 * Constructs a new session with a default buffer size of {@code 100}.
+	 * @see #Session(DataSource, int)
 	 */
-	public Session(DataSource ds) {
+	public Session (DataSource ds) {
+		this(ds, 100);
+	}
+	/**
+	 * Constructs a new session with a {@code Datasource}.
+	 * @param ds datasource to SQL database
+	 * @param bufferSize number of requests to cache before committing to database
+	 */
+	public Session(DataSource ds, int bufferSize) {
 		this.ds = ds;
+		this.bufferSize = bufferSize;
 	}
 	
 	/**
@@ -45,14 +57,17 @@ public class Session {
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
 	public <T> T get(Class<T> c, UUID uuid) throws SQLException {
-		try (Connection conn = getConn()) {
-			T result = new SessionWorker(conn).get(c, uuid);
-			conn.commit();
+		try {
+			T result = getWorker().get(c, uuid);
+			bufferCounter++;
 			
 			if (LOGGING_ENABLED)
 				log.debug((result == null ? "Failed to find " : "Found ") + c.getName() + " with " + ID_NAME + ": " + uuid);
 			
 			return result;
+		} catch (SQLException e) {
+			getWorker().rollback();
+			throw e;
 		}
 	}
 	/**
@@ -64,13 +79,16 @@ public class Session {
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
 	public <T> Set<T> get(Class<T> c, Condition condition) throws SQLException {
-		try (Connection conn = getConn()) {
-			Set<T> results = new SessionWorker(conn).get(c, condition);
-			conn.commit();
+		try {
+			Set<T> results = getWorker().get(c, condition);
+			bufferCounter++;
 			
 			if (LOGGING_ENABLED)
 				log.debug("Found " + results.size() + " results for " + c.getName() + " matching condition: " + condition);
 			return results;
+		} catch (SQLException e) {
+			getWorker().rollback();
+			throw e;
 		}
 	}
 	
@@ -83,12 +101,46 @@ public class Session {
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
 	public UUID put(Object o) throws SQLException {
-		try (Connection conn = getConn()) {
-			UUID result = new SessionWorker(conn).put(o);
-			conn.commit();
+		try {
+			UUID result = getWorker().put(o);
+			bufferCounter++;
 			
 			return result;
+		} catch (SQLException e) {
+			worker.rollback();
+			throw e;
 		}
+	}
+	
+	/**
+	 * Commits all active requests and closes any database connections this session is holding.
+	 * @throws SQLException if a database error occurs
+	 */
+	public void flush() throws SQLException {
+		if (worker != null) {
+			worker.close();
+			worker = null;
+			
+			bufferCounter = 0;
+		}
+	}
+	
+	/**
+	 * Equivalent to {@link #flush()}.
+	 */
+	@Override
+	public void close() throws SQLException {
+		flush();
+	}
+	
+	private SessionWorker getWorker() throws SQLException {
+		if (bufferCounter >= bufferSize)
+			flush();
+		
+		if (worker == null)
+			worker = new SessionWorker(getConn());
+		
+		return worker;
 	}
 	
 	private Connection getConn() throws SQLException {
@@ -151,6 +203,15 @@ public class Session {
 			if (LOGGING_ENABLED)
 				log.debug("Saved (" + o.getClass().getName() + ") " + o + " at " + ID_NAME + ": " + uuid);
 			return uuid;
+		}
+		
+		void close() throws SQLException {	// Commit and close worker
+			conn.commit();
+			conn.close();
+		}
+		void rollback() throws SQLException {
+			conn.rollback();
+			conn.close();
 		}
 		
 		private <T> Map<UUID, T> getMap(Class<T> c, Condition condition) throws SQLException {	// Return UUID mapped to object

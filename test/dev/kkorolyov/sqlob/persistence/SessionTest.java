@@ -116,42 +116,48 @@ public class SessionTest {
 	
 	@Test
 	public void testPerformanceDumbStub() throws SQLException {
-		Session session = new Session(ds);
 		int tests = 100;
 		
 		List<UUID> uuids = new LinkedList<>();
 		
 		long start = System.nanoTime();
-		for (int i = 0; i < tests; i++)
-			uuids.add(session.put(new DumbStub(i)));
+		try (Session session = new Session(ds)) {
+			for (int i = 0; i < tests; i++)
+				uuids.add(session.put(new DumbStub(i)));
+		}
 		long ms = (System.nanoTime() - start) / 1000000;
 		
 		System.out.println(ms + "ms to PUT " + tests + " DumbStubs using " + ds);
 		
 		start = System.nanoTime();
-		for (UUID uuid : uuids)
-			session.get(DumbStub.class, uuid);
+		try (Session session = new Session(ds)) {
+			for (UUID uuid : uuids)
+				session.get(DumbStub.class, uuid);
+		}
 		ms = (System.nanoTime() - start) / 1000000;
 		
 		System.out.println(ms + " ms to GET " + tests + " DumbStubs using " + ds);
 	}
 	@Test
 	public void testPerformanceSmartStub() throws SQLException {
-		Session session = new Session(ds);
 		int tests = 100;
 		
 		List<UUID> uuids = new LinkedList<>();
 		
 		long start = System.nanoTime();
-		for (int i = 0; i < tests; i++)
-			uuids.add(session.put(new SmartStub(null)));
+		try (Session session = new Session(ds)) {
+			for (int i = 0; i < tests; i++)
+				uuids.add(session.put(new SmartStub(new DumbStub(i))));
+		}
 		long ms = (System.nanoTime() - start) / 1000000;
 		
 		System.out.println(ms + "ms to PUT " + tests + " SmartStubs using " + ds);
 		
 		start = System.nanoTime();
-		for (UUID uuid : uuids)
-			session.get(SmartStub.class, uuid);
+		try (Session session = new Session(ds)) {
+			for (UUID uuid : uuids)
+				session.get(SmartStub.class, uuid);
+		}
 		ms = (System.nanoTime() - start) / 1000000;
 		
 		System.out.println(ms + " ms to GET " + tests + " SmartStubs using " + ds);
@@ -159,27 +165,28 @@ public class SessionTest {
 	
 	@Test
 	public void testGetId() throws SQLException {
-		Session session = new Session(ds);
-		
-		DumbStub ds = new DumbStub(125135);
-		SmartStub ss = new SmartStub(ds);
-		
-		UUID 	dsID = session.put(ds),
-					ssID = session.put(ss);
-		
-		assertEquals(ds, session.get(ds.getClass(), dsID));
-		assertEquals(ss, session.get(ss.getClass(), ssID));
+		try (Session session = new Session(ds)) {
+			DumbStub ds = new DumbStub(125135);
+			SmartStub ss = new SmartStub(ds);
+			
+			UUID 	dsID = session.put(ds),
+						ssID = session.put(ss);
+			
+			assertEquals(ds, session.get(ds.getClass(), dsID));
+			assertEquals(ss, session.get(ss.getClass(), ssID));
+		}
 	}
 	@Test
 	public void testGetCondition() throws SQLException {
-		Session session = new Session(ds);
-		int num = 17;
-		DumbStub ds = new DumbStub(17);
-		Condition cond = new Condition("num", "=", num);
-		
-		session.put(ds);
-		
-		assertEquals(ds, session.get(ds.getClass(), cond).iterator().next());
+		try (Session session = new Session(ds)) {
+			int num = 17;
+			DumbStub ds = new DumbStub(17);
+			Condition cond = new Condition("num", "=", num);
+			
+			session.put(ds);
+			
+			assertEquals(ds, session.get(ds.getClass(), cond).iterator().next());
+		}
 	}
 	
 	static class DumbStub {
