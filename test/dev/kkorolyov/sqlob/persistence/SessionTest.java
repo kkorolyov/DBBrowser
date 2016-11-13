@@ -74,6 +74,9 @@ public class SessionTest {
 
 			s.addBatch("DROP TABLE IF EXISTS DumbStub");
 			s.addBatch("DROP TABLE IF EXISTS dumbstub");
+			
+			s.addBatch("DROP TABLE IF EXISTS Test");
+			s.addBatch("DROP TABLE IF EXISTS test");
 
 			s.executeBatch();
 			
@@ -141,7 +144,7 @@ public class SessionTest {
 		
 		long start = System.nanoTime();
 		for (int i = 0; i < tests; i++)
-			uuids.add(session.put(new SmartStub(new DumbStub(i))));
+			uuids.add(session.put(new SmartStub(null)));
 		long ms = (System.nanoTime() - start) / 1000000;
 		
 		System.out.println(ms + "ms to PUT " + tests + " SmartStubs using " + ds);
@@ -180,7 +183,7 @@ public class SessionTest {
 	}
 	
 	static class DumbStub {
-		@Sql("INT")
+		@Sql("INTEGER")
 		int num;
 		
 		DumbStub() {}
