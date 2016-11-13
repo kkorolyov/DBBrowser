@@ -22,6 +22,10 @@ public class Session {
 	private static final String ID_NAME = "uuid",
 															ID_TYPE = "CHAR(36)";
 	
+	private static final Map<Class<?>, String> tables = new HashMap<>();	// Caches shared by all Sessions
+	private static final Map<String, String> tableInits = new HashMap<>();
+	private static final Map<Class<?>, LinkedList<SqlField>> sqlFields = new HashMap<>();
+	
 	private final DataSource ds;
 
 	/**
@@ -40,12 +44,16 @@ public class Session {
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
-	public <T> T get(Class<T> c, UUID uuid) throws SQLException {	// TODO Reuse connection for less overhead
-		Set<T> matches = get(c, new Condition(ID_NAME, "=", uuid.toString()));
-		
-		if (LOGGING_ENABLED)
-			log.debug((matches.isEmpty() ? "Failed to find " : "Found ") + c.getName() + " with " + ID_NAME + ": " + uuid);
-		return matches.isEmpty() ? null : matches.iterator().next();
+	public <T> T get(Class<T> c, UUID uuid) throws SQLException {
+		try (Connection conn = getConn()) {
+			T result = get(c, uuid, conn);
+			conn.commit();
+			
+			if (LOGGING_ENABLED)
+				log.debug((result == null ? "Failed to find " : "Found ") + c.getName() + " with " + ID_NAME + ": " + uuid);
+			
+			return result;
+		}
 	}
 	/**
 	 * Retrieves all instances of a class matching a condition.
@@ -56,11 +64,14 @@ public class Session {
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
 	public <T> Set<T> get(Class<T> c, Condition condition) throws SQLException {
-		Set<T> results = new HashSet<>(getMap(c, condition).values());	// Discard IDs and duplicates
-		
-		if (LOGGING_ENABLED)
-			log.debug("Found " + results.size() + " results for " + c.getName() + " matching condition: " + condition);
-		return results;
+		try (Connection conn = getConn()) {
+			Set<T> results = get(c, condition, conn);
+			conn.commit();
+			
+			if (LOGGING_ENABLED)
+				log.debug("Found " + results.size() + " results for " + c.getName() + " matching condition: " + condition);
+			return results;
+		}
 	}
 	
 	/**
@@ -72,9 +83,26 @@ public class Session {
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
 	public UUID put(Object o) throws SQLException {
-		Iterable<Field> fields = getPersistentFields(o.getClass());
-		Condition equals = buildEqualsCondition(o, fields);
-		Map<UUID, ?> map = getMap(o.getClass(), equals);
+		try (Connection conn = getConn()) {
+			UUID result = put(o, conn);
+			conn.commit();
+			
+			return result;
+		}
+	}
+	
+	private static <T> T get(Class<T> c, UUID uuid, Connection conn) throws SQLException {
+		Set<T> matches = get(c, new Condition(ID_NAME, "=", uuid.toString()), conn);
+		return matches.isEmpty() ? null : matches.iterator().next();
+	}
+	private static <T> Set<T> get(Class<T> c, Condition condition, Connection conn) throws SQLException {
+		return new HashSet<>(getMap(c, condition, conn).values());	// Discard IDs and duplicates
+	}
+	
+	private static UUID put(Object o, Connection conn) throws SQLException {
+		Iterable<SqlField> sqlFields = getPersistentFields(o.getClass());
+		Condition equals = buildEqualsCondition(o, sqlFields, conn);
+		Map<UUID, ?> map = getMap(o.getClass(), equals, conn);
 		
 		if (!map.isEmpty()) {	// Equivalent object already saved
 			UUID uuid = map.keySet().iterator().next();
@@ -83,120 +111,105 @@ public class Session {
 				log.debug("Found equivalent instance of (" + o.getClass().getName() + ") " + o + " at " + ID_NAME + ": " + uuid);
 			return uuid;
 		}
-		try (Connection conn = getConn()) {
-			try (PreparedStatement s = conn.prepareStatement(buildPut(getTable(o.getClass()), fields))) {
-				int counter = 1;
-				s.setString(counter++, UUID.randomUUID().toString());	// Generate new UUID
-				
-				for (Field field : fields) {
-					try {
-						Object value = field.get(o);
-						if (value != null) {
-							if (field.getAnnotation(Reference.class) == null)	// Primitive
-								s.setObject(counter++, value);
-							else	// Reference
-								s.setString(counter++, put(value).toString());
-						}
-					} catch (IllegalAccessException e) {
-						throw new NonPersistableException(field.getName() + " is innaccessible");
+		try (PreparedStatement s = conn.prepareStatement(buildPut(getTable(o.getClass(), conn), sqlFields))) {
+			int counter = 1;
+			s.setString(counter++, UUID.randomUUID().toString());	// Generate new UUID
+			
+			for (SqlField sqlField : sqlFields) {
+				try {
+					Object value = sqlField.field.get(o);
+					if (value != null) {
+						if (sqlField.isReference)	// Reference
+							s.setString(counter++, put(value, conn).toString());
+						else	// Primitive	
+							s.setObject(counter++, value);
 					}
+				} catch (IllegalAccessException e) {
+					throw new NonPersistableException(sqlField.field.getName() + " is innaccessible");
 				}
-				s.executeUpdate();
-				conn.commit();
-			} catch (SQLException e) {
-				conn.rollback();
-				throw e;
 			}
+			s.executeUpdate();
+			conn.commit();
+		} catch (SQLException e) {
+			conn.rollback();
+			throw e;
 		}
-		UUID uuid = getMap(o.getClass(), equals).keySet().iterator().next();
+		UUID uuid = getMap(o.getClass(), equals, conn).keySet().iterator().next();
 		
 		if (LOGGING_ENABLED)
 			log.debug("Saved (" + o.getClass().getName() + ") " + o + " at " + ID_NAME + ": " + uuid);
 		return uuid;
 	}
 	
-	private <T> Map<UUID, T> getMap(Class<T> c, Condition condition) throws SQLException {	// Return UUID mapped to object
+	private static <T> Map<UUID, T> getMap(Class<T> c, Condition condition, Connection conn) throws SQLException {	// Return UUID mapped to object
 		Map<UUID, T> results = new HashMap<>();
-		String table = getTable(c);	// Get appropriate table, create if needed
+		String table = getTable(c, conn);	// Get appropriate table, create if needed
 		
-		try (Connection conn = getConn()) {
-			try (PreparedStatement s = conn.prepareStatement(buildGet(table, condition))) {
-				if (condition != null) {
-					int counter = 1;
-					for (Object value : condition.values())
-						s.setObject(counter++, value);
-				}
-				ResultSet rs = s.executeQuery();
-				while (rs.next()) {	// Found result
-					try {
-						UUID uuid = UUID.fromString(rs.getString(ID_NAME));
-						T result = c.newInstance();
-						
-						for (Field field : getPersistentFields(c)) {
-							try {
-								Object value = rs.getObject(field.getName());
-								if (value != null && field.getAnnotation(Reference.class) != null)	// Reference
-									value = get(field.getType(), UUID.fromString(rs.getString(field.getName())));
-									
-								field.set(result, value);
-							} catch (IllegalAccessException e) {
-								throw new NonPersistableException(field.getName() + " is innaccessible");
-							}
-						}
-						results.put(uuid, result);
-					} catch (InstantiationException | IllegalAccessException e) {
-						throw new NonPersistableException(c.getName() + " does not provide an accessible nullary constructor");
-					}
-				}
-			} catch (SQLException e) {
-				throw e;
-			} finally {
-				conn.rollback();
+		try (PreparedStatement s = conn.prepareStatement(buildGet(table, condition))) {
+			if (condition != null) {
+				int counter = 1;
+				for (Object value : condition.values())
+					s.setObject(counter++, value);
 			}
+			ResultSet rs = s.executeQuery();
+			while (rs.next()) {	// Found result
+				try {
+					UUID uuid = UUID.fromString(rs.getString(ID_NAME));
+					T result = c.newInstance();
+					
+					for (SqlField sqlField : getPersistentFields(c)) {
+						try {
+							Object value = rs.getObject(sqlField.field.getName());
+							if (value != null && sqlField.isReference)	// Reference
+								value = get(sqlField.field.getType(), UUID.fromString(rs.getString(sqlField.field.getName())), conn);
+								
+							sqlField.field.set(result, value);
+						} catch (IllegalAccessException e) {
+							throw new NonPersistableException(sqlField.field.getName() + " is innaccessible");
+						}
+					}
+					results.put(uuid, result);
+				} catch (InstantiationException | IllegalAccessException e) {
+					throw new NonPersistableException(c.getName() + " does not provide an accessible nullary constructor");
+				}
+			}
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			conn.rollback();
 		}
 		return results;
 	}
 	
-	private String getTable(Class<?> c) throws SQLException {
-		Sql override = c.getAnnotation(Sql.class);
-		String table = override != null ? override.value() : c.getSimpleName();
+	private static String getTable(Class<?> c, Connection conn) throws SQLException {
+		String 	table = null,
+						tableInit = null;
+		if ((table = tables.get(c)) == null) {	// Get table name from cache
+			Sql override = c.getAnnotation(Sql.class);
+			table = (override == null ? c.getSimpleName() : override.value());
+			tables.put(c, table);
 			
-		if (!tableExists(table))
-			initTable(buildDefaultInit(table, getPersistentFields(c)));
+			if (LOGGING_ENABLED)
+				log.debug("Added to tables: " + c + ", " + table);
+		}
+		if ((tableInit = tableInits.get(table)) == null) {	// Get init statement from cache
+			tableInit = buildDefaultInit(table, getPersistentFields(c), conn);
+			tableInits.put(table, tableInit);
+			
+			if (LOGGING_ENABLED)
+				log.debug("Added to tableInits: " + table + ", " + tableInit);
+		}
+		conn.createStatement().executeUpdate(tableInit);	// Add table init to transaction
+		conn.commit();
 		
 		return table;
 	}
-	private boolean tableExists(String table) throws SQLException {
-		try (Connection conn = getConn()) {
-			try (ResultSet rs = conn.getMetaData().getTables(null, null, table, null)) {
-				return rs.next();	// Table exists
-			} catch (SQLException e) {
-				conn.rollback();
-				throw e;
-			}
-		}
-	}
-	private void initTable(String init) throws SQLException {
-		try (Connection conn = getConn()) {
-			try (Statement s = conn.createStatement()) {
-				s.executeUpdate(init);
-				conn.commit();
-			} catch (SQLException e) {
-				conn.rollback();
-				throw e;
-			}
-		}
-	}
-	
-	private String buildDefaultInit(String table, Iterable<Field> fields) throws SQLException {
+	private static String buildDefaultInit(String table, Iterable<SqlField> sqlFields, Connection conn) throws SQLException {
 		StringBuilder builder = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(table).append(" (").append(ID_NAME).append(" ").append(ID_TYPE).append(" PRIMARY KEY");	// Use type 4 UUID
-		for (Field field : fields) {
-			Reference reference = field.getAnnotation(Reference.class);
-			Sql sql = field.getAnnotation(Sql.class);
-			
-			builder.append(", ").append(field.getName()).append(" ");
-			builder.append(reference == null ? sql.value() : buildReference(field));
-		}
+		
+		for (SqlField sqlField : sqlFields)
+			builder.append(", ").append(sqlField.field.getName()).append(" ").append(sqlField.isReference ? buildReference(sqlField.field, conn) : sqlField.sql.value());
+		
 		builder.append(")");
 		
 		String result = builder.toString();
@@ -205,29 +218,23 @@ public class Session {
 			log.debug("Built default table init statement for " + table + ": " + result);
 		return result;
 	}
-	private String buildReference(Field f) throws SQLException {
-		return ID_TYPE + ", FOREIGN KEY (" + f.getName() + ") REFERENCES " + getTable(f.getType()) + " (" + ID_NAME + ")";
+	private static String buildReference(Field f, Connection conn) throws SQLException {
+		return ID_TYPE + ", FOREIGN KEY (" + f.getName() + ") REFERENCES " + getTable(f.getType(), conn) + " (" + ID_NAME + ")";
 	}
 	
 	private static String buildGet(String table, Condition condition) {
-		StringBuilder builder = new StringBuilder("SELECT * FROM ");
-		builder.append(table);
-		
-		if (condition != null)
-			builder.append(" WHERE ").append(condition);
-		
-		String result = builder.toString();
+		String result = "SELECT * FROM " + table + (condition == null ? "" : " WHERE " + condition);
 		
 		if (LOGGING_ENABLED)
 			log.debug("Built GET for " + table + ": " + result);
 		return result;
 	}
-	private static String buildPut(String table, Iterable<Field> fields) {
+	private static String buildPut(String table, Iterable<SqlField> sqlFields) {
 		StringBuilder builder = new StringBuilder("INSERT INTO ").append(table).append("(").append(ID_NAME).append(","),
 									values = new StringBuilder("VALUES (?,");
 		
-		for (Field field : fields)  {
-			builder.append(field.getName()).append(",");
+		for (SqlField sqlField : sqlFields)  {
+			builder.append(sqlField.field.getName()).append(",");
 			values.append("?,");
 		}
 		values.replace(values.length() - 1, values.length(), ")");
@@ -240,15 +247,15 @@ public class Session {
 		return result;
 	}
 	
-	private Condition buildEqualsCondition(Object o, Iterable<Field> fields) throws SQLException {
+	private static Condition buildEqualsCondition(Object o, Iterable<SqlField> sqlFields, Connection conn) throws SQLException {
 		Condition cond = null;
-		for (Field field : fields) {
+		for (SqlField sqlField : sqlFields) {
 			try {
-				Object value = field.get(o);
-				if (value != null && field.getAnnotation(Reference.class) != null)	// Reference
-					value = put(value).toString();
+				Object value = sqlField.field.get(o);
+				if (value != null && sqlField.isReference)	// Reference
+					value = put(value, conn).toString();
 				
-				String 	attribute = field.getName(),
+				String 	attribute = sqlField.field.getName(),
 								operator = (value == null ? "IS" : "=");
 				
 				if (cond == null)
@@ -256,7 +263,7 @@ public class Session {
 				else
 					cond.and(attribute, operator, value);
 			} catch (IllegalAccessException e) {
-				throw new NonPersistableException(field.getName() + " is innaccessible");
+				throw new NonPersistableException(sqlField.field.getName() + " is innaccessible");
 			}
 		}
 		if (LOGGING_ENABLED)
@@ -264,24 +271,45 @@ public class Session {
 		return cond;
 	}
 	
-	private static Iterable<Field> getPersistentFields(Class<?> c) {
-		List<Field> fields = new ArrayList<>();
-		
-		for (Field field : c.getDeclaredFields()) {
-			Transient transientAnnotation = field.getAnnotation(Transient.class);
-			Reference reference = field.getAnnotation(Reference.class);
-			Sql sql = field.getAnnotation(Sql.class);
+	private static Iterable<SqlField> getPersistentFields(Class<?> c) {
+		LinkedList<SqlField> fields = null;
+		if ((fields = sqlFields.get(c)) == null) {
+			fields = new LinkedList<>();
 			
-			if (transientAnnotation == null && (reference != null || sql != null))	// Not transient
-				fields.add(field);
+			for (Field field : c.getDeclaredFields()) {
+				Transient transientAnnotation = field.getAnnotation(Transient.class);
+				Reference reference = field.getAnnotation(Reference.class);
+				Sql sql = field.getAnnotation(Sql.class);
+				
+				if (transientAnnotation == null && (reference != null || sql != null))	// Not transient
+					fields.add(new SqlField(field, reference, sql));
+			}
+			sqlFields.put(c, fields);
+			
+			if (LOGGING_ENABLED)
+				log.debug("Added to sqlFields: " + c + ", " + fields);
 		}
 		return fields;
 	}
 	
 	private Connection getConn() throws SQLException {
 		Connection conn = ds.getConnection();
-		conn.setAutoCommit(false);
+		conn.setAutoCommit(false);	// Disable to reduce overhead
 		
+		if (LOGGING_ENABLED)
+			log.debug("Retrieved new Connection from " + ds);
 		return conn;
+	}
+	
+	private static class SqlField {
+		final Field field;
+		final Sql sql;
+		final boolean isReference;
+		
+		SqlField(Field field, Reference r, Sql s) {
+			this.field = field;
+			this.sql = s;
+			this.isReference = r != null;
+		}
 	}
 }
