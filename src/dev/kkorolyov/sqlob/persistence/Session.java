@@ -61,6 +61,9 @@ public class Session implements AutoCloseable {
 			T result = getWorker().get(c, uuid);
 			bufferCounter++;
 			
+			if (bufferSize == 0)
+				flush();
+			
 			if (LOGGING_ENABLED)
 				log.debug((result == null ? "Failed to find " : "Found ") + c.getName() + " with " + ID_NAME + ": " + uuid);
 			
@@ -83,6 +86,9 @@ public class Session implements AutoCloseable {
 			Set<T> results = getWorker().get(c, condition);
 			bufferCounter++;
 			
+			if (bufferSize == 0)
+				flush();
+			
 			if (LOGGING_ENABLED)
 				log.debug("Found " + results.size() + " results for " + c.getName() + " matching condition: " + condition);
 			return results;
@@ -104,6 +110,9 @@ public class Session implements AutoCloseable {
 		try {
 			UUID result = getWorker().put(o);
 			bufferCounter++;
+			
+			if (bufferSize == 0)
+				flush();
 			
 			return result;
 		} catch (SQLException e) {
@@ -134,7 +143,7 @@ public class Session implements AutoCloseable {
 	}
 	
 	private SessionWorker getWorker() throws SQLException {
-		if (bufferCounter >= bufferSize)
+		if (worker != null && (bufferCounter >= bufferSize))
 			flush();
 		
 		if (worker == null)

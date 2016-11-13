@@ -2,14 +2,9 @@ package dev.kkorolyov.sqlob.persistence;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.UUID;
 
 import javax.sql.DataSource;
@@ -20,11 +15,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.postgresql.ds.PGSimpleDataSource;
-import org.sqlite.SQLiteConfig;
-import org.sqlite.SQLiteDataSource;
-
-import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 
 import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.annotation.Reference;
@@ -33,35 +23,16 @@ import dev.kkorolyov.sqlob.annotation.Sql;
 @SuppressWarnings("javadoc")
 @RunWith(Parameterized.class)
 public class SessionTest {
-	private static final String SQLITE_FILE = "test/sqlite.db";
-	
 	private DataSource ds;
 	
 	@Parameters(name = "{index}({0})")
 	public static Iterable<DataSource> data() {
-		SQLiteConfig config = new SQLiteConfig();
-		config.enforceForeignKeys(true);
-		SQLiteDataSource sqliteDS = new SQLiteDataSource(config);
-		sqliteDS.setUrl("jdbc:sqlite:" + SQLITE_FILE);
-		
-		MysqlDataSource mysqlDS = new MysqlDataSource();
-		mysqlDS.setServerName(TestAssets.host());
-		mysqlDS.setDatabaseName(TestAssets.database());
-		mysqlDS.setUser(TestAssets.user());
-		mysqlDS.setPassword(TestAssets.password());
-		
-		PGSimpleDataSource pgDS = new PGSimpleDataSource();
-		pgDS.setServerName(TestAssets.host());
-		pgDS.setDatabaseName(TestAssets.database());
-		pgDS.setUser(TestAssets.user());
-		pgDS.setPassword(TestAssets.password());
-		
-		return Arrays.asList(sqliteDS, mysqlDS, pgDS);
+		return TestAssets.dataSources();
 	}
 	
 	@AfterClass
 	public static void tearDownAfterClass() {
-		System.out.println((new File(SQLITE_FILE).delete() ? "Deleted " : "Failed to delete ") + "test SQLite file: " + SQLITE_FILE);
+		TestAssets.cleanUp();
 	}
 	@After
 	public void tearDown() throws SQLException {
@@ -86,81 +57,6 @@ public class SessionTest {
 	
 	public SessionTest(DataSource input) {
 		this.ds = input;
-	}
-	
-	@Test
-	public void testPerformance() throws SQLException {
-		int tests = 100;
-		
-		long start = System.nanoTime();
-		try (Connection conn = ds.getConnection()) {
-			conn.setAutoCommit(false);
-			
-			Statement s = conn.createStatement();
-			s.executeUpdate("DROP TABLE IF EXISTS Test");
-			s.executeUpdate("CREATE TABLE IF NOT EXISTS Test (id CHAR(3) PRIMARY KEY, num INT)");
-			conn.commit();
-			
-			PreparedStatement ps = conn.prepareStatement("INSERT INTO Test (id,num) VALUES (?,?)");
-			for (int i = 0; i < tests; i++) {
-				ps.setString(1, String.valueOf(i));
-				ps.setInt(2, i);
-				ps.executeUpdate();
-			}
-			conn.commit();
-		}
-		long ms = (System.nanoTime() - start) / 1000000;
-
-		System.out.println(ms + "ms to PUT " + tests + " things using " + ds);
-	}
-	
-	@Test
-	public void testPerformanceDumbStub() throws SQLException {
-		int tests = 100;
-		
-		List<UUID> uuids = new LinkedList<>();
-		
-		long start = System.nanoTime();
-		try (Session session = new Session(ds)) {
-			for (int i = 0; i < tests; i++)
-				uuids.add(session.put(new DumbStub(i)));
-		}
-		long ms = (System.nanoTime() - start) / 1000000;
-		
-		System.out.println(ms + "ms to PUT " + tests + " DumbStubs using " + ds);
-		
-		start = System.nanoTime();
-		try (Session session = new Session(ds)) {
-			for (UUID uuid : uuids)
-				session.get(DumbStub.class, uuid);
-		}
-		ms = (System.nanoTime() - start) / 1000000;
-		
-		System.out.println(ms + " ms to GET " + tests + " DumbStubs using " + ds);
-	}
-	@Test
-	public void testPerformanceSmartStub() throws SQLException {
-		int tests = 100;
-		
-		List<UUID> uuids = new LinkedList<>();
-		
-		long start = System.nanoTime();
-		try (Session session = new Session(ds)) {
-			for (int i = 0; i < tests; i++)
-				uuids.add(session.put(new SmartStub(new DumbStub(i))));
-		}
-		long ms = (System.nanoTime() - start) / 1000000;
-		
-		System.out.println(ms + "ms to PUT " + tests + " SmartStubs using " + ds);
-		
-		start = System.nanoTime();
-		try (Session session = new Session(ds)) {
-			for (UUID uuid : uuids)
-				session.get(SmartStub.class, uuid);
-		}
-		ms = (System.nanoTime() - start) / 1000000;
-		
-		System.out.println(ms + " ms to GET " + tests + " SmartStubs using " + ds);
 	}
 	
 	@Test
