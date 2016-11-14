@@ -29,6 +29,7 @@ public class Condition {
 	 * @return this condition
 	 */
 	public Condition and(Condition condition) {
+		appendValues(condition);
 		sql.append(" AND ").append(condition);
 		
 		return this;
@@ -39,6 +40,7 @@ public class Condition {
 	 * @return this condition
 	 */
 	public Condition or(Condition condition) {
+		appendValues(condition);
 		sql.append(" OR ").append(condition);
 		
 		return this;
@@ -68,6 +70,13 @@ public class Condition {
 	/** @return all values in this condition, in order */
 	Iterable<Object> values() {
 		return values;
+	}
+	
+	private void appendValues(Condition condition) {
+		for (Object value : condition.values()) {
+			if (value != null)
+				values.add(value);
+		}
 	}
 	
 	/** @return SQL phrase representing this condition */
