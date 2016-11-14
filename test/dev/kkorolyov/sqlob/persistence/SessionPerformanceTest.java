@@ -1,5 +1,7 @@
 package dev.kkorolyov.sqlob.persistence;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -32,7 +34,7 @@ public class SessionPerformanceTest {
 	}
 	
 	@AfterClass
-	public static void tearDownAfterClass() {
+	public static void tearDownAfterClass() throws FileNotFoundException, IOException {
 		TestAssets.cleanUp();
 	}
 	@After

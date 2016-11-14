@@ -2,6 +2,8 @@ package dev.kkorolyov.sqlob.persistence;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -18,7 +20,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.annotation.Column;
-import dev.kkorolyov.sqlob.annotation.Reference;
 import dev.kkorolyov.sqlob.annotation.Table;
 
 @SuppressWarnings("javadoc")
@@ -32,7 +33,7 @@ public class SessionTest {
 	}
 	
 	@AfterClass
-	public static void tearDownAfterClass() {
+	public static void tearDownAfterClass() throws FileNotFoundException, IOException {
 		TestAssets.cleanUp();
 	}
 	@After
@@ -88,11 +89,19 @@ public class SessionTest {
 	
 	static class DumbStub {
 		@Column("n")
-		int num;
+		private int num;
+		private String v;
+		private int i;
+		private double r;
+		private String c;
 		
 		DumbStub() {}
 		DumbStub(int num) {
 			this.num = num;
+			v = "v";
+			i = num + 4;
+			r = 14.5;
+			c = "t";
 		}
 		
 		@Override
@@ -124,14 +133,13 @@ public class SessionTest {
 		
 		@Override
 		public String toString() {
-			return getClass().getName() + "(" + num + ")";
+			return getClass().getName() + "(" + num + ", " + v + ", " + i + ", " + r + ", " + c + ")";
 		}
 	}
 	@Table("SS")
 	static class SmartStub {
-		@Reference
 		@Column("s")
-		DumbStub stub;
+		private DumbStub stub;
 		
 		SmartStub(){}
 		SmartStub(DumbStub stub) {

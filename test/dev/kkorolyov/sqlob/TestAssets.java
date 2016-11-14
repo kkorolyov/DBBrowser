@@ -1,6 +1,8 @@
 package dev.kkorolyov.sqlob;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Arrays;
 
 import javax.sql.DataSource;
@@ -57,7 +59,9 @@ public class TestAssets {
 		return Arrays.asList(sqliteDS, mysqlDS, pgDS);
 	}
 	
-	public static void cleanUp() {
+	public static void cleanUp() throws FileNotFoundException, IOException {
+		props.saveFile(true);
+		
 		System.out.println((new File(SQLITE_FILE).delete() ? "Deleted " : "Failed to delete ") + "test SQLite file: " + SQLITE_FILE);
 	}
 	

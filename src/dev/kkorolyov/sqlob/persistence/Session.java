@@ -1,13 +1,13 @@
 package dev.kkorolyov.sqlob.persistence;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;
 
 import javax.sql.DataSource;
 
 import dev.kkorolyov.sqlob.annotation.Column;
-import dev.kkorolyov.sqlob.annotation.Reference;
 import dev.kkorolyov.sqlob.annotation.Table;
 import dev.kkorolyov.sqlob.annotation.Transient;
 import dev.kkorolyov.sqlob.logging.Logger;
@@ -197,11 +197,7 @@ public class Session implements AutoCloseable {
 				for (SqlField sqlField : sqlFields) {
 					try {
 						Object value = sqlField.field.get(o);
-						
-						if (sqlField.isReference)	// Reference
-							s.setString(counter++, value == null ? null : put(value).toString());
-						else	// Primitive	
-							s.setObject(counter++, value, JDBCType.valueOf(getSqlType(sqlField.field.getType())).getVendorTypeNumber());
+						s.setObject(counter++, (sqlField.isReference ? put(value).toString() : value), sqlField.type);
 					} catch (IllegalAccessException e) {
 						throw new NonPersistableException(sqlField.field.getName() + " is innaccessible");
 					}
@@ -242,7 +238,7 @@ public class Session implements AutoCloseable {
 						
 						for (SqlField sqlField : getPersistentFields(c)) {
 							try {
-								Object value = rs.getObject(sqlField.column);
+								Object value = rs.getObject(sqlField.name);
 								if (value != null && sqlField.isReference)	// Reference
 									value = get(sqlField.field.getType(), UUID.fromString((String) value));
 									
@@ -292,7 +288,7 @@ public class Session implements AutoCloseable {
 			StringBuilder builder = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(table).append(" (").append(ID_NAME).append(" ").append(ID_TYPE).append(" PRIMARY KEY");	// Use type 4 UUID
 			
 			for (SqlField sqlField : sqlFields)
-				builder.append(", ").append(sqlField.column).append(" ").append(sqlField.isReference ? buildReference(sqlField) : getSql(sqlField.field.getType()));
+				builder.append(", ").append(sqlField.name).append(" ").append(sqlField.isReference ? buildReference(sqlField) : sqlField.typeName);
 			
 			builder.append(")");
 			
@@ -303,7 +299,7 @@ public class Session implements AutoCloseable {
 			return result;
 		}
 		private String buildReference(SqlField sqlField) throws SQLException {
-			return ID_TYPE + ", FOREIGN KEY (" + sqlField.column + ") REFERENCES " + getTable(sqlField.field.getType()) + " (" + ID_NAME + ")";
+			return sqlField.typeName + ", FOREIGN KEY (" + sqlField.name + ") REFERENCES " + getTable(sqlField.field.getType()) + " (" + ID_NAME + ")";
 		}
 		
 		private String buildGet(String table, Condition condition) {
@@ -318,7 +314,7 @@ public class Session implements AutoCloseable {
 										values = new StringBuilder("VALUES (?,");
 			
 			for (SqlField sqlField : sqlFields)  {
-				builder.append(sqlField.column).append(",");
+				builder.append(sqlField.name).append(",");
 				values.append("?,");
 			}
 			values.replace(values.length() - 1, values.length(), ")");
@@ -339,7 +335,7 @@ public class Session implements AutoCloseable {
 					if (value != null && sqlField.isReference)	// Reference
 						value = put(value).toString();
 					
-					String 	attribute = sqlField.column,
+					String 	attribute = sqlField.name,
 									operator = (value == null ? "IS" : "=");
 					
 					if (cond == null)
@@ -362,10 +358,10 @@ public class Session implements AutoCloseable {
 				
 				for (Field field : c.getDeclaredFields()) {
 					if (field.getAnnotation(Transient.class) == null) {	// Not transient
+						field.setAccessible(true);	// Allow access
 						Column column = field.getAnnotation(Column.class);
-						Reference reference = field.getAnnotation(Reference.class);
 						
-						fields.add(new SqlField(field, column, reference));
+						fields.add(new SqlField(field, column));
 					}
 				}
 				sqlFields.put(c, fields);
@@ -377,41 +373,53 @@ public class Session implements AutoCloseable {
 		}
 	}
 	
-	private static String getSqlType(Class<?> c) {
-		String sql = getSql(c);
-		int sizeIndex = sql.lastIndexOf('(');
-		
-		if (sizeIndex >= 0)
-			sql = sql.substring(0, sizeIndex);
-		
-		return sql;
-	}
-	private static String getSql(Class<?> c) {
-		if (c == Short.class || c == Short.TYPE)
-			return "SMALLINT";
-		else if (c == Integer.class || c == Integer.TYPE)
-			return "INTEGER";
-		else if (c == Long.class || c == Long.TYPE)
-			return "BIGINT";
-		else if (c == Boolean.class || c == Boolean.TYPE)
-			return "INTEGER";
-		else if (c == Character.class || c == Character.TYPE)
-			return "CHAR(1)";
-		else if (c == String.class)
-			return "VARCHAR(1024)";
-		else
-			return null;
-	}
-	
 	private static class SqlField {
 		final Field field;
-		final String column;
+		final String 	name,
+									typeName;
+		final int type;
 		final boolean isReference;
 		
-		SqlField(Field field, Column column, Reference reference) {
+		SqlField(Field field, Column column) {
 			this.field = field;
-			this.column = column == null ? field.getName() : column.value();
-			this.isReference = reference != null;
+			this.name = (column == null ? field.getName() : column.value());
+			this.typeName = (getSql(field.getType()) == null ? ID_TYPE : getSql(field.getType()));
+			this.type = getSqlType(typeName).getVendorTypeNumber();
+			this.isReference = typeName.equals(ID_TYPE);
+		}
+		
+		private static String getSql(Class<?> c) {
+			if (c == Short.class || c == Short.TYPE)
+				return "SMALLINT";
+			else if (c == Integer.class || c == Integer.TYPE)
+				return "INTEGER";
+			else if (c == Long.class || c == Long.TYPE)
+				return "BIGINT";
+			
+			else if (c == Float.class || c == Float.TYPE)
+				return "DOUBLE";
+			else if (c == Double.class || c == Double.TYPE)
+				return "DOUBLE";
+			else if (c == BigDecimal.class)
+				return "DECIMAL";
+			
+			else if (c == Boolean.class || c == Boolean.TYPE)
+				return "INTEGER";
+			else if (c == Character.class || c == Character.TYPE)
+				return "CHAR(1)";
+			else if (c == String.class)
+				return "VARCHAR(1024)";
+			else
+				return null;
+		}
+		private static JDBCType getSqlType(String typeName) {
+			String type = typeName;
+			int sizeIndex = type.lastIndexOf('(');
+			
+			if (sizeIndex >= 0)
+				type = type.substring(0, sizeIndex);
+			
+			return JDBCType.valueOf(type);
 		}
 	}
 }
