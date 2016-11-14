@@ -17,8 +17,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import dev.kkorolyov.sqlob.TestAssets;
+import dev.kkorolyov.sqlob.annotation.Column;
 import dev.kkorolyov.sqlob.annotation.Reference;
-import dev.kkorolyov.sqlob.annotation.Sql;
+import dev.kkorolyov.sqlob.annotation.Table;
 
 @SuppressWarnings("javadoc")
 @RunWith(Parameterized.class)
@@ -77,7 +78,7 @@ public class SessionTest {
 		try (Session session = new Session(ds)) {
 			int num = 17;
 			DumbStub ds = new DumbStub(17);
-			Condition cond = new Condition("num", "=", num);
+			Condition cond = new Condition("n", "=", num);
 			
 			session.put(ds);
 			
@@ -86,7 +87,7 @@ public class SessionTest {
 	}
 	
 	static class DumbStub {
-		@Sql("INTEGER")
+		@Column("n")
 		int num;
 		
 		DumbStub() {}
@@ -126,9 +127,10 @@ public class SessionTest {
 			return getClass().getName() + "(" + num + ")";
 		}
 	}
-	@Sql("SS")
+	@Table("SS")
 	static class SmartStub {
 		@Reference
+		@Column("s")
 		DumbStub stub;
 		
 		SmartStub(){}

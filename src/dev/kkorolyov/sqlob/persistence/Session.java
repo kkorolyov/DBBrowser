@@ -6,8 +6,9 @@ import java.util.*;
 
 import javax.sql.DataSource;
 
+import dev.kkorolyov.sqlob.annotation.Column;
 import dev.kkorolyov.sqlob.annotation.Reference;
-import dev.kkorolyov.sqlob.annotation.Sql;
+import dev.kkorolyov.sqlob.annotation.Table;
 import dev.kkorolyov.sqlob.annotation.Transient;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.logging.LoggerInterface;
@@ -200,7 +201,7 @@ public class Session implements AutoCloseable {
 						if (sqlField.isReference)	// Reference
 							s.setString(counter++, value == null ? null : put(value).toString());
 						else	// Primitive	
-							s.setObject(counter++, value, JDBCType.valueOf(sqlField.sql.value()).getVendorTypeNumber());
+							s.setObject(counter++, value, JDBCType.valueOf(getSqlType(sqlField.field.getType())).getVendorTypeNumber());
 					} catch (IllegalAccessException e) {
 						throw new NonPersistableException(sqlField.field.getName() + " is innaccessible");
 					}
@@ -241,9 +242,9 @@ public class Session implements AutoCloseable {
 						
 						for (SqlField sqlField : getPersistentFields(c)) {
 							try {
-								Object value = rs.getObject(sqlField.field.getName());
+								Object value = rs.getObject(sqlField.column);
 								if (value != null && sqlField.isReference)	// Reference
-									value = get(sqlField.field.getType(), UUID.fromString(rs.getString(sqlField.field.getName())));
+									value = get(sqlField.field.getType(), UUID.fromString((String) value));
 									
 								sqlField.field.set(result, value);
 							} catch (IllegalAccessException e) {
@@ -265,8 +266,8 @@ public class Session implements AutoCloseable {
 			Iterable<SqlField> sqlFields = getPersistentFields(c);
 			
 			if ((table = tables.get(c)) == null) {	// Get table name from cache
-				Sql override = c.getAnnotation(Sql.class);
-				table = (override == null ? c.getSimpleName() : override.value());
+				Table override = c.getAnnotation(Table.class);
+				table = (override == null ? c.getSimpleName() : override.value());	// Apply name overridden with Table annotation
 				tables.put(c, table);
 				
 				if (LOGGING_ENABLED)
@@ -291,7 +292,7 @@ public class Session implements AutoCloseable {
 			StringBuilder builder = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(table).append(" (").append(ID_NAME).append(" ").append(ID_TYPE).append(" PRIMARY KEY");	// Use type 4 UUID
 			
 			for (SqlField sqlField : sqlFields)
-				builder.append(", ").append(sqlField.field.getName()).append(" ").append(sqlField.isReference ? buildReference(sqlField.field) : sqlField.sql.value());
+				builder.append(", ").append(sqlField.column).append(" ").append(sqlField.isReference ? buildReference(sqlField) : getSql(sqlField.field.getType()));
 			
 			builder.append(")");
 			
@@ -301,8 +302,8 @@ public class Session implements AutoCloseable {
 				log.debug("Built default table init statement for " + table + ": " + result);
 			return result;
 		}
-		private String buildReference(Field f) throws SQLException {
-			return ID_TYPE + ", FOREIGN KEY (" + f.getName() + ") REFERENCES " + getTable(f.getType()) + " (" + ID_NAME + ")";
+		private String buildReference(SqlField sqlField) throws SQLException {
+			return ID_TYPE + ", FOREIGN KEY (" + sqlField.column + ") REFERENCES " + getTable(sqlField.field.getType()) + " (" + ID_NAME + ")";
 		}
 		
 		private String buildGet(String table, Condition condition) {
@@ -317,7 +318,7 @@ public class Session implements AutoCloseable {
 										values = new StringBuilder("VALUES (?,");
 			
 			for (SqlField sqlField : sqlFields)  {
-				builder.append(sqlField.field.getName()).append(",");
+				builder.append(sqlField.column).append(",");
 				values.append("?,");
 			}
 			values.replace(values.length() - 1, values.length(), ")");
@@ -338,7 +339,7 @@ public class Session implements AutoCloseable {
 					if (value != null && sqlField.isReference)	// Reference
 						value = put(value).toString();
 					
-					String 	attribute = sqlField.field.getName(),
+					String 	attribute = sqlField.column,
 									operator = (value == null ? "IS" : "=");
 					
 					if (cond == null)
@@ -360,12 +361,12 @@ public class Session implements AutoCloseable {
 				fields = new LinkedList<>();
 				
 				for (Field field : c.getDeclaredFields()) {
-					Transient transientAnnotation = field.getAnnotation(Transient.class);
-					Reference reference = field.getAnnotation(Reference.class);
-					Sql sql = field.getAnnotation(Sql.class);
-					
-					if (transientAnnotation == null && (reference != null || sql != null))	// Not transient
-						fields.add(new SqlField(field, reference, sql));
+					if (field.getAnnotation(Transient.class) == null) {	// Not transient
+						Column column = field.getAnnotation(Column.class);
+						Reference reference = field.getAnnotation(Reference.class);
+						
+						fields.add(new SqlField(field, column, reference));
+					}
 				}
 				sqlFields.put(c, fields);
 				
@@ -376,15 +377,41 @@ public class Session implements AutoCloseable {
 		}
 	}
 	
+	private static String getSqlType(Class<?> c) {
+		String sql = getSql(c);
+		int sizeIndex = sql.lastIndexOf('(');
+		
+		if (sizeIndex >= 0)
+			sql = sql.substring(0, sizeIndex);
+		
+		return sql;
+	}
+	private static String getSql(Class<?> c) {
+		if (c == Short.class || c == Short.TYPE)
+			return "SMALLINT";
+		else if (c == Integer.class || c == Integer.TYPE)
+			return "INTEGER";
+		else if (c == Long.class || c == Long.TYPE)
+			return "BIGINT";
+		else if (c == Boolean.class || c == Boolean.TYPE)
+			return "INTEGER";
+		else if (c == Character.class || c == Character.TYPE)
+			return "CHAR(1)";
+		else if (c == String.class)
+			return "VARCHAR(1024)";
+		else
+			return null;
+	}
+	
 	private static class SqlField {
 		final Field field;
-		final Sql sql;
+		final String column;
 		final boolean isReference;
 		
-		SqlField(Field field, Reference r, Sql s) {
+		SqlField(Field field, Column column, Reference reference) {
 			this.field = field;
-			this.sql = s;
-			this.isReference = r != null;
+			this.column = column == null ? field.getName() : column.value();
+			this.isReference = reference != null;
 		}
 	}
 }
