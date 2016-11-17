@@ -49,6 +49,7 @@ public class TestAssets {
 		mysqlDS.setDatabaseName(TestAssets.database());
 		mysqlDS.setUser(TestAssets.user());
 		mysqlDS.setPassword(TestAssets.password());
+		mysqlDS.setRewriteBatchedStatements(true);
 		
 		PGSimpleDataSource pgDS = new PGSimpleDataSource();
 		pgDS.setServerName(TestAssets.host());
@@ -56,7 +57,7 @@ public class TestAssets {
 		pgDS.setUser(TestAssets.user());
 		pgDS.setPassword(TestAssets.password());
 		
-		return Arrays.asList(sqliteDS, mysqlDS, pgDS);
+		return Arrays.asList(/*sqliteDS,*/ mysqlDS, pgDS);
 	}
 	
 	public static void cleanUp() throws FileNotFoundException, IOException {

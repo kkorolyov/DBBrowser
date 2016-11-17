@@ -79,9 +79,19 @@ public class PersistedClass {
 	public String getName() {
 		return name;
 	}
-	/** @return table initialization statement */
-	public String getInit() {
-		return init;
+	/** @return table initialization statement of this table and its referenced tables, in appropriate order */
+	public Iterable<String> getInits() {
+		List<String> inits = new LinkedList<>();
+		
+		for (PersistedField field : fields) {	// Add referenced inits first
+			if (field.isReference()) {
+				for (String init : field.getReferencedClass().getInits())
+					inits.add(init);
+			}
+		}
+		inits.add(init);	// Add this init last
+		
+		return inits;
 	}
 	
 	/** @return table fields */

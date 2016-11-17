@@ -1,18 +1,11 @@
 package dev.kkorolyov.sqlob.persistence;
 
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 
 import javax.sql.DataSource;
 
-import dev.kkorolyov.sqlob.annotation.Column;
-import dev.kkorolyov.sqlob.annotation.Table;
-import dev.kkorolyov.sqlob.annotation.Transient;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.logging.LoggerInterface;
 
@@ -289,14 +282,13 @@ public class Session implements AutoCloseable {
 			return results;
 		}
 		
-		private String getTable(Class<?> c) throws SQLException {	// TODO un-ickify
+		private String getTable(Class<?> c) throws SQLException {
 			PersistedClass pc = PersistedClass.getInstance(c, typeMap);
 			
-			for (PersistedField field : pc.getFields()) {
-				if (field.isReference())
-					getTable(field.getReferencedClass().getClazz());
-			}
-			conn.createStatement().executeUpdate(pc.getInit());	// Add table init to transaction
+			Statement s = conn.createStatement();
+			for (String init : pc.getInits())
+				s.addBatch(init);
+			s.executeBatch();
 			
 			return pc.getName();
 		}
