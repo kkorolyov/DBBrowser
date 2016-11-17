@@ -7,11 +7,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Indicates the name of the table a class maps to.
+ * Overrides the table a class maps to.
  */
 @Target(TYPE)
 @Retention(RUNTIME)
 public @interface Table {
-	/** @return name of the table the annotated class maps to */
+	/** @return overridden name of the table the annotated class maps to */
 	String value();
 }
