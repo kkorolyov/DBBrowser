@@ -8,25 +8,27 @@ import dev.kkorolyov.sqlob.annotation.Column;
 /**
  * A field persisted as a column of a SQL table.
  */
-public class PersistedField {
+public class SqlobField {
 	private final Field field;
-	private final PersistedClass referencedClass;
+	private final SqlobClass 	parentClass,
+																referencedClass;
 	private final String 	name,
 												type;
 	private final int typeCode;
 	
-	PersistedField(Field field, TypeMap typeMap) {
+	SqlobField(Field field, SqlobClass parentClass) {
 		this.field = field;
+		this.parentClass = parentClass;
 		
 		Column override = this.field.getAnnotation(Column.class);
 		name = ((override == null || override.value().length() <= 0) ? this.field.getName() : override.value());
 		
 		if (override == null || override.type().length() <= 0) {	// No type override
-			String mappedType = typeMap.toSql(this.field.getType());
+			String mappedType = this.parentClass.getTypeMap().get(this.field.getType());
 
 			if (mappedType == null) {	// Reference
 				type = Session.ID_TYPE;
-				referencedClass = PersistedClass.getInstance(this.field.getType(), typeMap);
+				referencedClass = this.parentClass.getSession().getSqlobClass(this.field.getType());
 			} else {
 				type = mappedType;
 				referencedClass = null;
@@ -63,7 +65,7 @@ public class PersistedField {
 	}
 	
 	/** @return referenced class, or {@code null} if this column is primitive */
-	public PersistedClass getReferencedClass() {
+	public SqlobClass getReferencedClass() {
 		return referencedClass;
 	}
 }

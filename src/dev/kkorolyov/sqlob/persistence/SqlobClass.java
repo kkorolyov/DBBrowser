@@ -1,7 +1,6 @@
 package dev.kkorolyov.sqlob.persistence;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -14,50 +13,39 @@ import dev.kkorolyov.sqlob.logging.LoggerInterface;
 /**
  * A class persisted as a SQL table.
  */
-public class PersistedClass {
-	private static final LoggerInterface log = Logger.getLogger(PersistedClass.class.getName());
+public class SqlobClass {
+	private static final LoggerInterface log = Logger.getLogger(SqlobClass.class.getName());
 	private static final boolean LOGGING_ENABLED = !(log instanceof dev.kkorolyov.sqlob.logging.LoggerStub);
-	private static final Map<Class<?>, PersistedClass> instances = new HashMap<>();
 	
 	private final Class<?> c;
 	private final String 	name,
 												init;
-	private final List<PersistedField> fields = new LinkedList<>();
+	private final List<SqlobField> fields = new LinkedList<>();
+	private final Session session;
 	
-	static PersistedClass getInstance(Class<?> c, TypeMap typeMap) {
-		PersistedClass pc = null;
-		
-		if ((pc = instances.get(c)) == null) {
-			pc = new PersistedClass(c, typeMap);
-			instances.put(c, pc);
-			
-			if (LOGGING_ENABLED)
-				log.info("Cached new " + PersistedClass.class.getName() + ": " + pc);
-		}
-		return pc;
-	}
-	private PersistedClass(Class<?> c, TypeMap typeMap) {
+	SqlobClass(Class<?> c, Session session) {
 		this.c = c;
+		this.session = session;
 		
 		Table override = this.c.getAnnotation(Table.class);
 		name = ((override == null || override.value().length() <= 0) ? this.c.getSimpleName() : override.value());
 		
-		buildFields(typeMap);
+		buildFields();
 
 		init = buildDefaultInit();
 	}
-	private void buildFields(TypeMap typeMap) {
+	private void buildFields() {
 		for (Field field : c.getDeclaredFields()) {
 			if (field.getAnnotation(Transient.class) == null) {	// Not transient
 				field.setAccessible(true);	// TODO Un-permanentize this
-				fields.add(new PersistedField(field, typeMap));
+				fields.add(new SqlobField(field, this));
 			}
 		}
 	}
 	private String buildDefaultInit() {
 		StringBuilder builder = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(name).append(" (").append(Session.ID_NAME).append(" ").append(Session.ID_TYPE).append(" PRIMARY KEY");	// Use type 4 UUID
 		
-		for (PersistedField field : fields) {
+		for (SqlobField field : fields) {
 			builder.append(", ").append(field.getName()).append(" ").append(field.getType());
 			
 			if (field.isReference())
@@ -83,7 +71,7 @@ public class PersistedClass {
 	public Iterable<String> getInits() {
 		List<String> inits = new LinkedList<>();
 		
-		for (PersistedField field : fields) {	// Add referenced inits first
+		for (SqlobField field : fields) {	// Add referenced inits first
 			if (field.isReference()) {
 				for (String init : field.getReferencedClass().getInits())
 					inits.add(init);
@@ -95,7 +83,20 @@ public class PersistedClass {
 	}
 	
 	/** @return table fields */
-	public Iterable<PersistedField> getFields() {
+	public Iterable<SqlobField> getFields() {
 		return fields;
+	}
+	
+	/** @return this SqlobClass's parent session */
+	public Session getSession() {
+		return session;
+	}
+	
+	/** @return type map used by this {@code SqlobClass} for mapping Java classes to SQL types */
+	public Map<Class<?>, String> getTypeMap() {
+		return session.getTypeMap();
+	}
+	Map<Class<?>, String> getRawTypeMap() {	// For overhead reduction
+		return session.getRawTypeMap();
 	}
 }
