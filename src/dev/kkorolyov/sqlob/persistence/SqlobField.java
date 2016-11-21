@@ -2,6 +2,7 @@ package dev.kkorolyov.sqlob.persistence;
 
 import java.lang.reflect.Field;
 import java.sql.JDBCType;
+import java.sql.SQLException;
 
 import dev.kkorolyov.sqlob.annotation.Column;
 
@@ -16,7 +17,7 @@ public class SqlobField {
 												type;
 	private final int typeCode;
 	
-	SqlobField(Field field, SqlobClass parentClass) {
+	SqlobField(Field field, SqlobClass parentClass) throws SQLException {
 		this.field = field;
 		this.parentClass = parentClass;
 		

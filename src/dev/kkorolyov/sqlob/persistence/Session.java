@@ -20,12 +20,12 @@ public class Session implements AutoCloseable {
 															ID_TYPE = "CHAR(36)";
 	
 	private final DataSource ds;
-	private SessionWorker worker;
 	private final int bufferSize;
 	private int bufferCounter = 0;
 	private Map<Class<?>, String> typeMap = getDefaultTypeMap();
 	private Map<Class<?>, SqlobClass> classes = new HashMap<>();
-
+	private SessionWorker worker;
+	
 	/**
 	 * Constructs a new session with a default buffer size of {@code 100}.
 	 * @see #Session(DataSource, int)
@@ -186,15 +186,17 @@ public class Session implements AutoCloseable {
 		flush();
 	}
 	
-	SqlobClass getSqlobClass(Class<?> c) {
+	SqlobClass getSqlobClass(Class<?> c) throws SQLException {
 		SqlobClass pc = null;
 		
 		if ((pc = classes.get(c)) == null) {
 			pc = new SqlobClass(c, this);
 			classes.put(c, pc);
 			
+			getWorker().initTable(pc);
+			
 			if (LOGGING_ENABLED)
-				log.info("Cached new " + SqlobClass.class.getName() + ": " + pc);
+				log.info("Cached new " + SqlobClass.class.getSimpleName() + ": " + pc);
 		}
 		return pc;
 	}
@@ -235,22 +237,22 @@ public class Session implements AutoCloseable {
 		}
 		
 		UUID put(Object o) throws SQLException {
-			Iterable<SqlobField> sqlFields = getSqlobClass(o.getClass()).getFields();
-			Condition equals = buildEqualsCondition(o, sqlFields);
+			SqlobClass sc = getSqlobClass(o.getClass());
+			Condition equals = buildEqualsCondition(o, sc.getFields());
 			Map<UUID, ?> map = getMap(o.getClass(), equals);
 			
 			if (!map.isEmpty()) {	// Equivalent object already saved
 				UUID uuid = map.keySet().iterator().next();
 				
 				if (LOGGING_ENABLED)
-					log.debug("Found equivalent instance of (" + o.getClass().getName() + ") " + o + " at " + ID_NAME + ": " + uuid);
+					log.debug("Found equivalent instance of (" + sc + ") " + o + " at " + ID_NAME + ": " + uuid);
 				return uuid;
 			}
-			try (PreparedStatement s = conn.prepareStatement(buildPut(getTable(o.getClass()), sqlFields))) {
+			try (PreparedStatement s = conn.prepareStatement(sc.getPut())) {
 				int counter = 1;
 				s.setString(counter++, UUID.randomUUID().toString());	// Generate new UUID
 				
-				for (SqlobField sqlField : sqlFields) {
+				for (SqlobField sqlField : sc.getFields()) {
 					try {
 						Object value = sqlField.getField().get(o);
 						s.setObject(counter++, (sqlField.isReference() ? put(value).toString() : value), sqlField.getTypeCode());
@@ -277,10 +279,11 @@ public class Session implements AutoCloseable {
 		}
 		
 		private <T> Map<UUID, T> getMap(Class<T> c, Condition condition) throws SQLException {	// Return UUID mapped to object
-			Map<UUID, T> results = new HashMap<>();
-			String table = getTable(c);	// Get appropriate table, create if needed
+			SqlobClass sc = getSqlobClass(c);
 			
-			try (PreparedStatement s = conn.prepareStatement(buildGet(table, condition))) {
+			try (PreparedStatement s = conn.prepareStatement(sc.getGet(condition))) {
+				Map<UUID, T> results = new HashMap<>();
+
 				if (condition != null) {
 					int counter = 1;
 					for (Object value : condition.values())
@@ -308,44 +311,14 @@ public class Session implements AutoCloseable {
 						throw new NonPersistableException(c.getName() + " does not provide an accessible nullary constructor");
 					}
 				}
+				return results;
 			}
-			return results;
 		}
 		
-		private String getTable(Class<?> c) throws SQLException {
-			SqlobClass pc = getSqlobClass(c);
-			
+		void initTable(SqlobClass sqlobClass) throws SQLException {
 			Statement s = conn.createStatement();
-			for (String init : pc.getInits())
-				s.addBatch(init);
-			s.executeBatch();
-			
-			return pc.getName();
-		}
-		
-		private String buildGet(String table, Condition condition) {
-			String result = "SELECT * FROM " + table + (condition == null ? "" : " WHERE " + condition);
-			
-			if (LOGGING_ENABLED)
-				log.debug("Built GET for " + table + ": " + result);
-			return result;
-		}
-		private String buildPut(String table, Iterable<SqlobField> sqlFields) {
-			StringBuilder builder = new StringBuilder("INSERT INTO ").append(table).append("(").append(ID_NAME).append(","),
-										values = new StringBuilder("VALUES (?,");
-			
-			for (SqlobField sqlField : sqlFields)  {
-				builder.append(sqlField.getName()).append(",");
-				values.append("?,");
-			}
-			values.replace(values.length() - 1, values.length(), ")");
-			builder.replace(builder.length() - 1, builder.length(), ") ").append(values.toString());
-			
-			String result = builder.toString();
-			
-			if (LOGGING_ENABLED)
-				log.debug("Built PUT for " + table + ": " + result);
-			return result;
+			for (String init : sqlobClass.getInits())
+				s.executeUpdate(init);
 		}
 		
 		private Condition buildEqualsCondition(Object o, Iterable<SqlobField> sqlFields) throws SQLException {
