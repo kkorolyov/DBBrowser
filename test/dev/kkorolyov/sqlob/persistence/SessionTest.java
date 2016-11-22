@@ -62,6 +62,19 @@ public class SessionTest {
 	}
 	
 	@Test
+	public void putDumb() throws SQLException {
+		try (Session session = new Session(ds)) {
+			session.put(new DumbStub(0));
+		}
+	}
+	@Test
+	public void putSmart() throws SQLException {
+		try (Session session = new Session(ds)) {
+			session.put(new SmartStub(new DumbStub(0)));
+		}
+	}
+	
+	@Test
 	public void testGetId() throws SQLException {
 		try (Session session = new Session(ds)) {
 			DumbStub ds = new DumbStub(125135);

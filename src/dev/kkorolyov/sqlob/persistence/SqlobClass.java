@@ -68,19 +68,9 @@ public class SqlobClass {
 	public String getName() {
 		return name;
 	}
-	/** @return SQL statements to initialize this SqlobClass and SqlobClasses it references, in valid order */
-	public Iterable<String> getInits() {
-		List<String> inits = new LinkedList<>();
-		
-		for (SqlobField field : fields) {	// Add referenced inits first
-			if (field.isReference()) {
-				for (String init : field.getReferencedClass().getInits())
-					inits.add(init);
-			}
-		}
-		inits.add(init);	// Add this init last
-		
-		return inits;
+	/** @return SQL statement to initialize this SqlobClass */
+	public String getInit() {
+		return init;
 	}
 	
 	/**
@@ -88,7 +78,17 @@ public class SqlobClass {
 	 * @return SQL statement to retrieve all instances of this SqlobClass matching {@code condition}
 	 */
 	public String getGet(Condition condition) {
-		String result = "SELECT * FROM " + name;
+		return getGet("*", condition);
+	}
+	/**
+	 * @param condition condition to match, {@code null} is no constraining condition
+	 * @return SQL statement to retrieve the UUIDs of all instances of this SqlobClass matching {@code condition}
+	 */
+	public String getGetId(Condition condition) {
+		return getGet(Session.ID_NAME, condition);
+	}
+	private String getGet(String columns, Condition condition) {
+		String result = "SELECT " + columns + " FROM " + name;
 		
 		if (condition != null)
 			result += " WHERE " + condition;
@@ -97,6 +97,7 @@ public class SqlobClass {
 			log.debug("Built GET for " + this + ": " + result);
 		return result;
 	}
+	
 	/** @return	SQL statement to add an instance of this SqlobClass */
 	public String getPut() {
 		StringBuilder builder = new StringBuilder("INSERT INTO ").append(name).append("(").append(Session.ID_NAME).append(","),
@@ -136,6 +137,6 @@ public class SqlobClass {
 	
 	@Override
 	public String toString() {
-		return SqlobClass.class.getSimpleName() + "(" + c + "->" + name + ")";
+		return SqlobClass.class.getSimpleName() + "(" + c.getName() + "->" + name + ")";
 	}
 }

@@ -237,20 +237,13 @@ public class Session implements AutoCloseable {
 		}
 		
 		UUID put(Object o) throws SQLException {
-			SqlobClass sc = getSqlobClass(o.getClass());
-			Condition equals = buildEquals(o);
-			
-			if (equals != null) { 
-				Map<UUID, ?> map = getMap(o.getClass(), equals);
-				
-				if (!map.isEmpty()) {	// Equivalent object already saved
-					UUID uuid = map.keySet().iterator().next();
-					
-					if (LOGGING_ENABLED)
-						log.debug("Found equivalent instance of (" + sc + ") " + o + " at " + ID_NAME + ": " + uuid);
-					return uuid;
-				}
+			UUID id = getId(o);
+			if (id != null) {
+				if (LOGGING_ENABLED)
+					log.debug("Found equivalent instance of (" + o.getClass() + ") " + o + " at " + ID_NAME + ": " + id);
+				return id;
 			}
+			SqlobClass sc = getSqlobClass(o.getClass());
 			try (PreparedStatement s = conn.prepareStatement(sc.getPut())) {
 				int counter = 1;
 				s.setString(counter++, UUID.randomUUID().toString());	// Generate new UUID
@@ -265,7 +258,7 @@ public class Session implements AutoCloseable {
 				}
 				s.executeUpdate();
 			}
-			UUID uuid = getMap(o.getClass(), equals).keySet().iterator().next();
+			UUID uuid = getId(o);
 			
 			if (LOGGING_ENABLED)
 				log.debug("Saved (" + o.getClass().getName() + ") " + o + " at " + ID_NAME + ": " + uuid);
@@ -286,10 +279,15 @@ public class Session implements AutoCloseable {
 			Condition equals = buildEquals(o);
 			
 			if (equals != null) {
-				Map<UUID, ?> map = getMap(o.getClass(), equals);
-				
-				if (!map.isEmpty())
-					result = map.entrySet().iterator().next().getKey();
+				try (PreparedStatement s = conn.prepareStatement(getSqlobClass(o.getClass()).getGetId(equals))) {
+					int counter = 1;
+					for (Object value : equals.values())
+						s.setObject(counter++, value);
+					
+					ResultSet rs = s.executeQuery();
+					if (rs.next())
+						result = UUID.fromString(rs.getString(1));
+				}
 			}
 			return result;
 		}
@@ -359,9 +357,9 @@ public class Session implements AutoCloseable {
 		}
 		
 		void initTable(SqlobClass sqlobClass) throws SQLException {
-			Statement s = conn.createStatement();
-			for (String init : sqlobClass.getInits())
-				s.executeUpdate(init);
+			try (Statement s = conn.createStatement()) {
+				s.executeUpdate(sqlobClass.getInit());
+			}
 		}
 	}
 }
