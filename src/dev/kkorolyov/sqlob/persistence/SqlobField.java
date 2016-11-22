@@ -41,8 +41,8 @@ public class SqlobField {
 		typeCode = JDBCType.valueOf(type.split("[\\s\\(]")[0]).getVendorTypeNumber();
 	}
 	
-	/** @return class field */
-	public Field getField() {
+	/** @return persisted field */
+	public Field getType() {
 		return field;
 	}
 	
@@ -51,12 +51,12 @@ public class SqlobField {
 		return name;
 	}
 	/** @return column type */
-	public String getType() {
+	public String getSqlType() {
 		return type;
 	}
 	
 	/** @return the JDBC type code associated with this column's type */
-	public int getTypeCode() {
+	public int getSqlTypeCode() {
 		return typeCode;
 	}
 	

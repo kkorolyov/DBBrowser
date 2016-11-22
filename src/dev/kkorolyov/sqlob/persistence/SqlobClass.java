@@ -2,6 +2,7 @@ package dev.kkorolyov.sqlob.persistence;
 
 import java.lang.reflect.Field;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -19,8 +20,7 @@ public class SqlobClass {
 	private static final boolean LOGGING_ENABLED = !(log instanceof dev.kkorolyov.sqlob.logging.LoggerStub);
 	
 	private final Class<?> c;
-	private final String 	name,
-												init;
+	private final String name;
 	private final List<SqlobField> fields = new LinkedList<>();
 	private final Session session;
 	
@@ -32,8 +32,6 @@ public class SqlobClass {
 		name = ((override == null || override.value().length() <= 0) ? this.c.getSimpleName() : override.value());
 		
 		buildFields();
-
-		init = buildDefaultInit();
 	}
 	private void buildFields() throws SQLException {
 		for (Field field : c.getDeclaredFields()) {
@@ -43,20 +41,21 @@ public class SqlobClass {
 			}
 		}
 	}
-	private String buildDefaultInit() {
-		StringBuilder builder = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(name).append(" (").append(Session.ID_NAME).append(" ").append(Session.ID_TYPE).append(" PRIMARY KEY");	// Use type 4 UUID
+	
+	public Map<SqlobField, Object> getValues(Object o) {
+		if (o.getClass() != c)
+			throw new IllegalArgumentException("Not an instance of the class wrapped by: " + this);
+		
+		Map<SqlobField, Object> values = new HashMap<>();
 		
 		for (SqlobField field : fields) {
-			builder.append(", ").append(field.getName()).append(" ").append(field.getType());
-			
-			if (field.isReference())
-				builder.append(", FOREIGN KEY (").append(field.getName()).append(") REFERENCES ").append(field.getReferencedClass().getName()).append(" (").append(Session.ID_NAME).append(")");
+			try {
+				values.put(field, field.getType().get(o));
+			} catch (IllegalAccessException e) {
+				throw new NonPersistableException(field.getType().getName() + " is inaccessible");
+			}
 		}
-		String result = builder.append(")").toString();
-		
-		if (LOGGING_ENABLED)
-			log.debug("Built table init statement for " + this + ": " + result); 
-		return result;
+		return values;
 	}
 	
 	/** @return persisted class */
@@ -67,54 +66,6 @@ public class SqlobClass {
 	/** @return table name */
 	public String getName() {
 		return name;
-	}
-	/** @return SQL statement to initialize this SqlobClass */
-	public String getInit() {
-		return init;
-	}
-	
-	/**
-	 * @param condition condition to match, {@code null} is no constraining condition
-	 * @return SQL statement to retrieve all instances of this SqlobClass matching {@code condition}
-	 */
-	public String getGet(Condition condition) {
-		return getGet("*", condition);
-	}
-	/**
-	 * @param condition condition to match, {@code null} is no constraining condition
-	 * @return SQL statement to retrieve the UUIDs of all instances of this SqlobClass matching {@code condition}
-	 */
-	public String getGetId(Condition condition) {
-		return getGet(Session.ID_NAME, condition);
-	}
-	private String getGet(String columns, Condition condition) {
-		String result = "SELECT " + columns + " FROM " + name;
-		
-		if (condition != null)
-			result += " WHERE " + condition;
-		
-		if (LOGGING_ENABLED)
-			log.debug("Built GET for " + this + ": " + result);
-		return result;
-	}
-	
-	/** @return	SQL statement to add an instance of this SqlobClass */
-	public String getPut() {
-		StringBuilder builder = new StringBuilder("INSERT INTO ").append(name).append("(").append(Session.ID_NAME).append(","),
-									values = new StringBuilder("VALUES (?,");
-
-		for (SqlobField sqlField : fields)  {
-			builder.append(sqlField.getName()).append(",");
-			values.append("?,");
-		}
-		values.replace(values.length() - 1, values.length(), ")");
-		builder.replace(builder.length() - 1, builder.length(), ") ").append(values.toString());
-		
-		String result = builder.toString();
-		
-		if (LOGGING_ENABLED)
-			log.debug("Built PUT for " + this + ": " + result);
-		return result;
 	}
 	
 	/** @return table fields */
