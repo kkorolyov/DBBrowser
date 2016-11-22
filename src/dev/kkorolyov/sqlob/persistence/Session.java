@@ -187,18 +187,18 @@ public class Session implements AutoCloseable {
 	}
 	
 	SqlobClass getSqlobClass(Class<?> c) throws SQLException {
-		SqlobClass pc = null;
+		SqlobClass sc = null;
 		
-		if ((pc = classes.get(c)) == null) {
-			pc = new SqlobClass(c, this);
-			classes.put(c, pc);
+		if ((sc = classes.get(c)) == null) {
+			sc = new SqlobClass(c, this);
+			classes.put(c, sc);
 			
-			getWorker().initTable(pc);
+			getWorker().initTable(sc);	// Initialize when caching
 			
 			if (LOGGING_ENABLED)
-				log.info("Cached new " + SqlobClass.class.getSimpleName() + ": " + pc);
+				log.info("Cached new " + sc);
 		}
-		return pc;
+		return sc;
 	}
 	
 	private SessionWorker getWorker() throws SQLException {
@@ -238,15 +238,18 @@ public class Session implements AutoCloseable {
 		
 		UUID put(Object o) throws SQLException {
 			SqlobClass sc = getSqlobClass(o.getClass());
-			Condition equals = buildEqualsCondition(o, sc.getFields());
-			Map<UUID, ?> map = getMap(o.getClass(), equals);
+			Condition equals = buildEquals(o);
 			
-			if (!map.isEmpty()) {	// Equivalent object already saved
-				UUID uuid = map.keySet().iterator().next();
+			if (equals != null) { 
+				Map<UUID, ?> map = getMap(o.getClass(), equals);
 				
-				if (LOGGING_ENABLED)
-					log.debug("Found equivalent instance of (" + sc + ") " + o + " at " + ID_NAME + ": " + uuid);
-				return uuid;
+				if (!map.isEmpty()) {	// Equivalent object already saved
+					UUID uuid = map.keySet().iterator().next();
+					
+					if (LOGGING_ENABLED)
+						log.debug("Found equivalent instance of (" + sc + ") " + o + " at " + ID_NAME + ": " + uuid);
+					return uuid;
+				}
 			}
 			try (PreparedStatement s = conn.prepareStatement(sc.getPut())) {
 				int counter = 1;
@@ -278,9 +281,21 @@ public class Session implements AutoCloseable {
 			conn.close();
 		}
 		
+		UUID getId(Object o) throws SQLException {
+			UUID result = null;
+			Condition equals = buildEquals(o);
+			
+			if (equals != null) {
+				Map<UUID, ?> map = getMap(o.getClass(), equals);
+				
+				if (!map.isEmpty())
+					result = map.entrySet().iterator().next().getKey();
+			}
+			return result;
+		}
+		
 		private <T> Map<UUID, T> getMap(Class<T> c, Condition condition) throws SQLException {	// Return UUID mapped to object
 			SqlobClass sc = getSqlobClass(c);
-			
 			try (PreparedStatement s = conn.prepareStatement(sc.getGet(condition))) {
 				Map<UUID, T> results = new HashMap<>();
 
@@ -295,11 +310,11 @@ public class Session implements AutoCloseable {
 						UUID uuid = UUID.fromString(rs.getString(ID_NAME));
 						T result = c.newInstance();
 						
-						for (SqlobField sqlField : getSqlobClass(c).getFields()) {
+						for (SqlobField sqlField : sc.getFields()) {
 							try {
 								Object value = rs.getObject(sqlField.getName());
 								if (value != null && sqlField.isReference())	// Reference
-									value = get(sqlField.getReferencedClass().getClazz(), UUID.fromString((String) value));
+									value = get(sqlField.getReferencedClass().getType(), UUID.fromString((String) value));
 									
 								sqlField.getField().set(result, value);
 							} catch (IllegalAccessException e) {
@@ -315,34 +330,38 @@ public class Session implements AutoCloseable {
 			}
 		}
 		
+		private Condition buildEquals(Object o) throws SQLException {
+			Condition result = null;
+			
+			for (SqlobField field : getSqlobClass(o.getClass()).getFields()) {
+				try {
+					Object value = field.getField().get(o);
+					if (value != null && field.isReference()) {	// Reference
+						UUID valueId = getId(value);
+						if (valueId == null) {	// No such referenced object -> no such this object
+							result = null;
+							break;
+						} else
+							value = valueId.toString();
+					}
+					String 	attribute = field.getName(),
+									operator = (value == null ? "IS" : "=");
+			
+					if (result == null)
+						result = new Condition(attribute, operator, value);
+					else
+						result.and(attribute, operator, value);
+				} catch (IllegalAccessException e) {
+					throw new NonPersistableException(field.getField().getName() + " is inaccessible");
+				}
+			}
+			return result;
+		}
+		
 		void initTable(SqlobClass sqlobClass) throws SQLException {
 			Statement s = conn.createStatement();
 			for (String init : sqlobClass.getInits())
 				s.executeUpdate(init);
-		}
-		
-		private Condition buildEqualsCondition(Object o, Iterable<SqlobField> sqlFields) throws SQLException {
-			Condition cond = null;
-			for (SqlobField sqlField : sqlFields) {
-				try {
-					Object value = sqlField.getField().get(o);
-					if (value != null && sqlField.isReference())	// Reference
-						value = put(value).toString();
-					
-					String 	attribute = sqlField.getName(),
-									operator = (value == null ? "IS" : "=");
-					
-					if (cond == null)
-						cond = new Condition(attribute, operator, value);
-					else
-						cond.and(attribute, operator, value);
-				} catch (IllegalAccessException e) {
-					throw new NonPersistableException(sqlField.getField().getName() + " is innaccessible");
-				}
-			}
-			if (LOGGING_ENABLED)
-				log.debug("Built equals condition for " + o + ": " + cond);
-			return cond;
 		}
 	}
 }

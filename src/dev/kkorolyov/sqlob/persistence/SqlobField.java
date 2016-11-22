@@ -12,7 +12,7 @@ import dev.kkorolyov.sqlob.annotation.Column;
 public class SqlobField {
 	private final Field field;
 	private final SqlobClass 	parentClass,
-																referencedClass;
+														referencedClass;
 	private final String 	name,
 												type;
 	private final int typeCode;

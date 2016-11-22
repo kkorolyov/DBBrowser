@@ -60,7 +60,7 @@ public class SqlobClass {
 	}
 	
 	/** @return persisted class */
-	public Class<?> getClazz() {
+	public Class<?> getType() {
 		return c;
 	}
 	
@@ -84,11 +84,14 @@ public class SqlobClass {
 	}
 	
 	/**
-	 * @param condition condition to match
+	 * @param condition condition to match, {@code null} is no constraining condition
 	 * @return SQL statement to retrieve all instances of this SqlobClass matching {@code condition}
 	 */
 	public String getGet(Condition condition) {
-		String result = "SELECT * FROM " + name + (condition == null ? "" : " WHERE " + condition);
+		String result = "SELECT * FROM " + name;
+		
+		if (condition != null)
+			result += " WHERE " + condition;
 		
 		if (LOGGING_ENABLED)
 			log.debug("Built GET for " + this + ": " + result);
