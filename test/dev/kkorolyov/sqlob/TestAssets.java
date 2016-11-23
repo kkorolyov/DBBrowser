@@ -57,7 +57,7 @@ public class TestAssets {
 		pgDS.setUser(TestAssets.user());
 		pgDS.setPassword(TestAssets.password());
 		
-		return Arrays.asList(/*sqliteDS, */mysqlDS, pgDS);
+		return Arrays.asList(sqliteDS, mysqlDS, pgDS);
 	}
 	
 	public static void cleanUp() throws FileNotFoundException, IOException {

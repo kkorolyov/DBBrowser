@@ -1,9 +1,9 @@
 package dev.kkorolyov.sqlob.persistence;
 
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;
+import java.util.Map.Entry;
 
 import javax.sql.DataSource;
 
@@ -17,8 +17,6 @@ import dev.kkorolyov.sqlob.logging.LoggerInterface;
 public class Session implements AutoCloseable {
 	private static final LoggerInterface log = Logger.getLogger(Session.class.getName());
 	private static final boolean LOGGING_ENABLED = !(log instanceof dev.kkorolyov.sqlob.logging.LoggerStub);
-	static final String ID_NAME = "uuid",
-											ID_TYPE = "CHAR(36)";
 	
 	private final DataSource ds;
 	private final int bufferSize;
@@ -62,7 +60,7 @@ public class Session implements AutoCloseable {
 				flush();
 			
 			if (LOGGING_ENABLED)
-				log.debug((result == null ? "Failed to find " : "Found ") + c.getName() + " with " + ID_NAME + ": " + uuid);
+				log.debug((result == null ? "Failed to find " : "Found ") + c.getName() + " with id: " + uuid);
 			
 			return result;
 		} catch (SQLException e) {
@@ -239,11 +237,10 @@ public class Session implements AutoCloseable {
 		}
 		
 		UUID put(Object o) throws SQLException {
-			SqlobClass sc = getSqlobClass(o.getClass());
-			UUID id = getId(sc, o);
+			UUID id = getId(o);
 			if (id != null) {
 				if (LOGGING_ENABLED)
-					log.debug("Found equivalent instance of (" + o.getClass() + ") " + o + " at " + ID_NAME + ": " + id);
+					log.debug("Found equivalent instance of (" + o.getClass() + ") " + o + " at id: " + id);
 				return id;
 			}
 			SqlobClass sc = getSqlobClass(o.getClass());
@@ -264,7 +261,7 @@ public class Session implements AutoCloseable {
 			UUID uuid = getId(o);
 			
 			if (LOGGING_ENABLED)
-				log.debug("Saved (" + o.getClass().getName() + ") " + o + " at " + ID_NAME + ": " + uuid);
+				log.debug("Saved (" + o.getClass().getName() + ") " + o + " at id: " + uuid);
 			return uuid;
 		}
 		
@@ -280,9 +277,17 @@ public class Session implements AutoCloseable {
 		UUID getId(Object o) throws SQLException {
 			UUID result = null;
 			SqlobClass sc = getSqlobClass(o.getClass());
-			try (PreparedStatement s = conn.prepareStatement(sqlGenerator.buildSelectId(sc, condition))) {
+			
+			Map<SqlobField, Object> values = sc.getValues(o);
+			try {
+				applyReferences(values);
+			} catch (ReferenceNotFoundException e) {
+				return null;	// Missing references = no ID
+			}
+			Condition equals = sqlGenerator.buildEquals(values);
+			try (PreparedStatement s = conn.prepareStatement(sqlGenerator.buildSelectId(sc, equals))) {
 				int counter = 1;
-				for (Object value : condition.values())
+				for (Object value : equals.values())
 					s.setObject(counter++, value);
 				
 				ResultSet rs = s.executeQuery();
@@ -292,22 +297,18 @@ public class Session implements AutoCloseable {
 			return result;
 		}
 		
-		private Map<String, Object> applyReferences(Map<SqlobField, Object> rawValues) throws SQLException, ReferenceNotFoundException {
-			Map<String, Object> values = new HashMap<>(rawValues);
-			
-			for (SqlobField field : sc.getFields()) {
-				if (field.isReference()) {
-					String attribute = field.getName();
-					Object value = values.get(attribute);
+		private void applyReferences(Map<SqlobField, Object> rawValues) throws SQLException, ReferenceNotFoundException {
+			for (Entry<SqlobField, Object> entry : rawValues.entrySet()) {
+				if (entry.getKey().isReference()) {
+					Object value = entry.getValue();
 					UUID id = getId(value);
 					
 					if (id == null)
 						throw new ReferenceNotFoundException(value);
 					
-					values.put(attribute, id.toString());
+					entry.setValue(id.toString());
 				}
 			}
-			return values;
 		}
 		
 		void initTable(SqlobClass sc) throws SQLException {
@@ -318,15 +319,26 @@ public class Session implements AutoCloseable {
 	}
 	
 	private class SqlGenerator {
+		private final String 	idName,
+													idType;
+		
+		SqlGenerator() {
+			this("uuid", "CHAR(36)");
+		}
+		SqlGenerator(String idName, String idType) {
+			this.idName = idName;
+			this.idType = idType;
+		}
+		
 		String buildCreate(SqlobClass sc) {
 			StringBuilder builder = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(sc.getName());
-			builder.append(" (").append(Session.ID_NAME).append(" ").append(Session.ID_TYPE).append(" PRIMARY KEY");	// Use type 4 UUID
+			builder.append(" (").append(idName).append(" ").append(idType).append(" PRIMARY KEY");	// Use type 4 UUID
 			
 			for (SqlobField field : sc.getFields()) {
 				builder.append(", ").append(field.getName()).append(" ").append(field.getSqlType());
 				
 				if (field.isReference())
-					builder.append(", FOREIGN KEY (").append(field.getName()).append(") REFERENCES ").append(field.getReferencedClass().getName()).append(" (").append(Session.ID_NAME).append(")");
+					builder.append(", FOREIGN KEY (").append(field.getName()).append(") REFERENCES ").append(field.getReferencedClass().getName()).append(" (").append(idName).append(")");
 			}
 			String result = builder.append(")").toString();
 			
@@ -336,7 +348,7 @@ public class Session implements AutoCloseable {
 		}
 		
 		String buildSelectId(SqlobClass sc, Condition condition) {
-			return buildSelect(sc, new Selection(ID_NAME), condition);
+			return buildSelect(sc, new Selection(idName), condition);
 		}
 		String buildSelectFields(SqlobClass sc, Condition condition) {
 			Selection selection = new Selection();
@@ -358,7 +370,7 @@ public class Session implements AutoCloseable {
 		}
 		
 		String buildInsert(SqlobClass sc) {
-			StringBuilder builder = new StringBuilder("INSERT INTO ").append(sc.getName()).append("(").append(ID_NAME).append(","),
+			StringBuilder builder = new StringBuilder("INSERT INTO ").append(sc.getName()).append("(").append(idName).append(","),
 										values = new StringBuilder("VALUES (?,");
 
 			for (SqlobField sqlField : sc.getFields())  {
@@ -377,11 +389,12 @@ public class Session implements AutoCloseable {
 			return result;
 		}
 		
-		Condition buildEquals(Map<String, Object> values) {
+		Condition buildEquals(Map<SqlobField, Object> values) {
 			Condition result = null;
 			
-			for (String attribute : values.keySet()) {
-				Object value = values.get(attribute);
+			for (Entry<SqlobField, Object> entry : values.entrySet()) {
+				String attribute = entry.getKey().getName();
+				Object value = entry.getValue();
 				Condition currentCondition = new Condition(attribute, (value == null ? "IS" : "="), value);
 				
 				if (result == null)

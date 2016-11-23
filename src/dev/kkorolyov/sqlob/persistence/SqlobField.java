@@ -28,7 +28,7 @@ public class SqlobField {
 			String mappedType = this.parentClass.getTypeMap().get(this.field.getType());
 
 			if (mappedType == null) {	// Reference
-				type = Session.ID_TYPE;
+				type = "CHAR(36)";	// TODO
 				referencedClass = this.parentClass.getSession().getSqlobClass(this.field.getType());
 			} else {
 				type = mappedType;
