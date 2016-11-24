@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.persistence;
+package dev.kkorolyov.sqlob.sql;
 
 /**
  * A selection of persisted attributes.

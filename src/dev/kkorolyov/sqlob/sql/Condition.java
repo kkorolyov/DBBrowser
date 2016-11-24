@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.persistence;
+package dev.kkorolyov.sqlob.sql;
 
 import java.util.LinkedList;
 import java.util.List;

@@ -21,6 +21,7 @@ import org.junit.runners.Parameterized.Parameters;
 import dev.kkorolyov.sqlob.TestAssets;
 import dev.kkorolyov.sqlob.annotation.Column;
 import dev.kkorolyov.sqlob.annotation.Table;
+import dev.kkorolyov.sqlob.sql.Condition;
 
 @SuppressWarnings("javadoc")
 @RunWith(Parameterized.class)

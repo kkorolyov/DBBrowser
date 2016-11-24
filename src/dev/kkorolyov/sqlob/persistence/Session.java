@@ -7,8 +7,13 @@ import java.util.Map.Entry;
 
 import javax.sql.DataSource;
 
+import dev.kkorolyov.sqlob.construct.SqlobClass;
+import dev.kkorolyov.sqlob.construct.SqlobClassFactory;
+import dev.kkorolyov.sqlob.construct.SqlobField;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.logging.LoggerInterface;
+import dev.kkorolyov.sqlob.sql.Condition;
+import dev.kkorolyov.sqlob.sql.Selection;
 
 /**
  * Persists objects using an external SQL database.
@@ -21,11 +26,10 @@ public class Session implements AutoCloseable {
 	private final DataSource ds;
 	private final int bufferSize;
 	private int bufferCounter = 0;
-	private Map<Class<?>, String> typeMap = getDefaultTypeMap();
-	private Map<Class<?>, SqlobClass> classes = new HashMap<>();
 	private SessionWorker worker;
 	private SqlGenerator sqlGenerator = new SqlGenerator();
-	
+	private SqlobClassFactory scFactory = new SqlobClassFactory(sqlGenerator.getIdType());
+
 	/**
 	 * Constructs a new session with a default buffer size of {@code 100}.
 	 * @see #Session(DataSource, int)
@@ -319,9 +323,6 @@ public class Session implements AutoCloseable {
 	}
 	
 	private class SqlGenerator {
-		private final String 	idName,
-													idType;
-		
 		SqlGenerator() {
 			this("uuid", "CHAR(36)");
 		}
@@ -369,7 +370,7 @@ public class Session implements AutoCloseable {
 			return result;
 		}
 		
-		String buildInsert(SqlobClass sc) {
+		String buildInsert(SqlobClass<?> sc) {
 			StringBuilder builder = new StringBuilder("INSERT INTO ").append(sc.getName()).append("(").append(idName).append(","),
 										values = new StringBuilder("VALUES (?,");
 
