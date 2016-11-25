@@ -3,6 +3,7 @@ package dev.kkorolyov.sqlob;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Arrays;
 
 import javax.sql.DataSource;
@@ -13,6 +14,8 @@ import org.sqlite.SQLiteDataSource;
 
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 
+import dev.kkorolyov.simplelogs.Logger;
+import dev.kkorolyov.simplelogs.Logger.Level;
 import dev.kkorolyov.simpleprops.Properties;
 
 @SuppressWarnings("javadoc")
@@ -22,8 +25,11 @@ public class TestAssets {
 															DATABASE = "DATABASE",
 															USER = "USER",
 															PASSWORD = "PASSWORD";	
-	
 	private static final Properties props = new Properties(new File("test/TestSQLOb.ini"), buildDefaults());
+	
+	static {
+		Logger.getLogger("", Level.DEBUG, new PrintWriter(System.err));
+	}
 	
 	public static String host() {
 		return props.get(HOST);

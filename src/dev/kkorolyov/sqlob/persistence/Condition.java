@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.sql;
+package dev.kkorolyov.sqlob.persistence;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -68,7 +68,7 @@ public class Condition {
 	}
 	
 	/** @return all values in this condition, in order */
-	public Iterable<Object> values() {
+	Iterable<Object> values() {
 		return values;
 	}
 	

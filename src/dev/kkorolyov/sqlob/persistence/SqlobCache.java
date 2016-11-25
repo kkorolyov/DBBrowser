@@ -2,20 +2,39 @@ package dev.kkorolyov.sqlob.persistence;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import dev.kkorolyov.sqlob.annotation.Transient;
 
 class SqlobCache {
+	private static final Map<Class<?>, Class<?>> wrapMap = new HashMap<>();
+	
 	private final String 	idName,
 												idType;
 	private final Map<Class<?>, SqlobClass<?>> classMap = new HashMap<>();
 	private Map<Class<?>, String> typeMap = getDefaultTypeMap();
+	
+	static {
+		wrapMap.put(byte.class, Byte.class);
+		wrapMap.put(short.class, Short.class);
+		wrapMap.put(int.class, Integer.class);
+		wrapMap.put(long.class, Long.class);
+		
+		wrapMap.put(float.class, Float.class);
+		wrapMap.put(double.class, Double.class);
+		
+		wrapMap.put(boolean.class, Boolean.class);
+		
+		wrapMap.put(char.class, Character.class);
+	}
+	
+	private static Class<?> wrap(Class<?> c) {
+		Class<?> wrapped = wrapMap.get(c);
+		
+		return wrapped == null ? c : wrapped;
+	}
 	
 	SqlobCache() {
 		this("uuid", "CHAR(36)");
@@ -35,18 +54,18 @@ class SqlobCache {
 		}
 		return result;
 	}
-	private <T> List<SqlobField> buildFields(Class<T> type, Connection conn) throws SQLException {
-		List<SqlobField> fields = new LinkedList<>();
+	private <T> Map<Class<?>, SqlobField> buildFields(Class<T> type, Connection conn) throws SQLException {
+		Map<Class<?>, SqlobField> fields = new HashMap<>();
 		
 		for (Field field : type.getDeclaredFields()) {
 			if (field.getAnnotation(Transient.class) == null) {
-				Class<?> fieldType = field.getType();
+				Class<?> fieldType = wrap(field.getType());
 				String sqlType = typeMap.get(fieldType);
 				SqlobClass<?> reference = (sqlType == null ? get(fieldType, conn) : null);
 				
 				field.setAccessible(true);
 				
-				fields.add(new SqlobField(field, (sqlType == null ? idType : sqlType), reference));
+				fields.put(fieldType, new SqlobField(field, (sqlType == null ? idType : sqlType), reference));
 			}
 		}
 		return fields;
@@ -63,37 +82,27 @@ class SqlobCache {
 	private static Map<Class<?>, String> getDefaultTypeMap() {
 		Map<Class<?>, String> map = new HashMap<>();
 		
-		String shortSql = "SMALLINT";
-		map.put(Short.class, shortSql);
-		map.put(Short.TYPE, shortSql);
+		map.put(Byte.class, "TINYINT");
+		map.put(Short.class, "SMALLINT");
+		map.put(Integer.class, "INTEGER");
+		map.put(Long.class, "BIGINT");
 		
-		String intSql = "INTEGER";
-		map.put(Integer.class, intSql);
-		map.put(Integer.TYPE, intSql);
+		map.put(Float.class, "REAL");
+		map.put(Double.class, "DOUBLE PRECISION");
 		
-		String longSql = "BIGINT";
-		map.put(Long.class, longSql);
-		map.put(Long.TYPE, longSql);
+		map.put(BigDecimal.class, "NUMERIC");
 		
-		String doubleSql = "DOUBLE PRECISION";
-		map.put(Float.class, doubleSql);
-		map.put(Float.TYPE, doubleSql);
-		map.put(Double.class, doubleSql);
-		map.put(Double.TYPE, doubleSql);
+		map.put(Boolean.class, "BIT");
 		
-		String bigDecimalSql = "DECIMAL";
-		map.put(BigDecimal.class, bigDecimalSql);
+		map.put(Character.class, "CHAR(1)");
 		
-		String booleanSql = "BIT";
-		map.put(Boolean.class, booleanSql);
-		map.put(Boolean.TYPE, booleanSql);
+		map.put(String.class, "VARCHAR(1024)");
 		
-		String charSql = "CHAR(1)";
-		map.put(Character.class, charSql);
-		map.put(Character.TYPE, charSql);
+		map.put(byte[].class, "VARBINARY(1024)");
 		
-		String stringSql = "VARCHAR(1024)";
-		map.put(String.class, stringSql);
+		map.put(Date.class, "DATE");
+		map.put(Time.class, "TIME");
+		map.put(Timestamp.class, "TIMESTAMP");
 		
 		return map;
 	}

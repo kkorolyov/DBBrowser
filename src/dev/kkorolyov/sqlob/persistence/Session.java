@@ -9,7 +9,6 @@ import java.util.UUID;
 import javax.sql.DataSource;
 
 import dev.kkorolyov.sqlob.logging.Logger;
-import dev.kkorolyov.sqlob.sql.Condition;
 
 /**
  * Persists objects using an external SQL database.
@@ -117,6 +116,7 @@ public class Session implements AutoCloseable {
 	 */
 	public void flush() throws SQLException {
 		if (conn != null) {
+			conn.commit();
 			conn.close();
 			conn = null;
 			

@@ -1,7 +1,10 @@
 package dev.kkorolyov.sqlob.persistence;
 
 import java.lang.reflect.Field;
+import java.sql.Connection;
 import java.sql.JDBCType;
+import java.sql.SQLException;
+import java.util.UUID;
 
 import dev.kkorolyov.sqlob.annotation.Column;
 
@@ -30,6 +33,14 @@ final class SqlobField {
 			init += ", FOREIGN KEY (" + name + ") REFERENCES " + reference.name + "(" + idName + ")";
 		
 		return init;
+	}
+	
+	Object transform(Object o, Connection conn) throws SQLException {	// Transforms to UUID String if reference
+		if (isReference()) {
+			UUID id = reference.getId(o, conn);
+			return id == null ? null : id.toString();
+		}
+		return o;
 	}
 	
 	boolean isReference() {
