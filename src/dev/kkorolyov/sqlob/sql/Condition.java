@@ -68,7 +68,7 @@ public class Condition {
 	}
 	
 	/** @return all values in this condition, in order */
-	Iterable<Object> values() {
+	public Iterable<Object> values() {
 		return values;
 	}
 	

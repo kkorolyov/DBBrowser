@@ -7,7 +7,7 @@ import dev.kkorolyov.simplelogs.Logger.Level;
 /**
  * Logger implementation to be loaded when {@code SimpleLogs} found.
  */
-public class LoggerImplementation implements LoggerInterface {
+public class LoggerImplementation extends Logger {
 	private dev.kkorolyov.simplelogs.Logger log;
 	
 	LoggerImplementation(String name) {
@@ -19,11 +19,11 @@ public class LoggerImplementation implements LoggerInterface {
 		log.exception(e);
 	}
 	@Override
-	public void info(String message) {
-		log.info(message);
+	public void info(LazyMessage message) {
+		log.info(message.execute());
 	}
 	@Override
-	public void debug(String message) {
-		log.debug(message);
+	public void debug(LazyMessage message) {
+		log.debug(message.execute());
 	}
 }

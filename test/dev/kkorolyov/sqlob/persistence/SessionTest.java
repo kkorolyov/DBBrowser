@@ -102,20 +102,11 @@ public class SessionTest {
 	}
 	
 	static class DumbStub {
-		@Column("n")
 		private int num;
-		private String v;
-		private int i;
-		private double r;
-		private String c;
 		
 		DumbStub() {}
 		DumbStub(int num) {
 			this.num = num;
-			v = "v";
-			i = num + 4;
-			r = 14.5;
-			c = "t";
 		}
 		
 		@Override
@@ -147,7 +138,7 @@ public class SessionTest {
 		
 		@Override
 		public String toString() {
-			return getClass().getName() + "(" + num + ", " + v + ", " + i + ", " + r + ", " + c + ")";
+			return getClass().getName() + "(" + num + ")";
 		}
 	}
 	@Table("SS")

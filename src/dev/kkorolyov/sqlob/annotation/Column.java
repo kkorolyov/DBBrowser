@@ -12,8 +12,6 @@ import java.lang.annotation.Target;
 @Target(FIELD)
 @Retention(RUNTIME)
 public @interface Column {
-	/** @return overridden name of the column the annotated field maps to */
+	/** @return name of the column the annotated field maps to */
 	String value();
-	/** @return overridden type of the column the annotated field maps to */
-	String type() default "";	// Default to no override
 }

@@ -17,7 +17,7 @@ public class Selection {
 	 * @param attribute attribute to select
 	 */
 	public Selection(String attribute) {
-		sql = new StringBuilder(attribute);
+		sql = new StringBuilder(attribute == null ? "" : attribute);
 	}
 	
 	/**
