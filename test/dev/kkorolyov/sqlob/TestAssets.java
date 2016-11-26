@@ -28,7 +28,7 @@ public class TestAssets {
 	private static final Properties props = new Properties(new File("test/TestSQLOb.ini"), buildDefaults());
 	
 	static {
-		Logger.getLogger("", Level.DEBUG, new PrintWriter(System.err));
+		Logger.getLogger("dev.kkorolyov.sqlob", Level.DEBUG, new PrintWriter(System.err));	// Enable logging
 	}
 	
 	public static String host() {

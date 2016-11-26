@@ -50,13 +50,12 @@ public class Session implements AutoCloseable {
 	 */
 	public <T> T get(Class<T> c, UUID uuid) throws SQLException {
 		try {
-			T result = cache.get(c, getConn()).getInstance(uuid, getConn());
+			T result = cache.get(c, getConn()).get(uuid, getConn());
 			bufferCounter++;
 			
 			if (bufferSize == 0)
 				flush();
 			
-			log.debug(() -> (result == null ? "Failed to find " : "Found ") + c.getName() + " with id: " + uuid);
 			return result;
 		} catch (SQLException e) {
 			getConn().rollback();
@@ -73,13 +72,12 @@ public class Session implements AutoCloseable {
 	 */
 	public <T> Set<T> get(Class<T> c, Condition condition) throws SQLException {
 		try {
-			Set<T> results = cache.get(c, getConn()).getInstances(condition, getConn());
+			Set<T> results = cache.get(c, getConn()).get(condition, getConn());
 			bufferCounter++;
 			
 			if (bufferSize == 0)
 				flush();
 			
-			log.debug(() -> "Found " + results.size() + " results for " + c.getName() + " matching condition: " + condition);
 			return results;
 		} catch (SQLException e) {
 			getConn().rollback();

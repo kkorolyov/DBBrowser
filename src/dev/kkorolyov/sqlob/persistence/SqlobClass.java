@@ -1,10 +1,9 @@
 package dev.kkorolyov.sqlob.persistence;
 
 import java.sql.*;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import dev.kkorolyov.sqlob.annotation.Table;
 import dev.kkorolyov.sqlob.logging.Logger;
@@ -36,11 +35,11 @@ final class SqlobClass<T> {
 		for (SqlobField field : fields.values()) {
 			createBuilder.append(", ").append(field.getInit(idName));
 			
-			insertBuilder.append(",").append(field.name);
-			valuesBuilder.append(",?");
+			insertBuilder.append(", ").append(field.name);
+			valuesBuilder.append(", ?");
 			
 			if (fieldSelectionBuilder.length() > 0)
-				fieldSelectionBuilder.append(",");
+				fieldSelectionBuilder.append(", ");
 			fieldSelectionBuilder.append(field.name);
 		}
 		createBuilder.append(")");
@@ -56,9 +55,8 @@ final class SqlobClass<T> {
 	SqlobClass<T> init(Connection conn) throws SQLException {
 		try (Statement s = conn.createStatement()) {
 			s.executeUpdate(create);
-			log.debug(() -> "Executed statement: " + create); 
 		}
-		log.debug(() -> "Initialized new SqlobClass: " + this);
+		log.debug(() -> "Initialized new SqlobClass: " + this + System.lineSeparator() + "\t" + create);
 		return this;
 	}
 	
@@ -67,27 +65,30 @@ final class SqlobClass<T> {
 		
 		if (id == null) {
 			id = UUID.randomUUID();
+			List<Object> parameters = new LinkedList<>();	// For logging
 			
 			try (PreparedStatement s = conn.prepareStatement(insert)) {
 				s.setString(1, id.toString());
-				
+				parameters.add(id);	// Logging
+
 				int counter = 2;
 				for (SqlobField field : fields.values()) {
 					try {
 						Object value = 	field.field.get(instance),
 														transformed = transform(value, conn);
 						if (value != null && transformed == null)	// Missing reference
-							transformed = field.reference.put(value, conn);
+							transformed = field.reference.put(value, conn);	// Recursive put
 						
 						s.setObject(counter++, transformed, field.typeCode);
+						parameters.add(transformed);	// Logging
 					} catch (IllegalAccessException e) {
-						throw new NonPersistableException(field.field.getName() + " is inaccessible");
+						throw new NonPersistableException(field.field + " is inaccessible");
 					}
 				}
 				s.executeUpdate();
 			}
 			UUID finalId = id;
-			log.debug(() -> "Saved new " + this + ": " + instance + "->" + finalId);
+			log.debug(() -> "Saved new " + this + ": " + instance + "->" + finalId + System.lineSeparator() + "\t" + applyStatement(insert, parameters));
 		}
 		return id;
 	}
@@ -95,32 +96,40 @@ final class SqlobClass<T> {
 	@SuppressWarnings("unchecked")
 	UUID getId(Object instance, Connection conn) throws SQLException {
 		Condition where = buildEquals((T) instance);
-		try (PreparedStatement s = conn.prepareStatement(buildSelect(idName, where))) {
+		String select = buildSelect(idName, where);
+		
+		try (PreparedStatement s = conn.prepareStatement(select)) {
 			int counter = 1;
 			for (Object value : where.values()) {
-				Object transformed = transform(value, conn);
-				if (value != null && transformed == null) // Missing reference
+				if (!shortCircuitSet(s, counter++, value, conn))	// Missing reference
 					return null;	// Short-circuit
-				
-				s.setObject(counter++, transformed);
 			}
 			try (ResultSet rs = s.executeQuery()) {
-				return rs.next() ? UUID.fromString(rs.getString(1)) : null;
+				UUID result = rs.next() ? UUID.fromString(rs.getString(1)) : null;
+				
+				log.debug(() -> (result == null ? "Failed to find " : "Found ") + "ID of " + this + " instance: " + instance + (result == null ? "" : "->" + result) + System.lineSeparator() + "\t" + applyStatement(select, where.values()));
+				return result;
 			}
 		}
 	}
-	T getInstance(UUID id, Connection conn) throws SQLException {
-		Set<T> instances = getInstances(new Condition(idName, "=", id.toString()), conn);
-		return instances.isEmpty() ? null : instances.iterator().next();
-	}
-	Set<T> getInstances(Condition where, Connection conn) throws SQLException {
-		Set<T> results = new HashSet<>();
+	
+	T get(UUID id, Connection conn) throws SQLException {
+		Set<T> instances = get(new Condition(idName, "=", id.toString()), conn);
+		T result = instances.isEmpty() ? null : instances.iterator().next();
 		
-		try (PreparedStatement s = conn.prepareStatement(buildSelect(fieldSelection, where))) {
+		log.debug(() -> (result == null ? "Failed to find " : "Found ") + "instance of " + this + ": " + id + "->" + result);
+		return result;
+	}
+	Set<T> get(Condition where, Connection conn) throws SQLException {
+		Set<T> results = new HashSet<>();
+		String select = buildSelect(fieldSelection, where);
+		
+		try (PreparedStatement s = conn.prepareStatement(select)) {
 			int counter = 1;
-			for (Object value : where.values())
-				s.setObject(counter++, transform(value, conn));
-			
+			for (Object value : where.values()) {
+				if (!shortCircuitSet(s, counter++, value, conn))	// Missing reference
+					return results;	// Short-circuit
+			}
 			try (ResultSet rs = s.executeQuery()) {
 				while(rs.next()) {
 					try {
@@ -130,11 +139,11 @@ final class SqlobClass<T> {
 							try {
 								Object value = rs.getObject(field.name);
 								if (field.isReference() && value != null)
-									value = field.reference.getInstance(UUID.fromString((String) value), conn);
+									value = field.reference.get(UUID.fromString((String) value), conn);
 								
 								field.field.set(result, value);
 							} catch (IllegalAccessException e) {
-								throw new NonPersistableException(field.field.getName() + " is inaccessible");
+								throw new NonPersistableException(field.field + " is inaccessible");
 							}
 						}
 						results.add(result);
@@ -144,7 +153,18 @@ final class SqlobClass<T> {
 				}
 			}
 		}
+		log.debug(() -> "Found " + results.size() + " instances of " + this + System.lineSeparator() + "\t" + applyStatement(select, where.values()));
 		return results;
+	}
+	
+	private boolean shortCircuitSet(PreparedStatement s, int index, Object value, Connection conn) throws SQLException {	// Returns false and does not modify Statement if missing reference
+		Object transformed = transform(value, conn);
+		if (value != null && transformed == null) {	// Missing reference
+			log.info(() -> "Missing reference for " + this + " field value; short-circuiting");
+			return false;
+		}
+		s.setObject(index, transformed);
+		return true;
 	}
 	
 	private Object transform(Object o, Connection conn) throws SQLException {
@@ -178,14 +198,23 @@ final class SqlobClass<T> {
 				else
 					result.and(currentCondition);
 			} catch (IllegalAccessException e) {
-				throw new NonPersistableException(field.field.getName() + " is inaccessible");
+				throw new NonPersistableException(field.field + " is inaccessible");
 			}
 		}
 		return result;
 	}
 	
+	private static String applyStatement(String base, Iterable<Object> parameters) {	// For logging
+		String statement = base;
+		
+		for (Object parameter : parameters)
+			statement = statement.replaceFirst(Pattern.quote("?"), Matcher.quoteReplacement(parameter.toString()));
+		
+		return statement;
+	}
+	
 	@Override
 	public String toString() {
-		return SqlobClass.class.getSimpleName() + "(" + c.getName() + "->" + name + ")";
+		return c.getName() + "->" + name;
 	}
 }

@@ -9,10 +9,10 @@ import java.util.Map;
 import dev.kkorolyov.sqlob.annotation.Transient;
 
 class SqlobCache {
+	private static final String ID_NAME = "uuid",
+															ID_TYPE = "CHAR(36)";
 	private static final Map<Class<?>, Class<?>> wrapMap = new HashMap<>();
-	
-	private final String 	idName,
-												idType;
+
 	private final Map<Class<?>, SqlobClass<?>> classMap = new HashMap<>();
 	private Map<Class<?>, String> typeMap = getDefaultTypeMap();
 	
@@ -36,20 +36,12 @@ class SqlobCache {
 		return wrapped == null ? c : wrapped;
 	}
 	
-	SqlobCache() {
-		this("uuid", "CHAR(36)");
-	}
-	SqlobCache(String idName, String idType) {
-		this.idName = idName;
-		this.idType = idType;
-	}
-	
 	<T> SqlobClass<T> get(Class<T> type, Connection conn) throws SQLException {
 		@SuppressWarnings("unchecked")
 		SqlobClass<T> result = (SqlobClass<T>) classMap.get(type);
 		
 		if (result == null) {
-			result = new SqlobClass<>(type, buildFields(type, conn), idName, idType).init(conn);	// Create + init
+			result = new SqlobClass<>(type, buildFields(type, conn), ID_NAME, ID_TYPE).init(conn);	// Create + init
 			classMap.put(type, result);
 		}
 		return result;
@@ -65,7 +57,7 @@ class SqlobCache {
 				
 				field.setAccessible(true);
 				
-				fields.put(fieldType, new SqlobField(field, (sqlType == null ? idType : sqlType), reference));
+				fields.put(fieldType, new SqlobField(field, (sqlType == null ? ID_TYPE : sqlType), reference));
 			}
 		}
 		return fields;
