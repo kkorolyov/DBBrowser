@@ -4,6 +4,8 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import dev.kkorolyov.sqlob.annotation.Transient;
@@ -46,8 +48,8 @@ class SqlobCache {
 		}
 		return result;
 	}
-	private <T> Map<Class<?>, SqlobField> buildFields(Class<T> type, Connection conn) throws SQLException {
-		Map<Class<?>, SqlobField> fields = new HashMap<>();
+	private <T> List<SqlobField> buildFields(Class<T> type, Connection conn) throws SQLException {
+		List<SqlobField> fields = new LinkedList<>();
 		
 		for (Field field : type.getDeclaredFields()) {
 			if (field.getAnnotation(Transient.class) == null) {
@@ -57,7 +59,7 @@ class SqlobCache {
 				
 				field.setAccessible(true);
 				
-				fields.put(fieldType, new SqlobField(field, (sqlType == null ? ID_TYPE : sqlType), reference));
+				fields.add(new SqlobField(field, (sqlType == null ? ID_TYPE : sqlType), reference));
 			}
 		}
 		return fields;

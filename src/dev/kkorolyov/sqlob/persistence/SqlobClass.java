@@ -13,13 +13,13 @@ final class SqlobClass<T> {
 	
 	final Class<T> c;
 	final String name;
-	final Map<Class<?>, SqlobField> fields;
+	final List<SqlobField> fields;
 	private final String 	idName;
 	private final String 	create,
 												insert,
 												fieldSelection;
 	
-	SqlobClass(Class<T> c, Map<Class<?>, SqlobField> fields, String idName, String idType) {
+	SqlobClass(Class<T> c, List<SqlobField> fields, String idName, String idType) {
 		this.c = c;
 		this.fields = fields;
 		this.idName = idName;
@@ -32,7 +32,7 @@ final class SqlobClass<T> {
 									valuesBuilder = new StringBuilder("VALUES (?"),
 									fieldSelectionBuilder = new StringBuilder();
 
-		for (SqlobField field : fields.values()) {
+		for (SqlobField field : fields) {
 			createBuilder.append(", ").append(field.getInit(idName));
 			
 			insertBuilder.append(", ").append(field.name);
@@ -72,7 +72,7 @@ final class SqlobClass<T> {
 				parameters.add(id);	// Logging
 
 				int counter = 2;
-				for (SqlobField field : fields.values()) {
+				for (SqlobField field : fields) {
 					try {
 						Object value = 	field.field.get(instance),
 														transformed = transform(value, conn);
@@ -107,7 +107,7 @@ final class SqlobClass<T> {
 			try (ResultSet rs = s.executeQuery()) {
 				UUID result = rs.next() ? UUID.fromString(rs.getString(1)) : null;
 				
-				log.debug(() -> (result == null ? "Failed to find " : "Found ") + "ID of " + this + " instance: " + instance + (result == null ? "" : "->" + result) + System.lineSeparator() + "\t" + applyStatement(select, where.values()));
+				log.debug(() -> (result == null ? "Failed to find " : "Found ") + "ID of " + this + " instance: " + instance + (result == null ? "" : "->" + result) + System.lineSeparator() + "\t" + applyStatement(select, (where == null ? null : where.values())));
 				return result;
 			}
 		}
@@ -125,17 +125,19 @@ final class SqlobClass<T> {
 		String select = buildSelect(fieldSelection, where);
 		
 		try (PreparedStatement s = conn.prepareStatement(select)) {
-			int counter = 1;
-			for (Object value : where.values()) {
-				if (!shortCircuitSet(s, counter++, value, conn))	// Missing reference
-					return results;	// Short-circuit
+			if (where != null) {	// Has conditions
+				int counter = 1;
+				for (Object value : where.values()) {
+					if (!shortCircuitSet(s, counter++, value, conn))	// Missing reference
+						return results;	// Short-circuit
+				}
 			}
 			try (ResultSet rs = s.executeQuery()) {
 				while(rs.next()) {
 					try {
 						T result = c.newInstance();
 						
-						for (SqlobField field : fields.values()) {
+						for (SqlobField field : fields) {
 							try {
 								Object value = rs.getObject(field.name);
 								if (field.isReference() && value != null)
@@ -153,7 +155,7 @@ final class SqlobClass<T> {
 				}
 			}
 		}
-		log.debug(() -> "Found " + results.size() + " instances of " + this + System.lineSeparator() + "\t" + applyStatement(select, where.values()));
+		log.debug(() -> "Found " + results.size() + " instances of " + this + System.lineSeparator() + "\t" + applyStatement(select, (where == null ? null : where.values())));
 		return results;
 	}
 	
@@ -171,8 +173,17 @@ final class SqlobClass<T> {
 		if (o == null)
 			return o;
 		
-		SqlobField field = fields.get(o.getClass());
+		SqlobField field = getField(o);
 		return field == null ? o : field.transform(o, conn);
+	}
+	private SqlobField getField(Object o) {
+		Class<?> oClass = o.getClass();
+		
+		for (SqlobField field : fields) {
+			if (field.field.getType() == oClass)
+				return field;
+		}
+		return null;
 	}
 	
 	private String buildSelect(String selection, Condition where) {
@@ -187,7 +198,7 @@ final class SqlobClass<T> {
 	private Condition buildEquals(T instance) {
 		Condition result = null;
 		
-		for (SqlobField field : fields.values()) {
+		for (SqlobField field : fields) {
 			try {
 				String attribute = field.name;
 				Object value = field.field.get(instance);
@@ -207,9 +218,10 @@ final class SqlobClass<T> {
 	private static String applyStatement(String base, Iterable<Object> parameters) {	// For logging
 		String statement = base;
 		
-		for (Object parameter : parameters)
-			statement = statement.replaceFirst(Pattern.quote("?"), Matcher.quoteReplacement(parameter.toString()));
-		
+		if (parameters != null) {
+			for (Object parameter : parameters)
+				statement = statement.replaceFirst(Pattern.quote("?"), Matcher.quoteReplacement(parameter.toString()));
+		}
 		return statement;
 	}
 	
