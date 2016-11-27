@@ -14,11 +14,16 @@ import javax.sql.DataSource;
 
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.sqlite.SQLiteDataSource;
 
+import dev.kkorolyov.simplelogs.Logger;
+import dev.kkorolyov.sqlob.Stub.BasicStub;
+import dev.kkorolyov.sqlob.Stub.SmartStub;
 import dev.kkorolyov.sqlob.TestAssets;
 
 @SuppressWarnings("javadoc")
@@ -28,7 +33,17 @@ public class SessionPerformanceTest {
 
 	@Parameters(name = "{index}({0})")
 	public static Iterable<DataSource> data() {
-		return TestAssets.dataSources();
+		List<DataSource> filtered = new LinkedList<>();
+		for (DataSource source : TestAssets.dataSources()) {
+			if (!(source instanceof SQLiteDataSource))
+				filtered.add(source);
+		}
+		return filtered;
+	}
+	
+	@BeforeClass
+	public static void setUpBeforeClass() {
+		Logger.getLogger("dev.kkorolyov.sqlob").setEnabled(false);
 	}
 	
 	@AfterClass
@@ -37,19 +52,16 @@ public class SessionPerformanceTest {
 	}
 	@After
 	public void tearDown() throws SQLException {
+		String[] tables = new String[]{"SmartStub", "BasicStub", "A", "Test"};
+		
 		try (Connection conn = ds.getConnection()) {
 			conn.setAutoCommit(false);
 			
 			Statement s = conn.createStatement();
-			s.addBatch("DROP TABLE IF EXISTS SS");
-			s.addBatch("DROP TABLE IF EXISTS ss");
-
-			s.addBatch("DROP TABLE IF EXISTS DumbStub");
-			s.addBatch("DROP TABLE IF EXISTS dumbstub");
-			
-			s.addBatch("DROP TABLE IF EXISTS Test");
-			s.addBatch("DROP TABLE IF EXISTS test");
-
+			for (String table : tables) {
+				s.addBatch("DROP TABLE IF EXISTS " + table);
+				s.addBatch("DROP TABLE IF EXISTS " + table.toLowerCase());
+			}
 			s.executeBatch();
 			
 			conn.commit();
@@ -87,7 +99,7 @@ public class SessionPerformanceTest {
 	}
 	
 	@Test
-	public void testPerformanceDumbStub() throws SQLException {
+	public void testPerformanceBasicStub() throws SQLException {
 		int tests = 100;
 		
 		List<UUID> uuids = new LinkedList<>();
@@ -95,20 +107,20 @@ public class SessionPerformanceTest {
 		long start = System.nanoTime();
 		try (Session session = new Session(ds)) {
 			for (int i = 0; i < tests; i++)
-				uuids.add(session.put(new DumbStub(i)));
+				uuids.add(session.put(BasicStub.random()));
 		}
 		long ms = (System.nanoTime() - start) / 1000000;
 		
-		System.out.println(ms + "ms to PUT " + tests + " DumbStubs using " + ds);
+		System.out.println(ms + "ms to PUT " + tests + " BasicStubs using " + ds);
 		
 		start = System.nanoTime();
 		try (Session session = new Session(ds)) {
 			for (UUID uuid : uuids)
-				session.get(DumbStub.class, uuid);
+				session.get(BasicStub.class, uuid);
 		}
 		ms = (System.nanoTime() - start) / 1000000;
 		
-		System.out.println(ms + " ms to GET " + tests + " DumbStubs using " + ds);
+		System.out.println(ms + " ms to GET " + tests + " BasicStubs using " + ds);
 	}
 	@Test
 	public void testPerformanceSmartStub() throws SQLException {
@@ -119,7 +131,7 @@ public class SessionPerformanceTest {
 		long start = System.nanoTime();
 		try (Session session = new Session(ds)) {
 			for (int i = 0; i < tests; i++)
-				uuids.add(session.put(new SmartStub(new DumbStub(i))));
+				uuids.add(session.put(SmartStub.random()));
 		}
 		long ms = (System.nanoTime() - start) / 1000000;
 		
