@@ -20,8 +20,6 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import dev.kkorolyov.sqlob.TestAssets;
-import dev.kkorolyov.sqlob.persistence.SessionTest.DumbStub;
-import dev.kkorolyov.sqlob.persistence.SessionTest.SmartStub;
 
 @SuppressWarnings("javadoc")
 @RunWith(Parameterized.class)

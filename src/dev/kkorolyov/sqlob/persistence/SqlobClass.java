@@ -1,5 +1,8 @@
 package dev.kkorolyov.sqlob.persistence;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -12,6 +15,7 @@ final class SqlobClass<T> {
 	private static final Logger log = Logger.getLogger(SqlobClass.class.getName());
 	
 	final Class<T> c;
+	final Constructor<T> constructor;
 	final String name;
 	final List<SqlobField> fields;
 	private final String 	idName;
@@ -24,6 +28,12 @@ final class SqlobClass<T> {
 		this.fields = fields;
 		this.idName = idName;
 		
+		try {
+			constructor = this.c.getDeclaredConstructor();
+			constructor.setAccessible(true);
+		} catch (NoSuchMethodException e) {
+			throw new NonPersistableException(c.getName() + " does not provide a nullary constructor");
+		}
 		Table override = this.c.getAnnotation(Table.class);
 		name = (override == null || override.value().length() <= 0) ? this.c.getSimpleName() : override.value();
 		
@@ -135,28 +145,48 @@ final class SqlobClass<T> {
 			try (ResultSet rs = s.executeQuery()) {
 				while(rs.next()) {
 					try {
-						T result = c.newInstance();
+						T result = constructor.newInstance();
 						
 						for (SqlobField field : fields) {
 							try {
-								Object value = rs.getObject(field.name);
+								Object value = rsGet(rs, field);
 								if (field.isReference() && value != null)
 									value = field.reference.get(UUID.fromString((String) value), conn);
 								
 								field.field.set(result, value);
 							} catch (IllegalAccessException e) {
-								throw new NonPersistableException(field.field + " is inaccessible");
+								throw new NonPersistableException(field.field + " is inaccessible", e);
 							}
 						}
 						results.add(result);
-					} catch (IllegalAccessException | InstantiationException e) {
-						throw new NonPersistableException(c.getName() + " does not provide an accessible nullary constructor");
+					} catch (IllegalAccessException | InstantiationException | IllegalArgumentException | InvocationTargetException e) {
+						throw new NonPersistableException("Failed to instantiate " + c.getName(), e);
 					}
 				}
 			}
 		}
 		log.debug(() -> "Found " + results.size() + " instances of " + this + System.lineSeparator() + "\t" + applyStatement(select, (where == null ? null : where.values())));
 		return results;
+	}
+	private static Object rsGet(ResultSet rs, SqlobField field) throws SQLException {
+		if (field.fieldType == Byte.class)
+			return rs.getByte(field.name);
+		else if (field.fieldType == Short.class)
+			return rs.getShort(field.name);
+		else if (field.fieldType == Integer.class)
+			return rs.getInt(field.name);
+		else if (field.fieldType == Long.class)
+			return rs.getLong(field.name);
+		else if (field.fieldType == Float.class)
+			return rs.getFloat(field.name);
+		else if (field.fieldType == Double.class)
+			return rs.getDouble(field.name);
+		else if (field.fieldType == Boolean.class)
+			return rs.getBoolean(field.name);
+		else if (field.fieldType == BigDecimal.class)
+			return rs.getBigDecimal(field.name);
+		else
+			return rs.getObject(field.name);
 	}
 	
 	private boolean shortCircuitSet(PreparedStatement s, int index, Object value, Connection conn) throws SQLException {	// Returns false and does not modify Statement if missing reference

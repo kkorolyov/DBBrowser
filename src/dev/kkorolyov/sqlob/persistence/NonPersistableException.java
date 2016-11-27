@@ -19,4 +19,12 @@ public class NonPersistableException extends RuntimeException {
 	public NonPersistableException(String message) {
 		super(message);
 	}
+	/**
+	 * Constructs an instance of this exception with the specified message and cause.
+	 * @param message detail message
+	 * @param cause {@code Throwable} causing this exception to be thrown
+	 */
+	public NonPersistableException(String message, Throwable cause) {
+		super(message, cause);
+	}
 }

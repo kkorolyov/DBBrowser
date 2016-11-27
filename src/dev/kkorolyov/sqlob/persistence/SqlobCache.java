@@ -59,7 +59,7 @@ class SqlobCache {
 				
 				field.setAccessible(true);
 				
-				fields.add(new SqlobField(field, (sqlType == null ? ID_TYPE : sqlType), reference));
+				fields.add(new SqlobField(field, fieldType, (sqlType == null ? ID_TYPE : sqlType), reference));
 			}
 		}
 		return fields;

@@ -10,13 +10,15 @@ import dev.kkorolyov.sqlob.annotation.Column;
 
 final class SqlobField {
 	final Field field;
+	final Class<?> fieldType;
 	final String 	name,
 								type;
 	final int typeCode;
 	final SqlobClass<?> reference;
 	
-	SqlobField(Field field, String type, SqlobClass<?> reference) {
+	SqlobField(Field field, Class<?> fieldType, String type, SqlobClass<?> reference) {
 		this.field = field;
+		this.fieldType = fieldType;
 		this.type = type;
 		this.reference = reference;
 		
