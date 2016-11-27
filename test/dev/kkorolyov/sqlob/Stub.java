@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.UUID;
 
 import dev.kkorolyov.sqlob.annotation.Column;
 import dev.kkorolyov.sqlob.annotation.Table;
@@ -15,7 +17,6 @@ import dev.kkorolyov.sqlob.annotation.Table;
  */
 public class Stub {
 	static Random rand = new Random();
-	static byte[] bytes = new byte[8];
 	
 	/**
 	 * Contains all default simple types.
@@ -38,12 +39,11 @@ public class Stub {
 		
 		/** @return	new basic stub with random values */
 		public static BasicStub random() {
-			rand.nextBytes(bytes);
-			return new BasicStub((byte) rand.nextInt(Byte.MAX_VALUE + 1), rand.nextBoolean(), new String(bytes), new java.util.Date());
+			return new BasicStub((byte) rand.nextInt(Byte.MAX_VALUE + 1), rand.nextBoolean(), UUID.randomUUID().toString().replaceAll("-", ""), LocalDateTime.now());
 		}
 		
 		private BasicStub(){}
-		public BasicStub(byte num, boolean bool, String string, java.util.Date date) {
+		public BasicStub(byte num, boolean bool, String string, LocalDateTime time) {
 			short0 = num;
 			int0 = num;
 			long0 = num;
@@ -55,9 +55,9 @@ public class Stub {
 			
 			string0 = string;
 			
-			date0 = new Date(date.getTime());
-			time0 = new Time(date.getTime());
-			timestamp0 = new Timestamp(date.getTime());
+			date0 = Date.valueOf(time.toLocalDate());
+			time0 = Time.valueOf(time.toLocalTime());
+			timestamp0 = Timestamp.valueOf(time);
 		}
 
 		@Override
@@ -172,12 +172,11 @@ public class Stub {
 		
 		/** @return	new basic stub with random values */
 		public static AnnotatedStub random() {
-			rand.nextBytes(bytes);
-			return new AnnotatedStub((byte) rand.nextInt(Byte.MAX_VALUE + 1), rand.nextBoolean(), new String(bytes), new java.util.Date());
+			return new AnnotatedStub((byte) rand.nextInt(Byte.MAX_VALUE + 1), rand.nextBoolean(), UUID.randomUUID().toString().replaceAll("-", ""), LocalDateTime.now());
 		}
 		
 		private AnnotatedStub(){}
-		public AnnotatedStub(byte num, boolean bool, String string, java.util.Date date) {
+		public AnnotatedStub(byte num, boolean bool, String string, LocalDateTime time) {
 			short0 = num;
 			int0 = num;
 			long0 = num;
@@ -189,9 +188,9 @@ public class Stub {
 			
 			string0 = string;
 			
-			date0 = new Date(date.getTime());
-			time0 = new Time(date.getTime());
-			timestamp0 = new Timestamp(date.getTime());
+			date0 = Date.valueOf(time.toLocalDate());
+			time0 = Time.valueOf(time.toLocalTime());
+			timestamp0 = Timestamp.valueOf(time);
 		}
 
 		@Override

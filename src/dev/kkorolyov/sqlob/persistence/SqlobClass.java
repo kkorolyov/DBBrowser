@@ -126,7 +126,7 @@ final class SqlobClass<T> {
 		Set<T> instances = get(new Condition(idName, "=", id.toString()), conn);
 		T result = instances.isEmpty() ? null : instances.iterator().next();
 		
-		log.debug(() -> (result == null ? "Failed to find " : "Found ") + "instance of " + this + ": " + id + "->" + result);
+		log.debug(() -> (result == null ? "Failed to find " : "Found ") + "instance of " + this + ": " + id + (result == null ? "" : "->" + result));
 		return result;
 	}
 	Set<T> get(Condition where, Connection conn) throws SQLException {
@@ -159,6 +159,30 @@ final class SqlobClass<T> {
 		log.debug(() -> "Found " + results.size() + " instances of " + this + System.lineSeparator() + "\t" + applyStatement(select, (where == null ? null : where.values())));
 		return results;
 	}
+	
+	boolean drop(UUID id, Connection conn) throws SQLException {
+		boolean result = drop(new Condition(idName, "=", id.toString()), conn) > 0;
+		
+		log.debug(() -> (result ? "Deleted " : "Failed to delete ") + "instance of " + this + ": " + id);
+		return result;
+	}
+	int drop(Condition where, Connection conn) throws SQLException {
+		String delete = buildDelete(where);
+		
+		try (PreparedStatement s = conn.prepareStatement(delete)) {
+			if (where != null) {	// Has conditions
+				int counter = 1;
+				for (Object value : where.values()) {
+					if (!shortCircuitSet(s, counter++, value, conn))	// Missing reference
+						return 0;	// Short-circuit
+				}
+			}
+			int result = s.executeUpdate();
+			
+			log.debug(() -> "Deleted " + result + " instances of " + this + System.lineSeparator() + "\t" + applyStatement(delete, (where == null ? null : where.values())));
+			return result;
+		}
+	}
 
 	private boolean shortCircuitSet(PreparedStatement s, int index, Object value, Connection conn) throws SQLException {	// Returns false and does not modify Statement if missing reference
 		Object transformed = transform(value, conn);
@@ -189,6 +213,14 @@ final class SqlobClass<T> {
 	
 	private String buildSelect(String selection, Condition where) {
 		String result = "SELECT " + selection + " FROM " + name;
+		
+		if (where != null)
+			result += " WHERE " + where;
+		
+		return result;
+	}
+	private String buildDelete(Condition where) {
+		String result = "DELETE FROM " + name;
 		
 		if (where != null)
 			result += " WHERE " + where;

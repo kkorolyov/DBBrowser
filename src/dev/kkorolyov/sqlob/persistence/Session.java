@@ -41,16 +41,16 @@ public class Session implements AutoCloseable {
 	}
 	
 	/**
-	 * Retrieves the instance of a class matching an UUID.
+	 * Retrieves the instance of a class matching an ID.
 	 * @param c type to retrieve
-	 * @param uuid instance uuid
+	 * @param id instance ID
 	 * @return instance matching {@code id}, or {@code null} if no such instance
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
-	public <T> T get(Class<T> c, UUID uuid) throws SQLException {
+	public <T> T get(Class<T> c, UUID id) throws SQLException {
 		try {
-			T result = cache.get(c, getConn()).get(uuid, getConn());
+			T result = cache.get(c, getConn()).get(id, getConn());
 			bufferCounter++;
 			
 			if (bufferSize == 0)
@@ -86,7 +86,29 @@ public class Session implements AutoCloseable {
 	}
 	
 	/**
-	 * Stores an instance of a class and returns its UUID.
+	 * Retrieves the ID of an instance of a class.
+	 * @param o stored instance
+	 * @return id of stored instance, or {@code null} if no such instance stored
+	 * @throws SQLException if a database error occurs
+	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 */
+	public UUID getId(Object o) throws SQLException {
+		try {
+			UUID result = cache.get(o.getClass(), getConn()).getId(o, getConn());
+			bufferCounter++;
+			
+			if (bufferSize == 0)
+				flush();
+			
+			return result;
+		} catch (SQLException e) {
+			getConn().rollback();
+			throw e;
+		}
+	}
+	
+	/**
+	 * Stores an instance of a class and returns its ID.
 	 * If an equivalent instance is already stored, no additional storage is performed and the UUID of that instance is returned.
 	 * @param o instance to store
 	 * @return UUID of stored instance
@@ -96,6 +118,29 @@ public class Session implements AutoCloseable {
 	public UUID put(Object o) throws SQLException {
 		try {
 			UUID result = cache.get(o.getClass(), getConn()).put(o, getConn());
+			bufferCounter++;
+			
+			if (bufferSize == 0)
+				flush();
+			
+			return result;
+		} catch (SQLException e) {
+			getConn().rollback();
+			throw e;
+		}
+	}
+	
+	/**
+	 * Deletes an instance of a class.
+	 * @param c type to delete
+	 * @param id instance ID
+	 * @return {@code true} if instance deleted
+	 * @throws SQLException if a database error occurs
+	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 */
+	public boolean drop(Class<?> c, UUID id) throws SQLException {
+		try {
+			boolean result = cache.get(c, getConn()).drop(id, getConn());
 			bufferCounter++;
 			
 			if (bufferSize == 0)

@@ -70,22 +70,86 @@ public class SessionTest {
 	
 	@Test
 	public void testGet() throws SQLException {
-		try (Session session = new Session(ds)) {
-			BasicStub bs = BasicStub.random();
-			AnnotatedStub as = AnnotatedStub.random();
-			SmartStub ss = SmartStub.random();
+		BasicStub bs = BasicStub.random();
+		AnnotatedStub as = AnnotatedStub.random();
+		SmartStub ss = SmartStub.random();
+		
+		try (Session s = new Session(ds)) {
+			UUID 	bsId = s.put(bs),
+						asId = s.put(as),
+						ssId = s.put(ss);
 			
-			UUID 	bsId = session.put(bs),
-						asId = session.put(as),
-						ssId = session.put(ss);
+			s.flush();
 			
-			assertEquals(bs, session.get(bs.getClass(), bsId));
-			assertEquals(as, session.get(as.getClass(), asId));
-			assertEquals(ss, session.get(ss.getClass(), ssId));
+			assertEquals(bs, s.get(bs.getClass(), bsId));
+			assertEquals(as, s.get(as.getClass(), asId));
+			assertEquals(ss, s.get(ss.getClass(), ssId));
 		}
 	}
 	@Test
-	public void testGetCondition() throws SQLException {
-		fail("TODO");
+	public void testGetCondition() throws SQLException {	// TODO More thorough
+		BasicStub bs = BasicStub.random();
+		SmartStub ss = new SmartStub(bs);
+		Condition cond = new Condition("stub", "=", bs);	// Tests recursion
+		
+		try (Session s = new Session(ds)) {
+			UUID ssId = s.put(ss);
+			
+			s.flush();
+			
+			assertEquals(s.get(ss.getClass(), ssId), s.get(ss.getClass(), cond).iterator().next());
+		}
+	}
+	
+	@Test
+	public void testGetId() throws SQLException {
+		BasicStub bs = BasicStub.random();
+		AnnotatedStub as = AnnotatedStub.random();
+		SmartStub ss = SmartStub.random();
+		
+		try (Session s = new Session(ds)) {
+			UUID 	bsId = s.put(bs),
+						asId = s.put(as),
+						ssId = s.put(ss);
+			
+			s.flush();
+			
+			assertEquals(bsId, s.getId(bs));
+			assertEquals(asId, s.getId(as));
+			assertEquals(ssId, s.getId(ss));
+		}
+	}
+	
+	@Test
+	public void testDrop() throws SQLException {
+		BasicStub bs = BasicStub.random();
+		AnnotatedStub as = AnnotatedStub.random();
+		SmartStub ss = SmartStub.random();
+		
+		try (Session s = new Session(ds)) {
+			UUID 	bsId = s.put(bs),
+						asId = s.put(as),
+						ssId = s.put(ss);
+			
+			s.flush();
+			
+			assertEquals(bs, s.get(BasicStub.class, bsId));
+			assertEquals(as, s.get(AnnotatedStub.class, asId));
+			assertEquals(ss, s.get(SmartStub.class, ssId));
+			
+			assertTrue(s.drop(bs.getClass(), bsId));
+			assertTrue(s.drop(as.getClass(), asId));
+			assertTrue(s.drop(ss.getClass(), ssId));
+			
+			s.flush();
+			
+			assertFalse(s.drop(bs.getClass(), bsId));	// Assert dropped
+			assertFalse(s.drop(as.getClass(), asId));
+			assertFalse(s.drop(ss.getClass(), ssId));
+			
+			assertNull(s.get(bs.getClass(), bsId));
+			assertNull(s.get(as.getClass(), asId));
+			assertNull(s.get(as.getClass(), ssId));
+		}
 	}
 }

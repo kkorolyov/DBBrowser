@@ -58,8 +58,6 @@ class SqlobCache {
 				String sqlType = typeMap.get(fieldType);
 				SqlobClass<?> reference = (sqlType == null ? get(fieldType, conn) : null);
 				
-				field.setAccessible(true);
-				
 				fields.add(new SqlobField(field, extractorMap.get(fieldType), (sqlType == null ? ID_TYPE : sqlType), reference));
 			}
 		}
@@ -94,8 +92,8 @@ class SqlobCache {
 		map.put(byte[].class, "VARBINARY(1024)");
 		
 		map.put(Date.class, "DATE");
-		map.put(Time.class, "TIME");
-		map.put(Timestamp.class, "TIMESTAMP");
+		map.put(Time.class, "TIME(6)");
+		map.put(Timestamp.class, "TIMESTAMP(6)");
 		
 		return map;
 	}

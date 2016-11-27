@@ -27,6 +27,8 @@ final class SqlobField {
 		name = (override == null || override.value().length() <= 0) ? this.field.getName() : override.value();
 		
 		typeCode = JDBCType.valueOf(type.split("[\\s(]")[0]).getVendorTypeNumber();
+		
+		this.field.setAccessible(true);
 	}
 	
 	String getInit(String idName) {
