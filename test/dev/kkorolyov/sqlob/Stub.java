@@ -21,7 +21,6 @@ public class Stub {
 	 * Contains all default simple types.
 	 */
 	public static class BasicStub {
-		private byte byte0;
 		private short short0;
 		private int int0;
 		private long long0;
@@ -32,8 +31,6 @@ public class Stub {
 		private boolean boolean0;
 		
 		private String string0;
-		
-		private byte[] byteArray0;
 		
 		private Date date0;
 		private Time time0;
@@ -47,7 +44,6 @@ public class Stub {
 		
 		private BasicStub(){}
 		public BasicStub(byte num, boolean bool, String string, java.util.Date date) {
-			byte0 = num;
 			short0 = num;
 			int0 = num;
 			long0 = num;
@@ -58,8 +54,6 @@ public class Stub {
 			boolean0 = bool;
 			
 			string0 = string;
-			
-			byteArray0 = string.getBytes();
 			
 			date0 = new Date(date.getTime());
 			time0 = new Time(date.getTime());
@@ -72,8 +66,6 @@ public class Stub {
 			int result = 1;
 			result = prime * result + ((bigDecimal0 == null) ? 0 : bigDecimal0.hashCode());
 			result = prime * result + (boolean0 ? 1231 : 1237);
-			result = prime * result + byte0;
-			result = prime * result + Arrays.hashCode(byteArray0);
 			result = prime * result + ((date0 == null) ? 0 : date0.hashCode());
 			long temp = Double.doubleToLongBits(double0);
 			result = prime * result + (int) (temp ^ (temp >>> 32));
@@ -103,10 +95,6 @@ public class Stub {
 			} else if (!bigDecimal0.equals(other.bigDecimal0))
 				return false;
 			if (boolean0 != other.boolean0)
-				return false;
-			if (byte0 != other.byte0)
-				return false;
-			if (!Arrays.equals(byteArray0, other.byteArray0))
 				return false;
 			if (date0 == null) {
 				if (other.date0 != null)
@@ -143,11 +131,10 @@ public class Stub {
 
 		@Override
 		public String toString() {
-			return "BasicStub [byte0=" + byte0 + ", short0=" + short0 + ", int0="
+			return "BasicStub [short0=" + short0 + ", int0="
 					+ int0 + ", long0=" + long0 + ", float0=" + float0 + ", double0="
 					+ double0 + ", bigDecimal0=" + bigDecimal0 + ", boolean0=" + boolean0
-					+ ", string0=" + string0 + ", byteArray0="
-					+ Arrays.toString(byteArray0) + ", date0=" + date0 + ", time0="
+					+ ", string0=" + string0 + ", date0=" + date0 + ", time0="
 					+ time0 + ", timestamp0=" + timestamp0 + "]";
 		}
 	}
@@ -157,8 +144,6 @@ public class Stub {
 	 */
 	@Table("A")
 	public static class AnnotatedStub {
-		@Column("B")
-		private byte byte0;
 		@Column("S")
 		private short short0;
 		@Column("I")
@@ -178,9 +163,6 @@ public class Stub {
 		@Column("St")
 		private String string0;
 		
-		@Column("BA")
-		private byte[] byteArray0;
-		
 		@Column("Da")
 		private Date date0;
 		@Column("Ti")
@@ -196,7 +178,6 @@ public class Stub {
 		
 		private AnnotatedStub(){}
 		public AnnotatedStub(byte num, boolean bool, String string, java.util.Date date) {
-			byte0 = num;
 			short0 = num;
 			int0 = num;
 			long0 = num;
@@ -207,8 +188,6 @@ public class Stub {
 			boolean0 = bool;
 			
 			string0 = string;
-			
-			byteArray0 = string.getBytes();
 			
 			date0 = new Date(date.getTime());
 			time0 = new Time(date.getTime());
@@ -221,8 +200,6 @@ public class Stub {
 			int result = 1;
 			result = prime * result + ((bigDecimal0 == null) ? 0 : bigDecimal0.hashCode());
 			result = prime * result + (boolean0 ? 1231 : 1237);
-			result = prime * result + byte0;
-			result = prime * result + Arrays.hashCode(byteArray0);
 			result = prime * result + ((date0 == null) ? 0 : date0.hashCode());
 			long temp = Double.doubleToLongBits(double0);
 			result = prime * result + (int) (temp ^ (temp >>> 32));
@@ -252,10 +229,6 @@ public class Stub {
 			} else if (!bigDecimal0.equals(other.bigDecimal0))
 				return false;
 			if (boolean0 != other.boolean0)
-				return false;
-			if (byte0 != other.byte0)
-				return false;
-			if (!Arrays.equals(byteArray0, other.byteArray0))
 				return false;
 			if (date0 == null) {
 				if (other.date0 != null)

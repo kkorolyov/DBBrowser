@@ -17,6 +17,7 @@ class SqlobCache {
 
 	private final Map<Class<?>, SqlobClass<?>> classMap = new HashMap<>();
 	private Map<Class<?>, String> typeMap = getDefaultTypeMap();
+	private Map<Class<?>, Extractor> extractorMap = getDefaultExtractorMap();
 	
 	static {
 		wrapMap.put(byte.class, Byte.class);
@@ -59,7 +60,7 @@ class SqlobCache {
 				
 				field.setAccessible(true);
 				
-				fields.add(new SqlobField(field, fieldType, (sqlType == null ? ID_TYPE : sqlType), reference));
+				fields.add(new SqlobField(field, extractorMap.get(fieldType), (sqlType == null ? ID_TYPE : sqlType), reference));
 			}
 		}
 		return fields;
@@ -80,13 +81,11 @@ class SqlobCache {
 		map.put(Short.class, "SMALLINT");
 		map.put(Integer.class, "INTEGER");
 		map.put(Long.class, "BIGINT");
-		
 		map.put(Float.class, "REAL");
 		map.put(Double.class, "DOUBLE PRECISION");
-		
 		map.put(BigDecimal.class, "NUMERIC");
 		
-		map.put(Boolean.class, "BIT");
+		map.put(Boolean.class, "BOOLEAN");
 		
 		map.put(Character.class, "CHAR(1)");
 		
@@ -97,6 +96,40 @@ class SqlobCache {
 		map.put(Date.class, "DATE");
 		map.put(Time.class, "TIME");
 		map.put(Timestamp.class, "TIMESTAMP");
+		
+		return map;
+	}
+	
+	Map<Class<?>, Extractor> getExtractorMap() {
+		return new HashMap<>(extractorMap);
+	}
+	void setExtractorMap(Map<Class<?>, Extractor> extractorMap) {
+		classMap.clear();
+		
+		this.extractorMap = (extractorMap == null ? getDefaultExtractorMap() : extractorMap);
+	}
+	private static Map<Class<?>, Extractor> getDefaultExtractorMap() {
+		Map<Class<?>, Extractor> map = new HashMap<>();
+		
+		map.put(Byte.class, (rs, column) -> rs.getByte(column));
+		map.put(Short.class, (rs, column) -> rs.getShort(column));
+		map.put(Integer.class, (rs, column) -> rs.getInt(column));
+		map.put(Long.class, (rs, column) -> rs.getLong(column));
+		map.put(Float.class, (rs, column) -> rs.getFloat(column));
+		map.put(Double.class, (rs, column) -> rs.getDouble(column));
+		map.put(BigDecimal.class, (rs, column) -> rs.getBigDecimal(column));
+
+		map.put(Boolean.class, (rs, column) -> rs.getBoolean(column));
+
+		map.put(Character.class, (rs, column) -> rs.getString(column).charAt(0));
+		
+		map.put(String.class, (rs, column) -> rs.getString(column));
+
+		map.put(byte[].class, (rs, column) -> rs.getBytes(column));
+
+		map.put(Date.class, (rs, column) -> rs.getDate(column));
+		map.put(Time.class, (rs, column) -> rs.getTime(column));
+		map.put(Timestamp.class, (rs, column) -> rs.getTimestamp(column));
 		
 		return map;
 	}

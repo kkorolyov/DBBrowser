@@ -139,6 +139,15 @@ public class Session implements AutoCloseable {
 		cache.setTypeMap(typeMap);
 	}
 	
+	/** @return extractor map used by this session for extracting Java objects from result set columns */
+	public Map<Class<?>, Extractor> getExtractorMap() {
+		return cache.getExtractorMap();
+	}
+	/** @param extractorMap new extractor map, if {@code null}, resets to default extractor map */
+	public void setExtractorMap(Map<Class<?>, Extractor> extractorMap) {
+		cache.setExtractorMap(extractorMap);
+	}
+	
 	private Connection getConn() throws SQLException {
 		if (conn != null && (bufferCounter >= bufferSize))
 			flush();

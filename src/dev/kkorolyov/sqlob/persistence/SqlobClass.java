@@ -2,7 +2,6 @@ package dev.kkorolyov.sqlob.persistence;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -147,17 +146,9 @@ final class SqlobClass<T> {
 					try {
 						T result = constructor.newInstance();
 						
-						for (SqlobField field : fields) {
-							try {
-								Object value = rsGet(rs, field);
-								if (field.isReference() && value != null)
-									value = field.reference.get(UUID.fromString((String) value), conn);
-								
-								field.field.set(result, value);
-							} catch (IllegalAccessException e) {
-								throw new NonPersistableException(field.field + " is inaccessible", e);
-							}
-						}
+						for (SqlobField field : fields)
+							field.apply(result, rs, conn);
+						
 						results.add(result);
 					} catch (IllegalAccessException | InstantiationException | IllegalArgumentException | InvocationTargetException e) {
 						throw new NonPersistableException("Failed to instantiate " + c.getName(), e);
@@ -168,27 +159,7 @@ final class SqlobClass<T> {
 		log.debug(() -> "Found " + results.size() + " instances of " + this + System.lineSeparator() + "\t" + applyStatement(select, (where == null ? null : where.values())));
 		return results;
 	}
-	private static Object rsGet(ResultSet rs, SqlobField field) throws SQLException {
-		if (field.fieldType == Byte.class)
-			return rs.getByte(field.name);
-		else if (field.fieldType == Short.class)
-			return rs.getShort(field.name);
-		else if (field.fieldType == Integer.class)
-			return rs.getInt(field.name);
-		else if (field.fieldType == Long.class)
-			return rs.getLong(field.name);
-		else if (field.fieldType == Float.class)
-			return rs.getFloat(field.name);
-		else if (field.fieldType == Double.class)
-			return rs.getDouble(field.name);
-		else if (field.fieldType == Boolean.class)
-			return rs.getBoolean(field.name);
-		else if (field.fieldType == BigDecimal.class)
-			return rs.getBigDecimal(field.name);
-		else
-			return rs.getObject(field.name);
-	}
-	
+
 	private boolean shortCircuitSet(PreparedStatement s, int index, Object value, Connection conn) throws SQLException {	// Returns false and does not modify Statement if missing reference
 		Object transformed = transform(value, conn);
 		if (value != null && transformed == null) {	// Missing reference
