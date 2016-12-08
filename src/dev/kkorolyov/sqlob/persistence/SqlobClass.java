@@ -69,39 +69,6 @@ final class SqlobClass<T> {
 		return this;
 	}
 	
-	UUID put(Object instance, Connection conn) throws SQLException {
-		UUID id = getId(instance, conn);
-		
-		if (id == null) {
-			id = UUID.randomUUID();
-			List<Object> parameters = new LinkedList<>();	// For logging
-			
-			try (PreparedStatement s = conn.prepareStatement(insert)) {
-				s.setString(1, id.toString());
-				parameters.add(id);	// Logging
-
-				int counter = 2;
-				for (SqlobField field : fields) {
-					try {
-						Object value = 	field.field.get(instance),
-														transformed = transform(value, conn);
-						if (value != null && transformed == null)	// Missing reference
-							transformed = field.reference.put(value, conn);	// Recursive put
-						
-						s.setObject(counter++, transformed, field.typeCode);
-						parameters.add(transformed);	// Logging
-					} catch (IllegalAccessException e) {
-						throw new NonPersistableException(field.field + " is inaccessible");
-					}
-				}
-				s.executeUpdate();
-			}
-			UUID finalId = id;
-			log.debug(() -> "Saved new " + this + ": " + instance + "->" + finalId + System.lineSeparator() + "\t" + applyStatement(insert, parameters));
-		}
-		return id;
-	}
-	
 	@SuppressWarnings("unchecked")
 	UUID getId(Object instance, Connection conn) throws SQLException {
 		Condition where = buildEquals((T) instance);
@@ -158,6 +125,44 @@ final class SqlobClass<T> {
 		}
 		log.debug(() -> "Found " + results.size() + " instances of " + this + System.lineSeparator() + "\t" + applyStatement(select, (where == null ? null : where.values())));
 		return results;
+	}
+	
+	UUID put(Object instance, Connection conn) throws SQLException {
+		UUID id = getId(instance, conn);
+		if (id == null) {
+			id = UUID.randomUUID();
+			put(id, instance, conn);
+		}
+		return id;
+	}
+	boolean put(UUID id, Object instance, Connection conn) throws SQLException {
+		boolean result = drop(id, conn);	// Drop any previous version
+		List<Object> parameters = new LinkedList<>();	// For logging
+		
+		try (PreparedStatement s = conn.prepareStatement(insert)) {
+			s.setString(1, id.toString());
+			parameters.add(id);	// Logging
+
+			int counter = 2;
+			for (SqlobField field : fields) {
+				try {
+					Object value = 	field.field.get(instance),
+													transformed = transform(value, conn);
+					if (value != null && transformed == null)	// Missing reference
+						transformed = field.reference.put(value, conn);	// Recursive put
+					
+					s.setObject(counter++, transformed, field.typeCode);
+					parameters.add(transformed);	// Logging
+				} catch (IllegalAccessException e) {
+					throw new NonPersistableException(field.field + " is inaccessible");
+				}
+			}
+			s.executeUpdate();
+		}
+		UUID finalId = id;
+		
+		log.debug(() -> (result ? "Replaced " : "Saved new ") + this + ": " + instance + "->" + finalId + System.lineSeparator() + "\t" + applyStatement(insert, parameters));
+		return result;
 	}
 	
 	boolean drop(UUID id, Connection conn) throws SQLException {

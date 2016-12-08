@@ -67,6 +67,22 @@ public class SessionTest {
 			s.put(SmartStub.random());
 		}
 	}
+	@Test
+	public void testPutID() throws SQLException {
+		UUID id = UUID.randomUUID();
+		
+		try (Session s = new Session(ds)) {
+			assertFalse(s.put(id, BasicStub.random()));
+			assertFalse(s.put(id, AnnotatedStub.random()));
+			assertFalse(s.put(id, SmartStub.random()));
+			
+			s.flush();
+			
+			assertTrue(s.put(id, BasicStub.random()));
+			assertTrue(s.put(id, AnnotatedStub.random()));
+			assertTrue(s.put(id, SmartStub.random()));
+		}
+	}
 	
 	@Test
 	public void testGet() throws SQLException {
@@ -151,5 +167,14 @@ public class SessionTest {
 			assertNull(s.get(as.getClass(), asId));
 			assertNull(s.get(as.getClass(), ssId));
 		}
+	}
+	@Test
+	public void testDropCondition() throws SQLException {
+		// TODO
+	}
+	
+	@Test
+	public void testExceptions() throws SQLException {
+		// TODO
 	}
 }

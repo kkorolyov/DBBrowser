@@ -41,21 +41,41 @@ public class Session implements AutoCloseable {
 	}
 	
 	/**
+	 * Retrieves the ID of an instance of a class.
+	 * @param o stored instance
+	 * @return id of stored instance, or {@code null} if no such instance stored
+	 * @throws SQLException if a database error occurs
+	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 * @throws IllegalArgumentException if {@code o} is null
+	 */
+	public UUID getId(Object o) throws SQLException {
+		assertNotNull(o);
+		try {
+			UUID result = cache.get(o.getClass(), getConn()).getId(o, getConn());
+			
+			finalizeAction();
+			return result;
+		} catch (SQLException e) {
+			getConn().rollback();
+			throw e;
+		}
+	}
+	
+	/**
 	 * Retrieves the instance of a class matching an ID.
 	 * @param c type to retrieve
 	 * @param id instance ID
 	 * @return instance matching {@code id}, or {@code null} if no such instance
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 * @throws IllegalArgumentException if {@code c} or {@code id} is null
 	 */
 	public <T> T get(Class<T> c, UUID id) throws SQLException {
+		assertNotNull(c, id);
 		try {
 			T result = cache.get(c, getConn()).get(id, getConn());
-			bufferCounter++;
-			
-			if (bufferSize == 0)
-				flush();
-			
+
+			finalizeAction();
 			return result;
 		} catch (SQLException e) {
 			getConn().rollback();
@@ -69,15 +89,14 @@ public class Session implements AutoCloseable {
 	 * @return all matching instances
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 * @throws IllegalArgumentException if {@code c} is null
 	 */
 	public <T> Set<T> get(Class<T> c, Condition condition) throws SQLException {
+		assertNotNull(c);
 		try {
 			Set<T> results = cache.get(c, getConn()).get(condition, getConn());
-			bufferCounter++;
 			
-			if (bufferSize == 0)
-				flush();
-			
+			finalizeAction();
 			return results;
 		} catch (SQLException e) {
 			getConn().rollback();
@@ -86,43 +105,42 @@ public class Session implements AutoCloseable {
 	}
 	
 	/**
-	 * Retrieves the ID of an instance of a class.
-	 * @param o stored instance
-	 * @return id of stored instance, or {@code null} if no such instance stored
+	 * Stores an instance of a class and returns its ID.
+	 * If an equivalent instance is already stored, no additional storage is performed and the ID of that instance is returned.
+	 * @param o instance to store
+	 * @return UUID of stored instance
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 * @throws IllegalArgumentException if {@code o} is null
 	 */
-	public UUID getId(Object o) throws SQLException {
+	public UUID put(Object o) throws SQLException {
+		assertNotNull(o);
 		try {
-			UUID result = cache.get(o.getClass(), getConn()).getId(o, getConn());
-			bufferCounter++;
+			UUID result = cache.get(o.getClass(), getConn()).put(o, getConn());
 			
-			if (bufferSize == 0)
-				flush();
-			
+			finalizeAction();
 			return result;
 		} catch (SQLException e) {
 			getConn().rollback();
 			throw e;
 		}
 	}
-	
 	/**
-	 * Stores an instance of a class and returns its ID.
-	 * If an equivalent instance is already stored, no additional storage is performed and the UUID of that instance is returned.
+	 * Stores an instance of a class using a predetermined ID.
+	 * If the ID is reserved by another instance, that instance is replaced with {@code o}.
+	 * @param id instance ID
 	 * @param o instance to store
-	 * @return UUID of stored instance
+	 * @return {@code true} if a previous instance was overwritten by {@code o}
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 * @throws IllegalArgumentException if {@code id} or {@code o} is null
 	 */
-	public UUID put(Object o) throws SQLException {
+	public boolean put(UUID id, Object o) throws SQLException {
+		assertNotNull(id, o);
 		try {
-			UUID result = cache.get(o.getClass(), getConn()).put(o, getConn());
-			bufferCounter++;
+			boolean result = cache.get(o.getClass(), getConn()).put(id, o, getConn());
 			
-			if (bufferSize == 0)
-				flush();
-			
+			finalizeAction();
 			return result;
 		} catch (SQLException e) {
 			getConn().rollback();
@@ -137,15 +155,35 @@ public class Session implements AutoCloseable {
 	 * @return {@code true} if instance deleted
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 * @throws IllegalArgumentException if {@code c} or {@code id} is null
 	 */
 	public boolean drop(Class<?> c, UUID id) throws SQLException {
+		assertNotNull(c, id);
 		try {
 			boolean result = cache.get(c, getConn()).drop(id, getConn());
-			bufferCounter++;
 			
-			if (bufferSize == 0)
-				flush();
+			finalizeAction();
+			return result;
+		} catch (SQLException e) {
+			getConn().rollback();
+			throw e;
+		}
+	}
+	/**
+	 * Deletes all instances of a class matching a condition.
+	 * @param c type to delete
+	 * @param condition condition to match
+	 * @return number of deleted instances
+	 * @throws SQLException if a database error occurs
+	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 * @throws IllegalArgumentException if {@code c} is null
+	 */
+	public int drop(Class<?> c, Condition condition) throws SQLException {
+		assertNotNull(c);
+		try {
+			int result = cache.get(c, getConn()).drop(condition, getConn());
 			
+			finalizeAction();
 			return result;
 		} catch (SQLException e) {
 			getConn().rollback();
@@ -165,6 +203,13 @@ public class Session implements AutoCloseable {
 			
 			bufferCounter = 0;
 		}
+	}
+	
+	private void finalizeAction() throws SQLException {
+		bufferCounter++;
+		
+		if (bufferSize == 0)
+			flush();
 	}
 	
 	/**
@@ -204,5 +249,12 @@ public class Session implements AutoCloseable {
 			log.debug(() -> "Retrieved new Connection from " + ds);
 		}
 		return conn;
+	}
+	
+	private static void assertNotNull(Object... args) throws IllegalArgumentException {
+		for (Object arg : args) {
+			if (arg == null)
+				throw new IllegalArgumentException();
+		}
 	}
 }
