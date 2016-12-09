@@ -1,24 +1,25 @@
 # SQLOb
-SQLOb (pronounced "Sklob"), is a Java API facilitating object-oriented access to a SQL database.
+SQLOb [_Sklob_], is a Java library providing for persistence of Java objects in a SQL database.
 
 ## Examples
 ```java
-String 	host = "0.0.0.0",
-				database = "sqlob_db",
-				user = "fakeuser",
-				password = "realpass";
-DatabaseType databaseType = DatabaseType.POSTGRESQL;
-
-DatabaseConnection dbConn = new DatabaseConnection(host, database, databaseType, user, password);
-String createTableBaseStatement = "CREATE TABLE new_table (name VARCHAR, is_useless BOOLEAN, uselessness_scale INTEGER)";
-
-dbConn.update(createTableBaseStatement, (RowEntry[]) null);	// Executes update with no parameters
-
-String tableName = "sqlob_table";
-if (dbConn.containsTable(tableName)) {
-	TableConnection tableConn = dbConn.connect(tableName);
+public class MyPersistedClass {
+	@Transient
+	private int counter;
+	private String name;
+	@Column("")
+	MyOtherClass other;
 	
-	Results allData = tableConn.select();	// Selects all data in table
+	public MyPersistedClass() {...}
+}
+...
+MyPersistedClass toSave = new MyPersistedClass();
+DataSource ds = <_get a DataSource_>;
+
+try (Session s = new Session(ds)) {
+	UUID savedInstanceId = s.put(toSave);	// Saves to database
+	s.flush();	// Commits requests and flushes buffer
+	MyPersistedClass retrieved = s.get(MyPersistedClass.class, savedInstanceId);	// Retrieves from database
 }
 ```
 
@@ -27,14 +28,13 @@ if (dbConn.containsTable(tableName)) {
 * Add either the source or bundled .jar file to your project's classpath.
 
 ## Usage
-### DatabaseConnection
-A `DatabaseConnection` is a connection to a single database.
-The parameters required by a `DatabaseConnection` include:
-* Database host address
-* Database name
-* Database user's username
-* Database user's password
-* Database type
+### Session
+A `Session` manages persistence between Java objects and a backing database.
+A basic `Session` requires only a `DataSource` to a database.
+`Session` provides various persistence methods:
+* `UUID getId(Object o)` returns the ID of an instance persisted in the database
+* `T get(Class<T> c, UUID id)` returns an instance of `T` persisted under an ID
+* 
 
 SQL statements can be executed on the selected database using any of the following methods:
 * `DatabaseConnection#execute(QueryStatement):Results`
