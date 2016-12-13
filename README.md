@@ -1,6 +1,8 @@
 # SQLOb
 SQLOb [_Sklob_], is a Java library providing for persistence of Java objects in a SQL database.
 
+Version 2.0 completely overhauled the project, turning it away from an additional wrapper on top of JDBC and into a more focused persistence library.
+
 ## Examples
 ```java
 public class MyPersistedClass {
@@ -14,7 +16,7 @@ public class MyPersistedClass {
 }
 ...
 MyPersistedClass toSave = new MyPersistedClass();
-DataSource ds = <_get a DataSource_>;
+DataSource ds = <get a DataSource>;
 
 try (Session s = new Session(ds)) {
 	UUID savedInstanceId = s.put(toSave);	// Saves to database
@@ -32,38 +34,28 @@ try (Session s = new Session(ds)) {
 A `Session` manages persistence between Java objects and a backing database.
 A basic `Session` requires only a `DataSource` to a database.
 `Session` provides various persistence methods:
+##### Retrieval
 * `UUID getId(Object o)` returns the ID of an instance persisted in the database
 * `T get(Class<T> c, UUID id)` returns an instance of `T` persisted under an ID
-* 
+* `Set<T> get(Class<T> c, Condition condition)` returns all persisted `T` instances matching a SQL-like condition
 
-SQL statements can be executed on the selected database using any of the following methods:
-* `DatabaseConnection#execute(QueryStatement):Results`
-* `DatabaseConnection#execute(UpdateStatement):int`
-* `DatabaseConnection#execute(String, RowEntry...):Results`
-* `DatabaseConnection#update(Strings, RowEntry...):int`
+##### Insertion
+* `UUID put(Object o)` persists an object in the backing database and returns the ID used to access it
+* `boolean put(UUID id, Object o)` persists an object under a preset ID and returns `true` if this overwrites an earlier object referenced by the ID
 
-### TableConnection
-A `TableConnection` is a connection to a single table on a database.
-A `TableConnection` to any table on a database may be retrieved using the `DatabaseConnection#connect(String)` method, which accepts the name of the table to connect to as the only parameter.
+##### Deletion
+* `boolean drop(Class<?> c, UUID id)` deletes an instance of a class persisted under an ID and returns `true` if deletion was successful
+* `int drop(Class<?> c, Condition condition)` deletes all instances of a class matching a SQL-like condition and returns the number of deletions
 
-### StatementCommand
-A `StatementCommand` is a complete SQL statement ready for execution.
-It consists of:
-* The base SQL statement, specified as a `String` with `?` characters denoting areas for parameter substitution during execution
-* A set of `RowEntry` objects denoting the database values set or modified by the statement
-* A set of `RowEntry` objects denoting the criteria restricting the statement
-* The `DatabaseConnection` used to execute the statement
-
-A `StatementCommand` is created using one of the multiple methods found in `StatementFactory`.
-Each `DatabaseConnection` has its own `StatementFactory`, which may be retrieved using the `DatabaseConnection#getStatementFactory()` method.
-
-### Results
-Whereas update statements return an `int` of the number of rows added, removed, or otherwise modified, query statements return a `Results` object.
-`Results` is similar to the java.sql package's `ResultSet` in that when freshly-created, `Results` has a cursor immediately preceeding the first row of data returned by the SQL query, as well as providing a method (Results#getNextRow():RowEntry[]) used to advance this cursor one row and return the row of data at that row.
+### Annotations
+Several optional annotations may be used to customize persisted data.
+* `@Transient` indicates that field will be ignored by the persistence engine
+* `@Table(String name)` overrides the name of the table mapped to a persisted class, which defaults to the simple name of the class
+* `@Column(String name)` overrides the name of the column mapped to a persisted field, which defaults to the name of the field
 
 ### Logging
 SQLOb has an optional dependency on the [SimpleLogs](https://github.com/kkorolyov/SimpleLogs) library.
-If SimpleLogs is found on the classpath during runtime, SQLOb will log messages at the DEBUG level using the methods provided by SimpleLogs.
+SQLOb logging can be activated by adding a `DEBUG`-level `Logger` to the `dev.kkorolyov.sqlob` logger hierarchy.
 
 ## License
 BSD-new license.  
