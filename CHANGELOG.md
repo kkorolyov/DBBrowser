@@ -8,5 +8,5 @@
 ## [1.0] - 2016-08-14
 * Initial release
 
-[2.0]: https://github.com/kkorolyov/SQLOb/releases/tag/2.0
+[2.0]: https://github.com/kkorolyov/SQLOb/releases/tag/v2.0
 [1.0]: https://github.com/kkorolyov/SQLOb/releases/tag/1.0
