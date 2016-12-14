@@ -4,9 +4,12 @@ import static org.junit.Assert.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.sql.DataSource;
@@ -103,17 +106,43 @@ public class SessionTest {
 		}
 	}
 	@Test
-	public void testGetCondition() throws SQLException {	// TODO More thorough
+	public void testGetCondition() throws SQLException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
 		BasicStub bs = BasicStub.random();
 		SmartStub ss = new SmartStub(bs);
-		Condition cond = new Condition("stub", "=", bs);	// Tests recursion
+		Condition matchSS = new Condition("stub", "=", bs),	// Tests recursion
+							noMatchSS = new Condition("stub", "!=", bs);
+		
+		Set<BasicStub> bsSet = buildBasicStubSet(10);
+		bsSet.add(bs);
+		Condition bsCond = new Condition("short0", "<", Byte.MAX_VALUE / 2).or("string0", "LIKE", "0%");
 		
 		try (Session s = new Session(ds)) {
 			UUID ssId = s.put(ss);
 			
 			s.flush();
 			
-			assertEquals(s.get(ss.getClass(), ssId), s.get(ss.getClass(), cond).iterator().next());
+			Set<SmartStub> oneMatch = s.get(SmartStub.class, matchSS);
+			assertEquals(1, oneMatch.size());
+			assertEquals(s.get(ss.getClass(), ssId), oneMatch.iterator().next());
+			
+			Set<?> noMatch = s.get(ss.getClass(), noMatchSS);
+			assertEquals(0, noMatch.size());
+			
+			Set<BasicStub> filteredBS = new HashSet<>();
+			for (BasicStub currentBS : bsSet) {
+				s.put(currentBS);
+				
+				Field shortField = BasicStub.class.getDeclaredField("short0"),
+							stringField = BasicStub.class.getDeclaredField("string0");
+				shortField.setAccessible(true);
+				stringField.setAccessible(true);
+				
+				if ((shortField.getShort(currentBS) < Byte.MAX_VALUE / 2) || ((String) stringField.get(currentBS)).charAt(0) == '0')
+					filteredBS.add(currentBS);
+			}
+			s.flush();
+			
+			assertEquals(filteredBS, s.get(BasicStub.class, bsCond));
 		}
 	}
 	
@@ -169,12 +198,137 @@ public class SessionTest {
 		}
 	}
 	@Test
-	public void testDropCondition() throws SQLException {
-		// TODO
+	public void testDropCondition() throws SQLException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		Set<BasicStub> bsSet = buildBasicStubSet(10);
+		Condition bsCond = new Condition("short0", "<", Byte.MAX_VALUE / 2).or("string0", "LIKE", "0%");
+		
+		try (Session s = new Session(ds)) {
+			Set<BasicStub> filteredBS = new HashSet<>();
+			for (BasicStub currentBS : bsSet) {
+				s.put(currentBS);
+				
+				Field shortField = BasicStub.class.getDeclaredField("short0"),
+							stringField = BasicStub.class.getDeclaredField("string0");
+				shortField.setAccessible(true);
+				stringField.setAccessible(true);
+				
+				if ((shortField.getShort(currentBS) < Byte.MAX_VALUE / 2) || ((String) stringField.get(currentBS)).charAt(0) == '0')
+					filteredBS.add(currentBS);
+			}
+			s.flush();
+			
+			assertEquals(filteredBS.size(), s.drop(BasicStub.class, bsCond));
+			
+			for (BasicStub bs : filteredBS)
+				assertNull(s.getId(bs));
+		}
 	}
 	
 	@Test
 	public void testExceptions() throws SQLException {
-		// TODO
+		try (Session s = new Session(ds)) {
+			s.getId(null);
+			fail("Failed to throw IllegalArgumentException from getId for null Object");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		
+		try (Session s = new Session(ds)) {
+			s.get(null, UUID.randomUUID());
+			fail("Failed to throw IllegalArgumentException from get for null Class");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		try (Session s = new Session(ds)) {
+			s.get(BasicStub.class, (UUID) null);
+			fail("Failed to throw IllegalArgumentException from get for null ID");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		try (Session s = new Session(ds)) {
+			s.get(null, (UUID) null);
+			fail("Failed to throw IllegalArgumentException from get for null Class and null ID");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		
+		try (Session s = new Session(ds)) {
+			s.get(null, new Condition("", "", null));
+			fail("Failed to throw IllegalArgumentException from get for null Class");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		try (Session s = new Session(ds)) {
+			s.get(null, (Condition) null);
+			fail("Failed to throw IllegalArgumentException from get for null Class and null Condition");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		
+		try (Session s = new Session(ds)) {
+			s.put(null);
+			fail("Failed to throw IllegalArgumentException from put for null Object");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		
+		try (Session s = new Session(ds)) {
+			s.put(null, "");
+			fail("Failed to throw IllegalArgumentException from put for null ID");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		try (Session s = new Session(ds)) {
+			s.put(UUID.randomUUID(), null);
+			fail("Failed to throw IllegalArgumentException from put for null Object");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		try (Session s = new Session(ds)) {
+			s.put(null, null);
+			fail("Failed to throw IllegalArgumentException from get for null ID and null Object");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		
+		try (Session s = new Session(ds)) {
+			s.drop(null, UUID.randomUUID());
+			fail("Failed to throw IllegalArgumentException from drop for null Class");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		try (Session s = new Session(ds)) {
+			s.drop(BasicStub.class, (UUID) null);
+			fail("Failed to throw IllegalArgumentException from drop for null ID");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		try (Session s = new Session(ds)) {
+			s.drop(null, (UUID) null);
+			fail("Failed to throw IllegalArgumentException from drop for null Class and null ID");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		
+		try (Session s = new Session(ds)) {
+			s.drop(null, new Condition("", "", null));
+			fail("Failed to throw IllegalArgumentException from drop for null Class");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+		try (Session s = new Session(ds)) {
+			s.drop(null, (Condition) null);
+			fail("Failed to throw IllegalArgumentException from drop for null Class and null Condition");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+	}
+	
+	private static Set<BasicStub> buildBasicStubSet(int num) {
+		Set<BasicStub> bsSet = new HashSet<>();
+		for (int i = 0; i < num; i++)
+			bsSet.add(BasicStub.random());
+		
+		return bsSet;
 	}
 }
