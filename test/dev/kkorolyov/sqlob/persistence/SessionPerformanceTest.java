@@ -101,25 +101,25 @@ public class SessionPerformanceTest {
 	@Test
 	public void testPerformanceBasicStub() throws SQLException {
 		int tests = 100;
-		
+
 		List<UUID> uuids = new LinkedList<>();
-		
+
 		long start = System.nanoTime();
 		try (Session session = new Session(ds)) {
 			for (int i = 0; i < tests; i++)
 				uuids.add(session.put(BasicStub.random()));
 		}
 		long ms = (System.nanoTime() - start) / 1000000;
-		
+
 		System.out.println(ms + "ms to PUT " + tests + " BasicStubs using " + ds);
-		
+
 		start = System.nanoTime();
 		try (Session session = new Session(ds)) {
 			for (UUID uuid : uuids)
 				session.get(BasicStub.class, uuid);
 		}
 		ms = (System.nanoTime() - start) / 1000000;
-		
+
 		System.out.println(ms + " ms to GET " + tests + " BasicStubs using " + ds);
 	}
 	@Test

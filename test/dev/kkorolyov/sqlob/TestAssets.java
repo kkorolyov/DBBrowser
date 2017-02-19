@@ -1,9 +1,8 @@
 package dev.kkorolyov.sqlob;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 import javax.sql.DataSource;
@@ -25,10 +24,10 @@ public class TestAssets {
 															DATABASE = "DATABASE",
 															USER = "USER",
 															PASSWORD = "PASSWORD";	
-	private static final Properties props = new Properties(new File("test/TestSQLOb.ini"), buildDefaults());
+	private static final Properties props = initProps();
 	
 	static {
-		Logger.getLogger("dev.kkorolyov.sqlob", Level.DEBUG, new PrintWriter(System.err));	// Enable logging
+	//	Logger.getLogger("dev.kkorolyov.sqlob", Level.DEBUG, new PrintWriter(System.err));	// Enable logging
 	}
 	
 	public static String host() {
@@ -67,11 +66,21 @@ public class TestAssets {
 	}
 	
 	public static void cleanUp() throws FileNotFoundException, IOException {
-		props.saveFile(true);
-		
 		System.out.println((new File(SQLITE_FILE).delete() ? "Deleted " : "Failed to delete ") + "test SQLite file: " + SQLITE_FILE);
 	}
 	
+	private static Properties initProps() {
+		try {
+			Path file = Paths.get("test/TestSQLOb.ini").toAbsolutePath();
+			Properties props = new Properties(file);
+			props.put(buildDefaults(), false);
+			props.save(file);
+
+			return props;
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
 	private static Properties buildDefaults() {
 		Properties defaults = new Properties();
 		defaults.put(HOST, "");
