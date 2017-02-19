@@ -1,6 +1,11 @@
 package dev.kkorolyov.sqlob;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -13,8 +18,6 @@ import org.sqlite.SQLiteDataSource;
 
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 
-import dev.kkorolyov.simplelogs.Logger;
-import dev.kkorolyov.simplelogs.Logger.Level;
 import dev.kkorolyov.simpleprops.Properties;
 
 @SuppressWarnings("javadoc")
@@ -71,7 +74,8 @@ public class TestAssets {
 	
 	private static Properties initProps() {
 		try {
-			Path file = Paths.get("test/TestSQLOb.ini").toAbsolutePath();
+			URI uri = TestAssets.class.getClassLoader().getResource("TestSQLOb.ini").toURI();
+			Path file = Paths.get(uri);
 			Properties props = new Properties(file);
 			props.put(buildDefaults(), false);
 			props.save(file);
@@ -79,6 +83,8 @@ public class TestAssets {
 			return props;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
 		}
 	}
 	private static Properties buildDefaults() {
