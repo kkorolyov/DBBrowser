@@ -38,6 +38,8 @@ public class Session implements AutoCloseable {
 	public Session(DataSource ds, int bufferSize) {
 		this.ds = ds;
 		this.bufferSize = bufferSize;
+
+		log.info(() -> "Constructed new " + this);
 	}
 	
 	/**
@@ -192,7 +194,7 @@ public class Session implements AutoCloseable {
 	}
 	
 	/**
-	 * Commits all active requests and closes any database connections this session is holding.
+	 * Commits all statements.
 	 * @throws SQLException if a database error occurs
 	 */
 	public void flush() throws SQLException {
@@ -200,7 +202,9 @@ public class Session implements AutoCloseable {
 			conn.commit();
 			conn.close();
 			conn = null;
-			
+
+			log.info(() -> "Flushed " + bufferCounter + " statements");
+
 			bufferCounter = 0;
 		}
 	}
@@ -208,16 +212,24 @@ public class Session implements AutoCloseable {
 	private void finalizeAction() throws SQLException {
 		bufferCounter++;
 		
-		if (bufferSize == 0)
-			flush();
+		if (bufferSize == 0) flush();
 	}
 	
 	/**
-	 * Equivalent to {@link #flush()}.
+	 * Commits all statements and closes the underlying {@link Connection}.
+	 * @throws SQLException if a database error occurs
 	 */
 	@Override
 	public void close() throws SQLException {
 		flush();
+
+		if (conn != null) {
+			conn.close();
+
+			log.info(() -> "Closed " + conn);
+
+			conn = null;
+		}
 	}
 	
 	/** @return type map used by this session for mapping Java classes to SQL types */
@@ -239,8 +251,7 @@ public class Session implements AutoCloseable {
 	}
 	
 	private Connection getConn() throws SQLException {
-		if (conn != null && (bufferCounter >= bufferSize))
-			flush();
+		if (conn != null && (bufferCounter >= bufferSize)) flush();
 		
 		if (conn == null) {
 			conn = ds.getConnection();
@@ -253,8 +264,15 @@ public class Session implements AutoCloseable {
 	
 	private static void assertNotNull(Object... args) throws IllegalArgumentException {
 		for (Object arg : args) {
-			if (arg == null)
-				throw new IllegalArgumentException();
+			if (arg == null) throw new IllegalArgumentException();
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "Session{" +
+					 "ds=" + ds +
+					 ", bufferSize=" + bufferSize +
+					 '}';
 	}
 }

@@ -20,10 +20,10 @@ public class LoggerImplementation extends Logger {
 	}
 	@Override
 	public void info(LazyMessage message) {
-		log.info(message.execute());
+		log.info(message::execute);
 	}
 	@Override
 	public void debug(LazyMessage message) {
-		log.debug(message.execute());
+		log.debug(message::execute);
 	}
 }
