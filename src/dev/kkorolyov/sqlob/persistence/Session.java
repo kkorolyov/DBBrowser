@@ -21,7 +21,7 @@ public class Session implements AutoCloseable {
 	private final int bufferSize;
 	private int bufferCounter = 0;
 	private Connection conn;
-	private SqlobCache cache = new SqlobCache();
+	private final SqlobCache cache = new SqlobCache();
 
 	/**
 	 * Constructs a new session with a default buffer size of {@code 100}.

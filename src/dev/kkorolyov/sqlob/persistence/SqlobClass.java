@@ -255,7 +255,7 @@ final class SqlobClass<T> {
 	
 	private static String applyStatement(String base, Iterable<Object> parameters) {	// For logging
 		String statement = base;
-		
+
 		if (parameters != null) {
 			for (Object parameter : parameters)
 				statement = statement.replaceFirst(Pattern.quote("?"), Matcher.quoteReplacement(parameter.toString()));

@@ -1,6 +1,7 @@
 package dev.kkorolyov.sqlob.persistence;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.HashMap;
@@ -10,6 +11,9 @@ import java.util.Map;
 
 import dev.kkorolyov.sqlob.annotation.Transient;
 
+/**
+ * Operates on a dynamically-cached (Class -> SqlobClass) map.
+ */
 class SqlobCache {
 	private static final String ID_NAME = "uuid",
 															ID_TYPE = "CHAR(36)";
@@ -53,7 +57,7 @@ class SqlobCache {
 		List<SqlobField> fields = new LinkedList<>();
 		
 		for (Field field : type.getDeclaredFields()) {
-			if (field.getAnnotation(Transient.class) == null) {
+			if (isPersistable(field)) {
 				Class<?> fieldType = wrap(field.getType());
 				String sqlType = typeMap.get(fieldType);
 				SqlobClass<?> reference = (sqlType == null ? get(fieldType, conn) : null);
@@ -62,6 +66,13 @@ class SqlobCache {
 			}
 		}
 		return fields;
+	}
+	private static boolean isPersistable(Field field) {
+		int modifiers = field.getModifiers();
+
+		return !Modifier.isStatic(modifiers) &&
+					 !Modifier.isTransient(modifiers) &&
+					 field.getAnnotation(Transient.class) == null;
 	}
 	
 	Map<Class<?>, String> getTypeMap() {
@@ -109,25 +120,25 @@ class SqlobCache {
 	private static Map<Class<?>, Extractor> getDefaultExtractorMap() {
 		Map<Class<?>, Extractor> map = new HashMap<>();
 		
-		map.put(Byte.class, (rs, column) -> rs.getByte(column));
-		map.put(Short.class, (rs, column) -> rs.getShort(column));
-		map.put(Integer.class, (rs, column) -> rs.getInt(column));
-		map.put(Long.class, (rs, column) -> rs.getLong(column));
-		map.put(Float.class, (rs, column) -> rs.getFloat(column));
-		map.put(Double.class, (rs, column) -> rs.getDouble(column));
-		map.put(BigDecimal.class, (rs, column) -> rs.getBigDecimal(column));
+		map.put(Byte.class, ResultSet::getByte);
+		map.put(Short.class, ResultSet::getShort);
+		map.put(Integer.class, ResultSet::getInt);
+		map.put(Long.class, ResultSet::getLong);
+		map.put(Float.class, ResultSet::getFloat);
+		map.put(Double.class, ResultSet::getDouble);
+		map.put(BigDecimal.class, ResultSet::getBigDecimal);
 
-		map.put(Boolean.class, (rs, column) -> rs.getBoolean(column));
+		map.put(Boolean.class, ResultSet::getBoolean);
 
 		map.put(Character.class, (rs, column) -> rs.getString(column).charAt(0));
 		
-		map.put(String.class, (rs, column) -> rs.getString(column));
+		map.put(String.class, ResultSet::getString);
 
-		map.put(byte[].class, (rs, column) -> rs.getBytes(column));
+		map.put(byte[].class, ResultSet::getBytes);
 
-		map.put(Date.class, (rs, column) -> rs.getDate(column));
-		map.put(Time.class, (rs, column) -> rs.getTime(column));
-		map.put(Timestamp.class, (rs, column) -> rs.getTimestamp(column));
+		map.put(Date.class, ResultSet::getDate);
+		map.put(Time.class, ResultSet::getTime);
+		map.put(Timestamp.class, ResultSet::getTimestamp);
 		
 		return map;
 	}

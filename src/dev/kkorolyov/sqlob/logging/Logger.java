@@ -20,8 +20,7 @@ public class Logger {
 				simpleLogsFound = false;	// SimpleLogs not found
 			}
 		}
-		if (stub == null)
-			stub = new Logger();
+		if (stub == null) stub = new Logger();
 		return stub;
 	}
 	

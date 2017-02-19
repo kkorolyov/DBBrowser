@@ -11,7 +11,7 @@ public class LoggerImplementation extends Logger {
 	private dev.kkorolyov.simplelogs.Logger log;
 	
 	LoggerImplementation(String name) {
-		log = dev.kkorolyov.simplelogs.Logger.getLogger(name, Level.DEBUG, (PrintWriter[]) null);
+		log = dev.kkorolyov.simplelogs.Logger.getLogger(name, Level.DEBUG);
 	}
 
 	@Override
