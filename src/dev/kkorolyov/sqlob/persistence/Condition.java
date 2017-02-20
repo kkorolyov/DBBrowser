@@ -17,8 +17,7 @@ public class Condition {
 	 * @param value value to match
 	 */
 	public Condition(String attribute, String operator, Object value) {
-		if (value != null)
-			values.add(value);
+		if (value != null) values.add(value);
 		
 		sql = new StringBuilder(attribute).append(" ").append(operator).append(" ").append(value == null ? "NULL" : "?");
 	}
@@ -74,8 +73,7 @@ public class Condition {
 	
 	private void appendValues(Condition condition) {
 		for (Object value : condition.values()) {
-			if (value != null)
-				values.add(value);
+			if (value != null) values.add(value);
 		}
 	}
 	

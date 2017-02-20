@@ -52,13 +52,18 @@ public class Session implements AutoCloseable {
 	 */
 	public UUID getId(Object o) throws SQLException {
 		assertNotNull(o);
+
+		Connection conn = getConn();
 		try {
-			UUID result = cache.get(o.getClass(), getConn()).getId(o, getConn());
+			UUID result = cache.get(o.getClass(), conn)
+												 .getId(o, conn);
 			
 			finalizeAction();
 			return result;
 		} catch (SQLException e) {
-			getConn().rollback();
+			conn.rollback();
+
+			log.exception(e);
 			throw e;
 		}
 	}
@@ -74,13 +79,18 @@ public class Session implements AutoCloseable {
 	 */
 	public <T> T get(Class<T> c, UUID id) throws SQLException {
 		assertNotNull(c, id);
+
+		Connection conn = getConn();
 		try {
-			T result = cache.get(c, getConn()).get(id, getConn());
+			T result = cache.get(c, conn)
+											.get(id, conn);
 
 			finalizeAction();
 			return result;
 		} catch (SQLException e) {
-			getConn().rollback();
+			conn.rollback();
+
+			log.exception(e);
 			throw e;
 		}
 	}
@@ -95,13 +105,17 @@ public class Session implements AutoCloseable {
 	 */
 	public <T> Set<T> get(Class<T> c, Condition condition) throws SQLException {
 		assertNotNull(c);
+
+		Connection conn = getConn();
 		try {
-			Set<T> results = cache.get(c, getConn()).get(condition, getConn());
+			Set<T> results = cache.get(c, conn).get(condition, conn);
 			
 			finalizeAction();
 			return results;
 		} catch (SQLException e) {
-			getConn().rollback();
+			conn.rollback();
+
+			log.exception(e);
 			throw e;
 		}
 	}
@@ -117,13 +131,17 @@ public class Session implements AutoCloseable {
 	 */
 	public UUID put(Object o) throws SQLException {
 		assertNotNull(o);
+
+		Connection conn = getConn();
 		try {
-			UUID result = cache.get(o.getClass(), getConn()).put(o, getConn());
+			UUID result = cache.get(o.getClass(), conn).put(o, conn);
 			
 			finalizeAction();
 			return result;
 		} catch (SQLException e) {
-			getConn().rollback();
+			conn.rollback();
+
+			log.exception(e);
 			throw e;
 		}
 	}
@@ -139,13 +157,17 @@ public class Session implements AutoCloseable {
 	 */
 	public boolean put(UUID id, Object o) throws SQLException {
 		assertNotNull(id, o);
+
+		Connection conn = getConn();
 		try {
-			boolean result = cache.get(o.getClass(), getConn()).put(id, o, getConn());
+			boolean result = cache.get(o.getClass(), conn).put(id, o, conn);
 			
 			finalizeAction();
 			return result;
 		} catch (SQLException e) {
-			getConn().rollback();
+			conn.rollback();
+
+			log.exception(e);
 			throw e;
 		}
 	}
@@ -161,13 +183,17 @@ public class Session implements AutoCloseable {
 	 */
 	public boolean drop(Class<?> c, UUID id) throws SQLException {
 		assertNotNull(c, id);
+
+		Connection conn = getConn();
 		try {
-			boolean result = cache.get(c, getConn()).drop(id, getConn());
+			boolean result = cache.get(c, conn).drop(id, conn);
 			
 			finalizeAction();
 			return result;
 		} catch (SQLException e) {
-			getConn().rollback();
+			conn.rollback();
+
+			log.exception(e);
 			throw e;
 		}
 	}
@@ -182,17 +208,21 @@ public class Session implements AutoCloseable {
 	 */
 	public int drop(Class<?> c, Condition condition) throws SQLException {
 		assertNotNull(c);
+
+		Connection conn = getConn();
 		try {
-			int result = cache.get(c, getConn()).drop(condition, getConn());
+			int result = cache.get(c, conn).drop(condition, conn);
 			
 			finalizeAction();
 			return result;
 		} catch (SQLException e) {
-			getConn().rollback();
+			conn.rollback();
+
+			log.exception(e);
 			throw e;
 		}
 	}
-	
+
 	/**
 	 * Commits all statements.
 	 * @throws SQLException if a database error occurs
@@ -200,8 +230,6 @@ public class Session implements AutoCloseable {
 	public void flush() throws SQLException {
 		if (conn != null) {
 			conn.commit();
-			conn.close();
-			conn = null;
 
 			log.info(() -> "Flushed " + bufferCounter + " statements");
 
@@ -210,11 +238,9 @@ public class Session implements AutoCloseable {
 	}
 	
 	private void finalizeAction() throws SQLException {
-		bufferCounter++;
-		
-		if (bufferSize == 0) flush();
+		if (++bufferCounter >= bufferSize) flush();
 	}
-	
+
 	/**
 	 * Commits all statements and closes the underlying {@link Connection}.
 	 * @throws SQLException if a database error occurs
@@ -251,8 +277,6 @@ public class Session implements AutoCloseable {
 	}
 	
 	private Connection getConn() throws SQLException {
-		if (conn != null && (bufferCounter >= bufferSize)) flush();
-		
 		if (conn == null) {
 			conn = ds.getConnection();
 			conn.setAutoCommit(false);	// Disable to reduce overhead

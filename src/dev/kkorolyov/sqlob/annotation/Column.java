@@ -7,7 +7,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Overrides the column a field maps to. 
+ * Overrides the column a field maps to.
  */
 @Target(FIELD)
 @Retention(RUNTIME)

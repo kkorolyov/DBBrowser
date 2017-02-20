@@ -1,13 +1,11 @@
 package dev.kkorolyov.sqlob.logging;
 
-import java.io.PrintWriter;
-
 import dev.kkorolyov.simplelogs.Logger.Level;
 
 /**
  * Logger implementation to be loaded when {@code SimpleLogs} found.
  */
-public class LoggerImplementation extends Logger {
+class LoggerImplementation extends Logger {
 	private dev.kkorolyov.simplelogs.Logger log;
 	
 	LoggerImplementation(String name) {
