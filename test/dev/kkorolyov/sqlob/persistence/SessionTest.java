@@ -1,13 +1,14 @@
 package dev.kkorolyov.sqlob.persistence;
 
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.Mockito.*;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.sql.DataSource;
 
@@ -20,8 +21,11 @@ import dev.kkorolyov.sqlob.Stub.BasicStub;
 import dev.kkorolyov.sqlob.stub.NoOpDataSource;
 
 public class SessionTest {
+	private static final int NUM_STUBS = 10;
 	private static final Class<?> stubClass = BasicStub.class;
-	private static final Object stub = BasicStub.random();
+	private static final Iterable<Object> stubs = Stream.generate(BasicStub::random)
+																											.limit(NUM_STUBS)
+																											.collect(Collectors.toList());
 	private static final Condition condition = new Condition("short", "=", 4);
 
 	private Connection conn;
@@ -42,46 +46,32 @@ public class SessionTest {
 
 	@TestFactory
 	Iterable<DynamicTest> noCommitOnGetId() throws SQLException {
-		return Arrays.asList(
-				dynamicTest("Buffer0", () -> executeNoCommitOnGetId(new Session(ds, 0))),
-				dynamicTest("Buffer1", () -> executeNoCommitOnGetId(new Session(ds, 1)))
-		);
+		return generateTests(session -> {
+			for (Object stub : stubs) session.getId(stub);
+			verify(conn, never()).commit();
+		}, new Session(ds, 0), new Session(ds, 1));
 	}
-	private void executeNoCommitOnGetId(Session session) throws SQLException {
-		for (int i = 0; i < 10; i++) session.getId(stub);
-
-		verify(conn, never()).commit();
-	}
-
 	@TestFactory
-	void noCommitOnGet() throws SQLException {
-		return Arrays.asList(
-				dynamicTest("Buffer0", () -> executeNoCommitOnGetId())
-		);
+	Iterable<DynamicTest> noCommitOnGet() throws SQLException {
+		return generateTests(session -> {
+			for (int i = 0; i < NUM_STUBS; i++) session.get(stubClass, UUID.randomUUID());
+			verify(conn, never()).commit();
+		}, new Session(ds, 0), new Session(ds, 1));
 	}
-	private void executeNoCommitOnGet(Session session) throws SQLException {
-		for (int i = 0; i < 10; i++) session.get(stubClass, UUID.randomUUID());
-
-		verify(conn, never()).commit();
-	}
-
 	@TestFactory
-	void noCommitOnGetByCondition() throws SQLException {
-	}
-	private void executeNoCommitOnGetByCondition(Session session) throws SQLException {
-		for (int i = 0; i < 10; i++) session.get(stubClass, condition);
-
-		verify(conn, never()).commit();
-	}
-
-	private Iterable<DynamicTest> getAutoCommitSessions(Function<Session, Void> action) {
+	Iterable<DynamicTest> noCommitOnGetByCondition() throws SQLException {
+		return generateTests(session -> {
+			for (int i = 0; i < NUM_STUBS; i++) session.get(stubClass, condition);
+			verify(conn, never()).commit();
+		}, new Session(ds, 0), new Session(ds, 1));
 	}
 
 	@Test
-	void commitEveryWhenBuffer0() {
+	void commitEveryWhenBuffer0() throws SQLException {
 		session = new Session(ds, 0);
 
-		session.p
+		for (Object stub : stubs) session.put(stub);
+		verify(conn, never()).commit();
 	}
 	@Test
 	void commitEveryWhenBuffer1() {
@@ -90,6 +80,19 @@ public class SessionTest {
 
 	@Test
 	void commitAfterBufferFills() {
-		session = new Session
+
+	}
+
+	private static Iterable<DynamicTest> generateTests(SessionConsumer test, Session... sessions) {
+		List<DynamicTest> tests = new ArrayList<>();
+
+		for (Session session : sessions) {
+			tests.add(DynamicTest.dynamicTest(session.toString(), () -> test.accept(session)));
+		}
+		return tests;
+	}
+
+	private static interface SessionConsumer {
+		void accept(Session session) throws SQLException;
 	}
 }
