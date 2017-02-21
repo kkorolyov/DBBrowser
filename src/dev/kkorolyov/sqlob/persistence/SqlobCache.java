@@ -12,7 +12,7 @@ import java.util.Map;
 import dev.kkorolyov.sqlob.annotation.Transient;
 
 /**
- * Operates on a dynamically-cached (Class -> SqlobClass) map.
+ * Operates on a dynamically-cached ({@link Class} -> {@link SqlobClass}) map.
  */
 class SqlobCache {
 	private static final String ID_NAME = "uuid",

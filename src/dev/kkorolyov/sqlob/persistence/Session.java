@@ -33,7 +33,7 @@ public class Session implements AutoCloseable {
 	/**
 	 * Constructs a new session.
 	 * @param ds datasource to SQL database
-	 * @param bufferSize number of requests to cache before committing to database
+	 * @param bufferSize maximum number of actions done before committing to database
 	 */
 	public Session(DataSource ds, int bufferSize) {
 		this.ds = ds;
@@ -55,11 +55,8 @@ public class Session implements AutoCloseable {
 
 		Connection conn = getConn();
 		try {
-			UUID result = cache.get(o.getClass(), conn)
-												 .getId(o, conn);
-			
-			finalizeAction();
-			return result;
+			return cache.get(o.getClass(), conn)
+									.getId(o, conn);
 		} catch (SQLException e) {
 			conn.rollback();
 
@@ -82,11 +79,8 @@ public class Session implements AutoCloseable {
 
 		Connection conn = getConn();
 		try {
-			T result = cache.get(c, conn)
-											.get(id, conn);
-
-			finalizeAction();
-			return result;
+			return cache.get(c, conn)
+									.get(id, conn);
 		} catch (SQLException e) {
 			conn.rollback();
 
@@ -108,10 +102,8 @@ public class Session implements AutoCloseable {
 
 		Connection conn = getConn();
 		try {
-			Set<T> results = cache.get(c, conn).get(condition, conn);
-			
-			finalizeAction();
-			return results;
+			return cache.get(c, conn)
+									.get(condition, conn);
 		} catch (SQLException e) {
 			conn.rollback();
 
@@ -224,16 +216,23 @@ public class Session implements AutoCloseable {
 	}
 
 	/**
-	 * Commits all statements.
+	 * Commits all actions.
 	 * @throws SQLException if a database error occurs
 	 */
 	public void flush() throws SQLException {
 		if (conn != null) {
-			conn.commit();
+			try {
+				conn.commit();
 
-			log.info(() -> "Flushed " + bufferCounter + " statements");
+				log.info(() -> "Flushed " + bufferCounter + " statements");
 
-			bufferCounter = 0;
+				bufferCounter = 0;
+			} catch (SQLException e) {
+				conn.rollback();
+
+				log.exception(e);
+				throw e;
+			}
 		}
 	}
 	
@@ -242,7 +241,7 @@ public class Session implements AutoCloseable {
 	}
 
 	/**
-	 * Commits all statements and closes the underlying {@link Connection}.
+	 * Commits all actions and closes the underlying {@link Connection}.
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override

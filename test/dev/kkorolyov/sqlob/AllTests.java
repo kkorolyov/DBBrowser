@@ -4,12 +4,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
-import dev.kkorolyov.sqlob.persistence.SessionTest;
+import dev.kkorolyov.sqlob.persistence.SessionTestOld;
 
 @SuppressWarnings("javadoc")
 @RunWith(Suite.class)
 
-@SuiteClasses({ SessionTest.class})
+@SuiteClasses({ SessionTestOld.class})
 
 public class AllTests {
 	// Suite
