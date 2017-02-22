@@ -1,8 +1,10 @@
 package dev.kkorolyov.sqlob.persistence;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.Mockito.*;
 
+import java.lang.reflect.Field;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -63,6 +65,38 @@ public class SessionTest {
 		when(ds.getConnection()).thenReturn(conn);
 
 		session = new Session(ds);
+	}
+
+	@TestFactory
+	Iterable<DynamicTest> negativeBufferSizeDefaultsToZero() {
+		return generateTests(
+				() -> {
+					Field bufferSizeField = Session.class.getDeclaredField("bufferSize");
+					bufferSizeField.setAccessible(true);
+
+					assertEquals(0, bufferSizeField.get(session));
+				},
+				IntStream.range(-100, 0).mapToObj(i -> new Session(ds, i))::iterator
+		);
+	}
+	@Test
+	void oneBufferSizeDefaultsToZero() throws NoSuchFieldException, IllegalAccessException {
+		session = new Session(ds, 1);
+
+		Field bufferSizeField = Session.class.getDeclaredField("bufferSize");
+		bufferSizeField.setAccessible(true);
+
+		assertEquals(0, bufferSizeField.get(session));
+	}
+	@Test
+	void greaterThanOneBufferSizeStaysAsIs() throws NoSuchFieldException, IllegalAccessException {
+		int bufferSize = 2;
+		session = new Session(ds, bufferSize);
+
+		Field bufferSizeField = Session.class.getDeclaredField("bufferSize");
+		bufferSizeField.setAccessible(true);
+
+		assertEquals(bufferSize, bufferSizeField.get(session));
 	}
 
 	@TestFactory
@@ -144,6 +178,6 @@ public class SessionTest {
 	}
 
 	private static interface ExceptionRunnable {
-		void run() throws SQLException;
+		void run() throws Exception;
 	}
 }
