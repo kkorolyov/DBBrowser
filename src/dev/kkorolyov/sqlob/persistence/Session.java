@@ -2,7 +2,6 @@ package dev.kkorolyov.sqlob.persistence;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -257,24 +256,23 @@ public class Session implements AutoCloseable {
 		}
 	}
 	
-	/** @return type map used by this session for mapping Java classes to SQL types */
-	public Map<Class<?>, String> getTypeMap() {
-		return cache.getTypeMap();
+	/**
+	 * Maps a {@code Class} to a {@code SQL} type.
+	 * @param c Java class
+	 * @param sql mapped SQL type
+	 */
+	public void mapType(Class<?> c, String sql) {
+		cache.mapType(c, sql);
 	}
-	/** @param typeMap new Java-to-SQL type map, if {@code null}, resets to default type map */
-	public void setTypeMap(Map<Class<?>, String> typeMap) {
-		cache.setTypeMap(typeMap);
+	/**
+	 * Maps a {@code Class} to an extractor.
+	 * @param c Java class
+	 * @param extractor extractor invoked when this retrieving a field of type {@code c}
+	 */
+	public void mapExtractor(Class<?> c, Extractor extractor) {
+		cache.mapExtractor(c, extractor);
 	}
-	
-	/** @return extractor map used by this session for extracting Java objects from result set columns */
-	public Map<Class<?>, Extractor> getExtractorMap() {
-		return cache.getExtractorMap();
-	}
-	/** @param extractorMap new extractor map, if {@code null}, resets to default extractor map */
-	public void setExtractorMap(Map<Class<?>, Extractor> extractorMap) {
-		cache.setExtractorMap(extractorMap);
-	}
-	
+
 	private Connection getConn() throws SQLException {
 		if (conn == null) {
 			conn = ds.getConnection();

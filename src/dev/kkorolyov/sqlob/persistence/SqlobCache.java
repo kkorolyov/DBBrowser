@@ -14,35 +14,15 @@ import dev.kkorolyov.sqlob.annotation.Transient;
 /**
  * Operates on a dynamically-cached ({@link Class} -> {@link SqlobClass}) map.
  */
-class SqlobCache {
+final class SqlobCache {
 	private static final String ID_NAME = "uuid",
 															ID_TYPE = "CHAR(36)";
-	private static final Map<Class<?>, Class<?>> wrapMap = new HashMap<>();
 
 	private final Map<Class<?>, SqlobClass<?>> classMap = new HashMap<>();
-	private Map<Class<?>, String> typeMap = getDefaultTypeMap();
-	private Map<Class<?>, Extractor> extractorMap = getDefaultExtractorMap();
+	private final Map<Class<?>, String> typeMap = new HashMap<>();
+	private final Map<Class<?>, Extractor> extractorMap = new HashMap<>();
 	
-	static {
-		wrapMap.put(byte.class, Byte.class);
-		wrapMap.put(short.class, Short.class);
-		wrapMap.put(int.class, Integer.class);
-		wrapMap.put(long.class, Long.class);
-		
-		wrapMap.put(float.class, Float.class);
-		wrapMap.put(double.class, Double.class);
-		
-		wrapMap.put(boolean.class, Boolean.class);
-		
-		wrapMap.put(char.class, Character.class);
-	}
-	
-	private static Class<?> wrap(Class<?> c) {
-		Class<?> wrapped = wrapMap.get(c);
-		
-		return wrapped == null ? c : wrapped;
-	}
-	
+
 	<T> SqlobClass<T> get(Class<T> type, Connection conn) throws SQLException {
 		@SuppressWarnings("unchecked")
 		SqlobClass<T> result = (SqlobClass<T>) classMap.get(type);
@@ -67,6 +47,22 @@ class SqlobCache {
 		}
 		return fields;
 	}
+
+	private static Class<?> wrap(Class<?> c) {
+		switch (c.getSimpleName()) {
+			case "byte": return Byte.class;
+			case "short": return Short.class;
+			case "int": return Integer.class;
+			case "long": return Long.class;
+			case "float": return Float.class;
+			case "double": return Double.class;
+			case "boolean": return Boolean.class;
+			case "char": return Character.class;
+
+			default: return c;
+		}
+	}
+
 	private static boolean isPersistable(Field field) {
 		int modifiers = field.getModifiers();
 
@@ -75,13 +71,8 @@ class SqlobCache {
 					 field.getAnnotation(Transient.class) == null;
 	}
 	
-	Map<Class<?>, String> getTypeMap() {
-		return new HashMap<>(typeMap);
-	}
-	void setTypeMap(Map<Class<?>, String> typeMap) {
-		classMap.clear();
-		
-		this.typeMap = (typeMap == null ? getDefaultTypeMap() : typeMap);
+	void mapType(Class<?> c, String sql) {
+		typeMap.put(c, sql);
 	}
 	private static Map<Class<?>, String> getDefaultTypeMap() {
 		Map<Class<?>, String> map = new HashMap<>();
@@ -109,13 +100,8 @@ class SqlobCache {
 		return map;
 	}
 	
-	Map<Class<?>, Extractor> getExtractorMap() {
-		return new HashMap<>(extractorMap);
-	}
-	void setExtractorMap(Map<Class<?>, Extractor> extractorMap) {
-		classMap.clear();
-		
-		this.extractorMap = (extractorMap == null ? getDefaultExtractorMap() : extractorMap);
+	void mapExtractor(Class<?> c, Extractor extractor) {
+		extractorMap.put(c, extractor);
 	}
 	private static Map<Class<?>, Extractor> getDefaultExtractorMap() {
 		Map<Class<?>, Extractor> map = new HashMap<>();
@@ -130,8 +116,10 @@ class SqlobCache {
 
 		map.put(Boolean.class, ResultSet::getBoolean);
 
-		map.put(Character.class, (rs, column) -> rs.getString(column).charAt(0));
-		
+		map.put(Character.class, (rs, column) -> {
+			String string = rs.getString(column);
+			return string == null ? null : string.charAt(0);
+		});
 		map.put(String.class, ResultSet::getString);
 
 		map.put(byte[].class, ResultSet::getBytes);
