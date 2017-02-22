@@ -37,7 +37,7 @@ public class Session implements AutoCloseable {
 	 */
 	public Session(DataSource ds, int bufferSize) {
 		this.ds = ds;
-		this.bufferSize = bufferSize;
+		this.bufferSize = bufferSize <= 1 ? 0 : bufferSize;
 
 		log.info(() -> "Constructed new " + this);
 	}
