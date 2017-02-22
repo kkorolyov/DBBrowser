@@ -21,7 +21,55 @@ final class SqlobCache {
 	private final Map<Class<?>, SqlobClass<?>> classMap = new HashMap<>();
 	private final Map<Class<?>, String> typeMap = new HashMap<>();
 	private final Map<Class<?>, Extractor> extractorMap = new HashMap<>();
-	
+
+	{
+		initTypeMap();
+		initExtractorMap();
+	}
+	private void initTypeMap() {
+		typeMap.put(Byte.class, "TINYINT");
+		typeMap.put(Short.class, "SMALLINT");
+		typeMap.put(Integer.class, "INTEGER");
+		typeMap.put(Long.class, "BIGINT");
+		typeMap.put(Float.class, "REAL");
+		typeMap.put(Double.class, "DOUBLE PRECISION");
+		typeMap.put(BigDecimal.class, "NUMERIC");
+
+		typeMap.put(Boolean.class, "BOOLEAN");
+
+		typeMap.put(Character.class, "CHAR(1)");
+
+		typeMap.put(String.class, "VARCHAR(1024)");
+
+		typeMap.put(byte[].class, "VARBINARY(1024)");
+
+		typeMap.put(Date.class, "DATE");
+		typeMap.put(Time.class, "TIME(6)");
+		typeMap.put(Timestamp.class, "TIMESTAMP(6)");
+	}
+	private void initExtractorMap() {
+		extractorMap.put(Byte.class, ResultSet::getByte);
+		extractorMap.put(Short.class, ResultSet::getShort);
+		extractorMap.put(Integer.class, ResultSet::getInt);
+		extractorMap.put(Long.class, ResultSet::getLong);
+		extractorMap.put(Float.class, ResultSet::getFloat);
+		extractorMap.put(Double.class, ResultSet::getDouble);
+		extractorMap.put(BigDecimal.class, ResultSet::getBigDecimal);
+
+		extractorMap.put(Boolean.class, ResultSet::getBoolean);
+
+		extractorMap.put(Character.class, (rs, column) -> {
+			String string = rs.getString(column);
+			return string == null ? null : string.charAt(0);
+		});
+		extractorMap.put(String.class, ResultSet::getString);
+
+		extractorMap.put(byte[].class, ResultSet::getBytes);
+
+		extractorMap.put(Date.class, ResultSet::getDate);
+		extractorMap.put(Time.class, ResultSet::getTime);
+		extractorMap.put(Timestamp.class, ResultSet::getTimestamp);
+	}
 
 	<T> SqlobClass<T> get(Class<T> type, Connection conn) throws SQLException {
 		@SuppressWarnings("unchecked")
@@ -74,60 +122,8 @@ final class SqlobCache {
 	void mapType(Class<?> c, String sql) {
 		typeMap.put(c, sql);
 	}
-	private static Map<Class<?>, String> getDefaultTypeMap() {
-		Map<Class<?>, String> map = new HashMap<>();
-		
-		map.put(Byte.class, "TINYINT");
-		map.put(Short.class, "SMALLINT");
-		map.put(Integer.class, "INTEGER");
-		map.put(Long.class, "BIGINT");
-		map.put(Float.class, "REAL");
-		map.put(Double.class, "DOUBLE PRECISION");
-		map.put(BigDecimal.class, "NUMERIC");
-		
-		map.put(Boolean.class, "BOOLEAN");
-		
-		map.put(Character.class, "CHAR(1)");
-		
-		map.put(String.class, "VARCHAR(1024)");
-		
-		map.put(byte[].class, "VARBINARY(1024)");
-		
-		map.put(Date.class, "DATE");
-		map.put(Time.class, "TIME(6)");
-		map.put(Timestamp.class, "TIMESTAMP(6)");
-		
-		return map;
-	}
-	
+
 	void mapExtractor(Class<?> c, Extractor extractor) {
 		extractorMap.put(c, extractor);
-	}
-	private static Map<Class<?>, Extractor> getDefaultExtractorMap() {
-		Map<Class<?>, Extractor> map = new HashMap<>();
-		
-		map.put(Byte.class, ResultSet::getByte);
-		map.put(Short.class, ResultSet::getShort);
-		map.put(Integer.class, ResultSet::getInt);
-		map.put(Long.class, ResultSet::getLong);
-		map.put(Float.class, ResultSet::getFloat);
-		map.put(Double.class, ResultSet::getDouble);
-		map.put(BigDecimal.class, ResultSet::getBigDecimal);
-
-		map.put(Boolean.class, ResultSet::getBoolean);
-
-		map.put(Character.class, (rs, column) -> {
-			String string = rs.getString(column);
-			return string == null ? null : string.charAt(0);
-		});
-		map.put(String.class, ResultSet::getString);
-
-		map.put(byte[].class, ResultSet::getBytes);
-
-		map.put(Date.class, ResultSet::getDate);
-		map.put(Time.class, ResultSet::getTime);
-		map.put(Timestamp.class, ResultSet::getTimestamp);
-		
-		return map;
 	}
 }
