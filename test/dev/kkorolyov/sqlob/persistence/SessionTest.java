@@ -70,12 +70,7 @@ public class SessionTest {
 	@TestFactory
 	Iterable<DynamicTest> negativeBufferSizeDefaultsToZero() {
 		return generateTests(
-				() -> {
-					Field bufferSizeField = Session.class.getDeclaredField("bufferSize");
-					bufferSizeField.setAccessible(true);
-
-					assertEquals(0, bufferSizeField.get(session));
-				},
+				() -> assertEquals(0, readBufferSize()),
 				IntStream.range(-100, 0).mapToObj(i -> new Session(ds, i))::iterator
 		);
 	}
@@ -83,20 +78,20 @@ public class SessionTest {
 	void oneBufferSizeDefaultsToZero() throws NoSuchFieldException, IllegalAccessException {
 		session = new Session(ds, 1);
 
-		Field bufferSizeField = Session.class.getDeclaredField("bufferSize");
-		bufferSizeField.setAccessible(true);
-
-		assertEquals(0, bufferSizeField.get(session));
+		assertEquals(0, readBufferSize());
 	}
 	@Test
 	void greaterThanOneBufferSizeStaysAsIs() throws NoSuchFieldException, IllegalAccessException {
 		int bufferSize = 2;
 		session = new Session(ds, bufferSize);
 
-		Field bufferSizeField = Session.class.getDeclaredField("bufferSize");
+		assertEquals(bufferSize, readBufferSize());
+	}
+	private int readBufferSize() throws NoSuchFieldException, IllegalAccessException {
+		Field bufferSizeField = session.getClass().getDeclaredField("bufferSize");
 		bufferSizeField.setAccessible(true);
 
-		assertEquals(bufferSize, bufferSizeField.get(session));
+		return (int) bufferSizeField.get(session);
 	}
 
 	@TestFactory
@@ -165,6 +160,28 @@ public class SessionTest {
 		}
 	}
 
+	@Test
+	void flushForcesCommit() throws SQLException, NoSuchFieldException, IllegalAccessException {
+		injectConn();
+
+		session.flush();
+
+		verify(conn, times(1)).commit();
+	}
+	@Test
+	void closeForcesCommit() throws SQLException, NoSuchFieldException, IllegalAccessException {
+		injectConn();
+
+		session.close();
+
+		verify(conn, times(1)).commit();
+	}
+	private void injectConn() throws NoSuchFieldException, IllegalAccessException {
+		Field connField = session.getClass().getDeclaredField("conn");
+		connField.setAccessible(true);
+		connField.set(session, conn);
+	}
+
 	private Iterable<DynamicTest> generateTests(ExceptionRunnable test, Iterable<Session> sessions) {
 		List<DynamicTest> tests = new ArrayList<>();
 
@@ -177,7 +194,7 @@ public class SessionTest {
 		return tests;
 	}
 
-	private static interface ExceptionRunnable {
+	private interface ExceptionRunnable {
 		void run() throws Exception;
 	}
 }
