@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.Mockito.*;
 
 import java.lang.reflect.Field;
-import java.sql.*;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -14,15 +14,11 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import javax.sql.DataSource;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
+import dev.kkorolyov.sqlob.JDBCMocks;
 import dev.kkorolyov.sqlob.Stub.BasicStub;
 
 public class SessionTest {
@@ -38,52 +34,27 @@ public class SessionTest {
 																																 .mapToObj(i -> new Condition("Field" + i, "=", i))
 																																 .collect(Collectors.toList());
 
-	@Mock
-	private DataSource ds;
-	@Mock
-	private Connection conn;
-	@Mock
-	private Statement statement;
-	@Mock
-	private PreparedStatement preparedStatement;
-	@Mock
-	private ResultSet resultSet;
+	private JDBCMocks mocks = new JDBCMocks();
 
-	private Session session;
-
-	@BeforeEach
-	void beforeEach() throws SQLException {
-		MockitoAnnotations.initMocks(this);
-
-		when(statement.executeQuery(any(String.class))).thenReturn(resultSet);
-
-		when(preparedStatement.executeQuery()).thenReturn(resultSet);
-
-		when(conn.createStatement()).thenReturn(statement);
-		when(conn.prepareStatement(any(String.class))).thenReturn(preparedStatement);
-
-		when(ds.getConnection()).thenReturn(conn);
-
-		session = new Session(ds);
-	}
+	private Session session = new Session(mocks.ds);
 
 	@TestFactory
 	Iterable<DynamicTest> negativeBufferSizeDefaultsToZero() {
 		return generateTests(
 				() -> assertEquals(0, readBufferSize()),
-				IntStream.range(-100, 0).mapToObj(i -> new Session(ds, i))::iterator
+				IntStream.range(-100, 0).mapToObj(i -> new Session(mocks.ds, i))::iterator
 		);
 	}
 	@Test
 	void oneBufferSizeDefaultsToZero() throws NoSuchFieldException, IllegalAccessException {
-		session = new Session(ds, 1);
+		session = new Session(mocks.ds, 1);
 
 		assertEquals(0, readBufferSize());
 	}
 	@Test
 	void greaterThanOneBufferSizeStaysAsIs() throws NoSuchFieldException, IllegalAccessException {
 		int bufferSize = 2;
-		session = new Session(ds, bufferSize);
+		session = new Session(mocks.ds, bufferSize);
 
 		assertEquals(bufferSize, readBufferSize());
 	}
@@ -99,9 +70,9 @@ public class SessionTest {
 		return generateTests(
 				() -> {
 					for (Object stub : stubs) session.getId(stub);
-					verify(conn, never()).commit();
+					verify(mocks.conn, never()).commit();
 				},
-				IntStream.range(0, NUM_PARAMETERIZED_TESTS).mapToObj(i -> new Session(ds, i))::iterator
+				IntStream.range(0, NUM_PARAMETERIZED_TESTS).mapToObj(i -> new Session(mocks.ds, i))::iterator
 		);
 	}
 	@TestFactory
@@ -109,9 +80,9 @@ public class SessionTest {
 		return generateTests(
 				() -> {
 					for (UUID uuid : uuids) session.get(stubClass, uuid);
-					verify(conn, never()).commit();
+					verify(mocks.conn, never()).commit();
 				},
-				IntStream.range(0, NUM_PARAMETERIZED_TESTS).mapToObj(i -> new Session(ds, i))::iterator
+				IntStream.range(0, NUM_PARAMETERIZED_TESTS).mapToObj(i -> new Session(mocks.ds, i))::iterator
 		);
 	}
 	@TestFactory
@@ -119,44 +90,44 @@ public class SessionTest {
 		return generateTests(
 				() -> {
 					for (Condition condition : conditions) session.get(stubClass, condition);
-					verify(conn, never()).commit();
+					verify(mocks.conn, never()).commit();
 				},
-				IntStream.range(0, NUM_PARAMETERIZED_TESTS).mapToObj(i -> new Session(ds, i))::iterator
+				IntStream.range(0, NUM_PARAMETERIZED_TESTS).mapToObj(i -> new Session(mocks.ds, i))::iterator
 		);
 	}
 
 	@Test
 	void commitEveryPutWhenNoBuffer() throws SQLException {
-		session = new Session(ds, 0);
+		session = new Session(mocks.ds, 0);
 
 		for (Object stub : stubs) session.put(stub);
-		verify(conn, times(NUM_PARAMETERIZED_TESTS)).commit();
+		verify(mocks.conn, times(NUM_PARAMETERIZED_TESTS)).commit();
 	}
 	@Test
 	void commitEveryDropWhenNoBuffer() throws SQLException {
-		session = new Session(ds, 0);
+		session = new Session(mocks.ds, 0);
 
 		for (UUID uuid : uuids) session.drop(stubClass, uuid);
-		verify(conn, times(NUM_PARAMETERIZED_TESTS)).commit();
+		verify(mocks.conn, times(NUM_PARAMETERIZED_TESTS)).commit();
 	}
 	@Test
 	void commitEveryDropByConditionWhenNoBuffer() throws SQLException {
-		session = new Session(ds, 0);
+		session = new Session(mocks.ds, 0);
 
 		for (Condition condition : conditions) session.drop(stubClass, condition);
-		verify(conn, times(NUM_PARAMETERIZED_TESTS)).commit();
+		verify(mocks.conn, times(NUM_PARAMETERIZED_TESTS)).commit();
 	}
 
 	@Test
 	void commitUponBufferFill() throws SQLException {
-		session = new Session(ds, NUM_PARAMETERIZED_TESTS);
+		session = new Session(mocks.ds, NUM_PARAMETERIZED_TESTS);
 
 		Iterator<Object> it = stubs.iterator();
 		while (it.hasNext()) {
 			session.put(it.next());
 
-			if (it.hasNext()) verify(conn, never()).commit();
-			else verify(conn, times(1)).commit();
+			if (it.hasNext()) verify(mocks.conn, never()).commit();
+			else verify(mocks.conn, times(1)).commit();
 		}
 	}
 
@@ -166,7 +137,7 @@ public class SessionTest {
 
 		session.flush();
 
-		verify(conn, times(1)).commit();
+		verify(mocks.conn, times(1)).commit();
 	}
 	@Test
 	void closeForcesCommit() throws SQLException, NoSuchFieldException, IllegalAccessException {
@@ -174,12 +145,12 @@ public class SessionTest {
 
 		session.close();
 
-		verify(conn, times(1)).commit();
+		verify(mocks.conn, times(1)).commit();
 	}
 	private void injectConn() throws NoSuchFieldException, IllegalAccessException {
 		Field connField = session.getClass().getDeclaredField("conn");
 		connField.setAccessible(true);
-		connField.set(session, conn);
+		connField.set(session, mocks.conn);
 	}
 
 	private Iterable<DynamicTest> generateTests(ExceptionRunnable test, Iterable<Session> sessions) {
