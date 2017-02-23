@@ -10,13 +10,13 @@ import java.util.List;
 import java.util.Map;
 
 import dev.kkorolyov.sqlob.annotation.Transient;
+import dev.kkorolyov.sqlob.logging.Logger;
 
 /**
  * Operates on a dynamically-cached ({@link Class} -> {@link SqlobClass}) map.
  */
 final class SqlobCache {
-	private static final String ID_NAME = "uuid",
-															ID_TYPE = "CHAR(36)";
+	private static final Logger log = Logger.getLogger(SqlobCache.class.getName());
 
 	private final Map<Class<?>, SqlobClass<?>> classMap = new HashMap<>();
 	private final Map<Class<?>, String> typeMap = new HashMap<>();
@@ -76,24 +76,40 @@ final class SqlobCache {
 		SqlobClass<T> result = (SqlobClass<T>) classMap.get(type);
 		
 		if (result == null) {
-			result = new SqlobClass<>(type, buildFields(type, conn), ID_NAME, ID_TYPE).init(conn);	// Create + init
+			result = new SqlobClass<>(type, buildFields(type, conn), conn);
 			classMap.put(type, result);
+
+			log.info(() -> "Cached (Class -> SqlobClass) mapping for " + type);
 		}
 		return result;
 	}
-	private <T> List<SqlobField> buildFields(Class<T> type, Connection conn) throws SQLException {
+	private <T> Iterable<SqlobField> buildFields(Class<T> type, Connection conn) throws SQLException {
 		List<SqlobField> fields = new LinkedList<>();
 		
 		for (Field field : type.getDeclaredFields()) {
 			if (isPersistable(field)) {
 				Class<?> fieldType = wrap(field.getType());
 				String sqlType = typeMap.get(fieldType);
-				SqlobClass<?> reference = (sqlType == null ? get(fieldType, conn) : null);
-				
-				fields.add(new SqlobField(field, extractorMap.get(fieldType), (sqlType == null ? ID_TYPE : sqlType), reference));
+				SqlobClass<?> reference = null;
+
+				if (sqlType == null) {	// Not a primitive SQL type
+					sqlType = Constants.ID_TYPE;
+					reference = get(fieldType, conn);
+
+					log.info(() -> "Retrieved SqlobClass for referenced class " + fieldType);
+				}
+				fields.add(new SqlobField(field, extractorMap.get(fieldType), sqlType, reference));
 			}
 		}
 		return fields;
+	}
+
+	private static boolean isPersistable(Field field) {
+		int modifiers = field.getModifiers();
+
+		return !Modifier.isStatic(modifiers) &&
+					 !Modifier.isTransient(modifiers) &&
+					 field.getAnnotation(Transient.class) == null;
 	}
 
 	private static Class<?> wrap(Class<?> c) {
@@ -111,14 +127,6 @@ final class SqlobCache {
 		}
 	}
 
-	private static boolean isPersistable(Field field) {
-		int modifiers = field.getModifiers();
-
-		return !Modifier.isStatic(modifiers) &&
-					 !Modifier.isTransient(modifiers) &&
-					 field.getAnnotation(Transient.class) == null;
-	}
-	
 	void mapType(Class<?> c, String sql) {
 		typeMap.put(c, sql);
 	}
