@@ -16,17 +16,14 @@ final class SqlobClass<T> {
 	final Class<T> c;
 	final Constructor<T> constructor;
 	final String name;
-	final List<SqlobField> fields;
-	private final String 	idName;
-	private final String 	create,
-												insert,
+	final Iterable<SqlobField> fields;
+	private final String 	insert,
 												fieldSelection;
 	
-	SqlobClass(Class<T> c, List<SqlobField> fields, String idName, String idType) {
+	SqlobClass(Class<T> c, Iterable<SqlobField> fields, Connection conn) throws SQLException {
 		this.c = c;
 		this.fields = fields;
-		this.idName = idName;
-		
+
 		try {
 			constructor = this.c.getDeclaredConstructor();
 			constructor.setAccessible(true);
@@ -34,21 +31,22 @@ final class SqlobClass<T> {
 			throw new NonPersistableException(c.getName() + " does not provide a nullary constructor");
 		}
 		Table override = this.c.getAnnotation(Table.class);
-		name = (override == null || override.value().length() <= 0) ? this.c.getSimpleName() : override.value();
-		
-		StringBuilder createBuilder = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(name).append("(").append(idName).append(" ").append(idType).append(" PRIMARY KEY"),
-									insertBuilder = new StringBuilder("INSERT INTO ").append(name).append(" (").append(idName),
-									valuesBuilder = new StringBuilder("VALUES (?"),
-									fieldSelectionBuilder = new StringBuilder();
+		if (override == null) name = c.getSimpleName();
+		else if (override.value().length() <= 0) throw new NonPersistableException(c.getName() + " has table override with empty name");
+		else name = override.value();
+
+		StringBuilder createBuilder = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(name).append("(").append(Constants.ID_NAME).append(" ").append(Constants.ID_TYPE).append(" PRIMARY KEY");
+		StringBuilder insertBuilder = new StringBuilder("INSERT INTO ").append(name).append(" (").append(Constants.ID_NAME);
+		StringBuilder	valuesBuilder = new StringBuilder("VALUES (?");
+		StringBuilder fieldSelectionBuilder = new StringBuilder();
 
 		for (SqlobField field : fields) {
-			createBuilder.append(", ").append(field.getInit(idName));
+			createBuilder.append(", ").append(field.getInit(Constants.ID_NAME));
 			
 			insertBuilder.append(", ").append(field.name);
 			valuesBuilder.append(", ?");
 			
-			if (fieldSelectionBuilder.length() > 0)
-				fieldSelectionBuilder.append(", ");
+			if (fieldSelectionBuilder.length() > 0) fieldSelectionBuilder.append(", ");
 			fieldSelectionBuilder.append(field.name);
 		}
 		createBuilder.append(")");
@@ -56,23 +54,20 @@ final class SqlobClass<T> {
 		valuesBuilder.append(")");
 		insertBuilder.append(") ").append(valuesBuilder);
 		
-		create = createBuilder.toString();
 		insert = insertBuilder.toString();
 		fieldSelection = fieldSelectionBuilder.toString();
-	}
-	
-	SqlobClass<T> init(Connection conn) throws SQLException {
+
+		String create = createBuilder.toString();
 		try (Statement s = conn.createStatement()) {
 			s.executeUpdate(create);
 		}
 		log.debug(() -> "Initialized new SqlobClass: " + this + System.lineSeparator() + "\t" + create);
-		return this;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	UUID getId(Object instance, Connection conn) throws SQLException {
 		Condition where = buildEquals((T) instance);
-		String select = buildSelect(idName, where);
+		String select = buildSelect(Constants.ID_NAME, where);
 		
 		try (PreparedStatement s = conn.prepareStatement(select)) {
 			int counter = 1;
@@ -90,7 +85,7 @@ final class SqlobClass<T> {
 	}
 	
 	T get(UUID id, Connection conn) throws SQLException {
-		Set<T> instances = get(new Condition(idName, "=", id.toString()), conn);
+		Set<T> instances = get(new Condition(Constants.ID_NAME, "=", id.toString()), conn);
 		T result = instances.isEmpty() ? null : instances.iterator().next();
 		
 		log.debug(() -> (result == null ? "Failed to find " : "Found ") + "instance of " + this + ": " + id + (result == null ? "" : "->" + result));
@@ -166,7 +161,7 @@ final class SqlobClass<T> {
 	}
 	
 	boolean drop(UUID id, Connection conn) throws SQLException {
-		boolean result = drop(new Condition(idName, "=", id.toString()), conn) > 0;
+		boolean result = drop(new Condition(Constants.ID_NAME, "=", id.toString()), conn) > 0;
 		
 		log.debug(() -> (result ? "Deleted " : "Failed to delete ") + "instance of " + this + ": " + id);
 		return result;
