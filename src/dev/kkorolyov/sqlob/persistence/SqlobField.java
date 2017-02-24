@@ -9,13 +9,16 @@ import java.util.UUID;
 
 import dev.kkorolyov.sqlob.annotation.Column;
 
+/**
+ * Manages persistence at the field/column level.
+ */
 final class SqlobField {
-	final Field field;
-	final Extractor extractor;
-	final String 	name,
-								type;
+	final String name;
+	final String type;
 	final int typeCode;
-	final SqlobClass<?> reference;
+	private final Field field;
+	private final Extractor extractor;
+	private final SqlobClass<?> reference;
 	
 	SqlobField(Field field, Extractor extractor, String type, SqlobClass<?> reference) {
 		this.field = field;
@@ -29,6 +32,24 @@ final class SqlobField {
 		typeCode = JDBCType.valueOf(type.split("[\\s(]")[0]).getVendorTypeNumber();
 		
 		this.field.setAccessible(true);
+	}
+
+	/** @return value of this field on {@code obj} */
+	Object get(Object obj) {
+		try {
+			return field.get(obj);
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException("This should never happen");
+		}
+	}
+
+	/** @return type of the encapsulated field */
+	Class<?> getType() {
+		return field.getType();
+	}
+
+	UUID put(Object obj, Connection conn) throws SQLException {
+		return reference.put(obj, conn);
 	}
 	
 	String getInit(String idName) {

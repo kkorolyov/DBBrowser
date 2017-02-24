@@ -10,6 +10,10 @@ import java.util.regex.Pattern;
 import dev.kkorolyov.sqlob.annotation.Table;
 import dev.kkorolyov.sqlob.logging.Logger;
 
+/**
+ * Manages persistence at the class/table level.
+ * @param <T> persisted class type
+ */
 final class SqlobClass<T> {
 	private static final Logger log = Logger.getLogger(SqlobClass.class.getName());
 	
@@ -140,17 +144,13 @@ final class SqlobClass<T> {
 
 			int counter = 2;
 			for (SqlobField field : fields) {
-				try {
-					Object value = 	field.field.get(instance),
-													transformed = transform(value, conn);
-					if (value != null && transformed == null)	// Missing reference
-						transformed = field.reference.put(value, conn);	// Recursive put
-					
-					s.setObject(counter++, transformed, field.typeCode);
-					parameters.add(transformed);	// Logging
-				} catch (IllegalAccessException e) {
-					throw new NonPersistableException(field.field + " is inaccessible");
-				}
+				Object value = 	field.get(instance),
+												transformed = transform(value, conn);
+				if (value != null && transformed == null)	// Missing reference
+					transformed = field.put(value, conn);	// Recursive put
+
+				s.setObject(counter++, transformed, field.typeCode);
+				parameters.add(transformed);	// Logging
 			}
 			s.executeUpdate();
 		}
@@ -205,7 +205,7 @@ final class SqlobClass<T> {
 		Class<?> oClass = o.getClass();
 		
 		for (SqlobField field : fields) {
-			if (field.field.getType() == oClass)
+			if (field.getType() == oClass)
 				return field;
 		}
 		return null;
@@ -232,18 +232,14 @@ final class SqlobClass<T> {
 		Condition result = null;
 		
 		for (SqlobField field : fields) {
-			try {
-				String attribute = field.name;
-				Object value = field.field.get(instance);
-				Condition currentCondition = new Condition(attribute, (value == null ? "IS" : "="), value);
-				
-				if (result == null)
-					result = currentCondition;
-				else
-					result.and(currentCondition);
-			} catch (IllegalAccessException e) {
-				throw new NonPersistableException(field.field + " is inaccessible");
-			}
+			String attribute = field.name;
+			Object value = field.get(instance);
+			Condition currentCondition = new Condition(attribute, (value == null ? "IS" : "="), value);
+
+			if (result == null)
+				result = currentCondition;
+			else
+				result.and(currentCondition);
 		}
 		return result;
 	}
