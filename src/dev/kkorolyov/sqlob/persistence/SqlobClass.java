@@ -6,6 +6,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import dev.kkorolyov.sqlob.annotation.Table;
 import dev.kkorolyov.sqlob.logging.Logger;
@@ -16,13 +18,13 @@ import dev.kkorolyov.sqlob.logging.Logger;
  */
 final class SqlobClass<T> {
 	private static final Logger log = Logger.getLogger(SqlobClass.class.getName());
-	
-	final Class<T> c;
-	final Constructor<T> constructor;
+
 	final String name;
-	final Iterable<SqlobField> fields;
-	private final String 	insert,
-												fieldSelection;
+	private final Class<T> c;
+	private final Constructor<T> constructor;
+	private final Iterable<SqlobField> fields;
+	private final String insert;
+	private final String fieldSelection;
 	
 	SqlobClass(Class<T> c, Iterable<SqlobField> fields, Connection conn) throws SQLException {
 		this.c = c;
@@ -39,29 +41,17 @@ final class SqlobClass<T> {
 		else if (override.value().length() <= 0) throw new NonPersistableException(c.getName() + " has table override with empty name");
 		else name = override.value();
 
-		StringBuilder createBuilder = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(name).append("(").append(Constants.ID_NAME).append(" ").append(Constants.ID_TYPE).append(" PRIMARY KEY");
-		StringBuilder insertBuilder = new StringBuilder("INSERT INTO ").append(name).append(" (").append(Constants.ID_NAME);
-		StringBuilder	valuesBuilder = new StringBuilder("VALUES (?");
-		StringBuilder fieldSelectionBuilder = new StringBuilder();
-
-		for (SqlobField field : fields) {
-			createBuilder.append(", ").append(field.getInit(Constants.ID_NAME));
-			
-			insertBuilder.append(", ").append(field.name);
-			valuesBuilder.append(", ?");
-			
-			if (fieldSelectionBuilder.length() > 0) fieldSelectionBuilder.append(", ");
-			fieldSelectionBuilder.append(field.name);
-		}
-		createBuilder.append(")");
-		
-		valuesBuilder.append(")");
-		insertBuilder.append(") ").append(valuesBuilder);
-		
-		insert = insertBuilder.toString();
-		fieldSelection = fieldSelectionBuilder.toString();
-
-		String create = createBuilder.toString();
+		fieldSelection = StreamSupport.stream(fields.spliterator(), true)	// Used in SELECT clause
+																	.map(field -> field.name)
+																	.collect(Collectors.joining(", "));
+		insert = "INSERT INTO " + name + " (" + Constants.ID_NAME + fieldSelection + ") "
+						 + StreamSupport.stream(fields.spliterator(), false)
+														.map(field -> "?")
+														.collect(Collectors.joining(", ", "VALUES (?", ")"));
+		String create = "CREATE TABLE IF NOT EXISTS " + name + "(" + Constants.ID_NAME + " " + Constants.ID_TYPE + " PRIMARY KEY, "
+										+ StreamSupport.stream(fields.spliterator(), false)
+																	 .map(field -> field.getInit(Constants.ID_NAME))
+																	 .collect(Collectors.joining(", "));
 		try (Statement s = conn.createStatement()) {
 			s.executeUpdate(create);
 		}
@@ -154,9 +144,7 @@ final class SqlobClass<T> {
 			}
 			s.executeUpdate();
 		}
-		UUID finalId = id;
-		
-		log.debug(() -> (result ? "Replaced " : "Saved new ") + this + ": " + instance + "->" + finalId + System.lineSeparator() + "\t" + applyStatement(insert, parameters));
+		log.debug(() -> (result ? "Replaced " : "Saved new ") + this + ": " + instance + "->" + id + System.lineSeparator() + "\t" + applyStatement(insert, parameters));
 		return result;
 	}
 	
