@@ -1,5 +1,7 @@
 package dev.kkorolyov.sqlob.persistence;
 
+import static dev.kkorolyov.sqlob.persistence.Constants.*;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
@@ -25,18 +27,18 @@ final class SqlobClass<T> {
 	private final Iterable<SqlobField> fields;
 	private final String insert;
 	private final String fieldSelection;
-	
-	SqlobClass(Class<T> c, Iterable<SqlobField> fields, Connection conn) throws SQLException {
+
+	SqlobClass(Class<T> c, Iterable<SqlobField> fields, Statement createStatement) throws SQLException {
 		this.c = c;
 		this.fields = fields;
 
 		try {
-			constructor = this.c.getDeclaredConstructor();
+			constructor = c.getDeclaredConstructor();
 			constructor.setAccessible(true);
 		} catch (NoSuchMethodException e) {
 			throw new NonPersistableException(c.getName() + " does not provide a nullary constructor");
 		}
-		Table override = this.c.getAnnotation(Table.class);
+		Table override = c.getAnnotation(Table.class);
 		if (override == null) name = c.getSimpleName();
 		else if (override.value().length() <= 0) throw new NonPersistableException(c.getName() + " has table override with empty name");
 		else name = override.value();
@@ -44,71 +46,61 @@ final class SqlobClass<T> {
 		fieldSelection = StreamSupport.stream(fields.spliterator(), true)	// Used in SELECT clause
 																	.map(field -> field.name)
 																	.collect(Collectors.joining(", "));
-		insert = "INSERT INTO " + name + " (" + Constants.ID_NAME + fieldSelection + ") "
+		insert = "INSERT INTO " + name + " (" + ID_NAME + fieldSelection + ") "
 						 + StreamSupport.stream(fields.spliterator(), false)
 														.map(field -> "?")
 														.collect(Collectors.joining(", ", "VALUES (?", ")"));
-		String create = "CREATE TABLE IF NOT EXISTS " + name + "(" + Constants.ID_NAME + " " + Constants.ID_TYPE + " PRIMARY KEY, "
+
+		String create = "CREATE TABLE IF NOT EXISTS " + name + "(" + ID_NAME + " " + ID_SQL_TYPE + " PRIMARY KEY, "
 										+ StreamSupport.stream(fields.spliterator(), false)
-																	 .map(field -> field.getInit(Constants.ID_NAME))
+																	 .map(field -> field.getInit(ID_NAME))
 																	 .collect(Collectors.joining(", "));
-		try (Statement s = conn.createStatement()) {
-			s.executeUpdate(create);
-		}
+		createStatement.executeUpdate(create);
+
 		log.debug(() -> "Initialized new SqlobClass: " + this + System.lineSeparator() + "\t" + create);
 	}
 
-	@SuppressWarnings("unchecked")
 	UUID getId(Object instance, Connection conn) throws SQLException {
-		Condition where = buildEquals((T) instance);
-		String select = buildSelect(Constants.ID_NAME, where);
+		Condition where = generateEquals(instance);
+		String select = generateSelect(ID_NAME, where);
 		
 		try (PreparedStatement s = conn.prepareStatement(select)) {
-			int counter = 1;
-			for (Object value : where.values()) {
-				if (!shortCircuitSet(s, counter++, value, conn))	// Missing reference
-					return null;	// Short-circuit
-			}
-			try (ResultSet rs = s.executeQuery()) {
-				UUID result = rs.next() ? UUID.fromString(rs.getString(1)) : null;
-				
-				log.debug(() -> (result == null ? "Failed to find " : "Found ") + "ID of " + this + " instance: " + instance + (result == null ? "" : "->" + result) + System.lineSeparator() + "\t" + applyStatement(select, (where == null ? null : where.values())));
-				return result;
-			}
+			if (!setValues(s, where.values(), conn)) return null;	// setValues did not complete due to missing reference, abort early
+
+			ResultSet rs = s.executeQuery();
+			UUID result = rs.next() ? UUID.fromString(rs.getString(1)) : null;
+
+			log.debug(() -> (result == null ? "Failed to find " : "Found ") + "ID of " + this + " instance: " + instance + "->" + result
+											+ System.lineSeparator() + "\t" + applyStatement(select, where.values()));
+			return result;
 		}
 	}
 	
 	T get(UUID id, Connection conn) throws SQLException {
-		Set<T> instances = get(new Condition(Constants.ID_NAME, "=", id.toString()), conn);
+		Set<T> instances = get(new Condition(ID_NAME, "=", id.toString()), conn);
 		T result = instances.isEmpty() ? null : instances.iterator().next();
 		
-		log.debug(() -> (result == null ? "Failed to find " : "Found ") + "instance of " + this + ": " + id + (result == null ? "" : "->" + result));
+		log.debug(() -> (result == null ? "Failed to find " : "Found ") + "instance of " + this + ": " + id + "->" + result);
 		return result;
 	}
 	Set<T> get(Condition where, Connection conn) throws SQLException {
 		Set<T> results = new HashSet<>();
-		String select = buildSelect(fieldSelection, where);
+		String select = generateSelect(fieldSelection, where);
 		
 		try (PreparedStatement s = conn.prepareStatement(select)) {
-			if (where != null) {	// Has conditions
-				int counter = 1;
-				for (Object value : where.values()) {
-					if (!shortCircuitSet(s, counter++, value, conn))	// Missing reference
-						return results;	// Short-circuit
-				}
-			}
-			try (ResultSet rs = s.executeQuery()) {
-				while(rs.next()) {
-					try {
-						T result = constructor.newInstance();
-						
-						for (SqlobField field : fields)
-							field.apply(result, rs, conn);
-						
-						results.add(result);
-					} catch (IllegalAccessException | InstantiationException | IllegalArgumentException | InvocationTargetException e) {
-						throw new NonPersistableException("Failed to instantiate " + c.getName(), e);
-					}
+			if (where != null && !setValues(s, where.values(), conn)) return results;	// setValues did not complete due to missing reference, abort early
+
+			ResultSet rs = s.executeQuery();
+			while(rs.next()) {
+				try {
+					T result = constructor.newInstance();
+
+					for (SqlobField field : fields)
+						field.apply(result, rs, conn);
+
+					results.add(result);
+				} catch (IllegalAccessException | InstantiationException | IllegalArgumentException | InvocationTargetException e) {
+					throw new NonPersistableException("Failed to instantiate " + c.getName(), e);
 				}
 			}
 		}
@@ -127,7 +119,7 @@ final class SqlobClass<T> {
 	boolean put(UUID id, Object instance, Connection conn) throws SQLException {
 		boolean result = drop(id, conn);	// Drop any previous version
 		List<Object> parameters = new LinkedList<>();	// For logging
-		
+
 		try (PreparedStatement s = conn.prepareStatement(insert)) {
 			s.setString(1, id.toString());
 			parameters.add(id);	// Logging
@@ -149,22 +141,17 @@ final class SqlobClass<T> {
 	}
 	
 	boolean drop(UUID id, Connection conn) throws SQLException {
-		boolean result = drop(new Condition(Constants.ID_NAME, "=", id.toString()), conn) > 0;
+		boolean result = drop(new Condition(ID_NAME, "=", id.toString()), conn) > 0;
 		
 		log.debug(() -> (result ? "Deleted " : "Failed to delete ") + "instance of " + this + ": " + id);
 		return result;
 	}
 	int drop(Condition where, Connection conn) throws SQLException {
-		String delete = buildDelete(where);
+		String delete = generateDelete(where);
 		
 		try (PreparedStatement s = conn.prepareStatement(delete)) {
-			if (where != null) {	// Has conditions
-				int counter = 1;
-				for (Object value : where.values()) {
-					if (!shortCircuitSet(s, counter++, value, conn))	// Missing reference
-						return 0;	// Short-circuit
-				}
-			}
+			if (where != null && !setValues(s, where.values(), conn)) return 0;	// setValues did not complete due to missing reference, abort early
+
 			int result = s.executeUpdate();
 			
 			log.debug(() -> "Deleted " + result + " instances of " + this + System.lineSeparator() + "\t" + applyStatement(delete, (where == null ? null : where.values())));
@@ -172,20 +159,20 @@ final class SqlobClass<T> {
 		}
 	}
 
-	private boolean shortCircuitSet(PreparedStatement s, int index, Object value, Connection conn) throws SQLException {	// Returns false and does not modify Statement if missing reference
-		Object transformed = transform(value, conn);
-		if (value != null && transformed == null) {	// Missing reference
-			log.info(() -> "Missing reference for " + this + " field value; short-circuiting");
-			return false;
+	private boolean setValues(PreparedStatement s, Iterable<Object> values, Connection conn) throws SQLException {
+		int i = 1;
+		for (Object value : values) {
+			Object transformed = (value == null) ? value : transform(value, conn);
+			if (value != null && transformed == null) {
+				log.info(() -> "Missing reference for " + this + " field value, aborting early");
+				return false;
+			}
+			s.setObject(i, transformed);
 		}
-		s.setObject(index, transformed);
 		return true;
 	}
-	
+
 	private Object transform(Object o, Connection conn) throws SQLException {
-		if (o == null)
-			return o;
-		
 		SqlobField field = getField(o);
 		return field == null ? o : field.transform(o, conn);
 	}
@@ -199,7 +186,7 @@ final class SqlobClass<T> {
 		return null;
 	}
 	
-	private String buildSelect(String selection, Condition where) {
+	private String generateSelect(String selection, Condition where) {
 		String result = "SELECT " + selection + " FROM " + name;
 		
 		if (where != null)
@@ -207,7 +194,7 @@ final class SqlobClass<T> {
 		
 		return result;
 	}
-	private String buildDelete(Condition where) {
+	private String generateDelete(Condition where) {
 		String result = "DELETE FROM " + name;
 		
 		if (where != null)
@@ -216,7 +203,7 @@ final class SqlobClass<T> {
 		return result;
 	}
 	
-	private Condition buildEquals(T instance) {
+	private Condition generateEquals(Object instance) {
 		Condition result = null;
 		
 		for (SqlobField field : fields) {
@@ -232,7 +219,7 @@ final class SqlobClass<T> {
 		return result;
 	}
 	
-	private static String applyStatement(String base, Iterable<Object> parameters) {	// For logging
+	private static String applyStatement(String base, Iterable<Object> parameters) {	// TODO Extract to logging or something
 		String statement = base;
 
 		if (parameters != null) {

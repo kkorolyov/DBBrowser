@@ -1,5 +1,7 @@
 package dev.kkorolyov.sqlob.persistence;
 
+import static dev.kkorolyov.sqlob.persistence.Constants.ID_SQL_TYPE;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
@@ -74,9 +76,11 @@ final class SqlobCache {
 	<T> SqlobClass<T> get(Class<T> type, Connection conn) throws SQLException {
 		@SuppressWarnings("unchecked")
 		SqlobClass<T> result = (SqlobClass<T>) classMap.get(type);
-		
+
 		if (result == null) {
-			result = new SqlobClass<>(type, buildFields(type, conn), conn);
+			Statement createStatement = conn.createStatement();	// TODO Cache this thing
+			result = new SqlobClass<>(type, buildFields(type, conn), createStatement);
+			createStatement.close();
 			classMap.put(type, result);
 
 			log.info(() -> "Cached (Class -> SqlobClass) mapping for " + type);
@@ -93,7 +97,7 @@ final class SqlobCache {
 				SqlobClass<?> reference = null;
 
 				if (sqlType == null) {	// Not a primitive SQL type
-					sqlType = Constants.ID_TYPE;
+					sqlType = ID_SQL_TYPE;
 					reference = get(fieldType, conn);
 
 					log.info(() -> "Retrieved SqlobClass for referenced class " + fieldType);
