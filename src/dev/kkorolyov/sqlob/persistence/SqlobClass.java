@@ -1,13 +1,15 @@
 package dev.kkorolyov.sqlob.persistence;
 
-import static dev.kkorolyov.sqlob.persistence.Constants.*;
+import static dev.kkorolyov.sqlob.persistence.Constants.ID_NAME;
+import static dev.kkorolyov.sqlob.persistence.Constants.ID_SQL_TYPE;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -73,7 +75,7 @@ final class SqlobClass<T> {
 			UUID result = rs.next() ? UUID.fromString(rs.getString(1)) : null;
 
 			log.debug(() -> (result == null ? "Failed to find " : "Found ") + "ID of " + this + " instance: " + instance + "->" + result
-											+ System.lineSeparator() + "\t" + applyStatement(select, where.values()));
+											+ System.lineSeparator() + "\t" + s);
 			return result;
 		}
 	}
@@ -104,8 +106,9 @@ final class SqlobClass<T> {
 					throw new NonPersistableException("Failed to instantiate " + c.getName(), e);
 				}
 			}
+			log.debug(() -> "Found " + results.size() + " instances of " + this
+											+ System.lineSeparator() + "\t" + s);
 		}
-		log.debug(() -> "Found " + results.size() + " instances of " + this + System.lineSeparator() + "\t" + applyStatement(select, (where == null ? null : where.values())));
 		return results;
 	}
 	
@@ -129,7 +132,7 @@ final class SqlobClass<T> {
 			s.executeUpdate();
 
 			log.debug(() -> (result ? "Replaced " : "Saved new ") + this + ": " + instance + "->" + id
-											+ System.lineSeparator() + "\t" + s.toString());
+											+ System.lineSeparator() + "\t" + s);
 		}
 		return result;
 	}
@@ -148,7 +151,8 @@ final class SqlobClass<T> {
 
 			int result = s.executeUpdate();
 			
-			log.debug(() -> "Deleted " + result + " instances of " + this + System.lineSeparator() + "\t" + applyStatement(delete, (where == null ? null : where.values())));
+			log.debug(() -> "Deleted " + result + " instances of " + this
+											+ System.lineSeparator() + "\t" + s);
 			return result;
 		}
 	}
@@ -201,16 +205,6 @@ final class SqlobClass<T> {
 				result.and(currentCondition);
 		}
 		return result;
-	}
-	
-	private static String applyStatement(String base, Iterable<Object> parameters) {	// TODO Extract to logging or something
-		String statement = base;
-
-		if (parameters != null) {
-			for (Object parameter : parameters)
-				statement = statement.replaceFirst(Pattern.quote("?"), Matcher.quoteReplacement(parameter.toString()));
-		}
-		return statement;
 	}
 	
 	@Override
