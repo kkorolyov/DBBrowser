@@ -55,7 +55,7 @@ final class SqlobClass<T> {
 
 		String create = "CREATE TABLE IF NOT EXISTS " + name + "(" + ID_NAME + " " + ID_SQL_TYPE + " PRIMARY KEY, "
 										+ StreamSupport.stream(fields.values().spliterator(), false)
-																	 .map(SqlobField::getInit)
+																	 .map(SqlobField::getCreateSnippet)
 																	 .collect(Collectors.joining(", "))
 										+ ")";
 		createStatement.executeUpdate(create);
@@ -99,7 +99,7 @@ final class SqlobClass<T> {
 				try {
 					T result = constructor.newInstance();
 
-					for (SqlobField field : fields.values())	field.apply(result, rs, conn);
+					for (SqlobField field : fields.values()) field.populateInstance(result, rs, conn);
 
 					results.add(result);
 				} catch (IllegalAccessException | InstantiationException | IllegalArgumentException | InvocationTargetException e) {

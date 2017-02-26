@@ -21,7 +21,7 @@ import org.junit.jupiter.api.TestFactory;
 import dev.kkorolyov.sqlob.JDBCMocks;
 import dev.kkorolyov.sqlob.Stub.BasicStub;
 
-public class SessionTest {
+class SessionTest {
 	private static final int NUM_PARAMETERIZED_TESTS = 10;
 	private static final Class<?> stubClass = BasicStub.class;
 	private static final Iterable<Object> stubs = Stream.generate(BasicStub::random)

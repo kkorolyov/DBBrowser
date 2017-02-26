@@ -22,17 +22,17 @@ final class SqlobField {
 	private final SqlobClass<?> reference;
 	
 	SqlobField(Field field, Extractor extractor, String type, SqlobClass<?> reference) {
+		field.setAccessible(true);
+
 		this.field = field;
 		this.extractor = (extractor == null) ? DEFAULT_EXTRACTOR : extractor;
 		this.type = type;
 		this.reference = reference;
 		
-		Column override = this.field.getAnnotation(Column.class);
-		name = (override == null || override.value().length() <= 0) ? this.field.getName() : override.value();
+		Column override = field.getAnnotation(Column.class);
+		name = (override == null || override.value().length() <= 0) ? field.getName() : override.value();
 		
 		typeCode = JDBCType.valueOf(type.split("[\\s(]")[0]).getVendorTypeNumber();
-		
-		this.field.setAccessible(true);
 	}
 
 	/** @return value of this field on {@code obj} */
@@ -44,26 +44,22 @@ final class SqlobField {
 		}
 	}
 
-	/** @return type of the encapsulated field */
-	Class<?> getType() {
-		return field.getType();
-	}
-
-	UUID put(Object obj, Connection conn) throws SQLException {
-		return reference.put(obj, conn);
-	}
-
-	String getInit() {
+	String getCreateSnippet() {
 		String init = name + " " + type;
 		
 		if (isReference()) init += ", FOREIGN KEY (" + name + ") REFERENCES " + reference.name + "(" + ID_NAME + ")";
 		
 		return init;
 	}
-	
-	void apply(Object instance, ResultSet rs, Connection conn) throws SQLException {
-		Object value = extractor.execute(rs, name);
 
+	/**
+	 * Populates the value of this field in {@code instance} using the appropriate value from {@code rs}.
+	 * @param instance instance to populate
+	 * @param rs result set to extract from
+	 * @param conn connection to utilize for reference mapping
+	 */
+	void populateInstance(Object instance, ResultSet rs, Connection conn) throws SQLException {
+		Object value = extractor.execute(rs, name);
 		if (isReference() && value != null) value = reference.get(UUID.fromString((String) value), conn);
 
 		try {
@@ -73,9 +69,16 @@ final class SqlobField {
 		}
 	}
 
-	void populateStatement(PreparedStatement s, int index, Object o, Connection conn) throws SQLException {
+	/**
+	 * Populates a SQL statement using the value of this field in {@code instance}.
+	 * @param s statement to populate
+	 * @param index parameter index to write to
+	 * @param instance instance to retrieve value from
+	 * @param conn connection to utilize for reference mapping
+	 */
+	void populateStatement(PreparedStatement s, int index, Object instance, Connection conn) throws SQLException {
 		try {
-			s.setObject(index, transform(field.get(o), conn), typeCode);
+			s.setObject(index, transform(field.get(instance), conn), typeCode);
 		} catch (IllegalAccessException e) {
 			throw new RuntimeException("This should never happen");
 		}
