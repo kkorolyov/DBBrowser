@@ -24,11 +24,11 @@ final class SqlobClass<T> {
 	final String name;
 	private final Class<T> c;
 	private final Constructor<T> constructor;
-	private final Iterable<SqlobField> fields;
+	private final Map<Class<?>, SqlobField> fields;
 	private final String insert;
 	private final String fieldSelection;
 
-	SqlobClass(Class<T> c, Iterable<SqlobField> fields, Statement createStatement) throws SQLException {
+	SqlobClass(Class<T> c, Map<Class<?>, SqlobField> fields, Statement createStatement) throws SQLException {
 		this.c = c;
 		this.fields = fields;
 
@@ -43,21 +43,23 @@ final class SqlobClass<T> {
 		else if (override.value().length() <= 0) throw new NonPersistableException(c.getName() + " has table override with empty name");
 		else name = override.value();
 
-		fieldSelection = StreamSupport.stream(fields.spliterator(), true)	// Used in SELECT clause
+		fieldSelection = StreamSupport.stream(fields.values().spliterator(), true)	// Used in SELECT clause
 																	.map(field -> field.name)
 																	.collect(Collectors.joining(", "));
-		insert = "INSERT INTO " + name + " (" + ID_NAME + fieldSelection + ") "
-						 + StreamSupport.stream(fields.spliterator(), false)
+		insert = "INSERT INTO " + name + " (" + ID_NAME + ", " + fieldSelection + ") "
+						 + StreamSupport.stream(fields.values().spliterator(), false)
 														.map(field -> "?")
-														.collect(Collectors.joining(", ", "VALUES (?", ")"));
+														.collect(Collectors.joining(", ", "VALUES (?, ", ")"));
 
 		String create = "CREATE TABLE IF NOT EXISTS " + name + "(" + ID_NAME + " " + ID_SQL_TYPE + " PRIMARY KEY, "
-										+ StreamSupport.stream(fields.spliterator(), false)
-																	 .map(field -> field.getInit(ID_NAME))
-																	 .collect(Collectors.joining(", "));
+										+ StreamSupport.stream(fields.values().spliterator(), false)
+																	 .map(SqlobField::getInit)
+																	 .collect(Collectors.joining(", "))
+										+ ")";
 		createStatement.executeUpdate(create);
 
-		log.debug(() -> "Initialized new SqlobClass: " + this + System.lineSeparator() + "\t" + create);
+		log.debug(() -> "Initialized new SqlobClass: " + this
+										+ System.lineSeparator() + "\t" + create);
 	}
 
 	UUID getId(Object instance, Connection conn) throws SQLException {
@@ -95,8 +97,7 @@ final class SqlobClass<T> {
 				try {
 					T result = constructor.newInstance();
 
-					for (SqlobField field : fields)
-						field.apply(result, rs, conn);
+					for (SqlobField field : fields.values())	field.apply(result, rs, conn);
 
 					results.add(result);
 				} catch (IllegalAccessException | InstantiationException | IllegalArgumentException | InvocationTargetException e) {
@@ -118,25 +119,18 @@ final class SqlobClass<T> {
 	}
 	boolean put(UUID id, Object instance, Connection conn) throws SQLException {
 		boolean result = drop(id, conn);	// Drop any previous version
-		List<Object> parameters = new LinkedList<>();	// For logging
 
 		try (PreparedStatement s = conn.prepareStatement(insert)) {
 			s.setString(1, id.toString());
-			parameters.add(id);	// Logging
 
 			int counter = 2;
-			for (SqlobField field : fields) {
-				Object value = 	field.get(instance),
-												transformed = transform(value, conn);
-				if (value != null && transformed == null)	// Missing reference
-					transformed = field.put(value, conn);	// Recursive put
+			for (SqlobField field : fields.values()) field.populateStatement(s, counter++, instance, conn);
 
-				s.setObject(counter++, transformed, field.typeCode);
-				parameters.add(transformed);	// Logging
-			}
 			s.executeUpdate();
+
+			log.debug(() -> (result ? "Replaced " : "Saved new ") + this + ": " + instance + "->" + id
+											+ System.lineSeparator() + "\t" + s.toString());
 		}
-		log.debug(() -> (result ? "Replaced " : "Saved new ") + this + ": " + instance + "->" + id + System.lineSeparator() + "\t" + applyStatement(insert, parameters));
 		return result;
 	}
 	
@@ -167,25 +161,15 @@ final class SqlobClass<T> {
 				log.info(() -> "Missing reference for " + this + " field value, aborting early");
 				return false;
 			}
-			s.setObject(i, transformed);
+			s.setObject(i++, transformed);
 		}
 		return true;
 	}
-
 	private Object transform(Object o, Connection conn) throws SQLException {
-		SqlobField field = getField(o);
+		SqlobField field = fields.get(o.getClass());
 		return field == null ? o : field.transform(o, conn);
 	}
-	private SqlobField getField(Object o) {
-		Class<?> oClass = o.getClass();
-		
-		for (SqlobField field : fields) {
-			if (field.getType() == oClass)
-				return field;
-		}
-		return null;
-	}
-	
+
 	private String generateSelect(String selection, Condition where) {
 		String result = "SELECT " + selection + " FROM " + name;
 		
@@ -206,7 +190,7 @@ final class SqlobClass<T> {
 	private Condition generateEquals(Object instance) {
 		Condition result = null;
 		
-		for (SqlobField field : fields) {
+		for (SqlobField field : fields.values()) {
 			String attribute = field.name;
 			Object value = field.get(instance);
 			Condition currentCondition = new Condition(attribute, (value == null ? "IS" : "="), value);

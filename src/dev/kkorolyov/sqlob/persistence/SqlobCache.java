@@ -1,15 +1,14 @@
 package dev.kkorolyov.sqlob.persistence;
 
+import static dev.kkorolyov.sqlob.persistence.Constants.ID_CLASS_TYPE;
 import static dev.kkorolyov.sqlob.persistence.Constants.ID_SQL_TYPE;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.sql.*;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.sql.Date;
+import java.util.*;
 
 import dev.kkorolyov.sqlob.annotation.Transient;
 import dev.kkorolyov.sqlob.logging.Logger;
@@ -48,6 +47,8 @@ final class SqlobCache {
 		typeMap.put(Date.class, "DATE");
 		typeMap.put(Time.class, "TIME(6)");
 		typeMap.put(Timestamp.class, "TIMESTAMP(6)");
+
+		typeMap.put(ID_CLASS_TYPE, ID_SQL_TYPE);
 	}
 	private void initExtractorMap() {
 		extractorMap.put(Byte.class, ResultSet::getByte);
@@ -71,6 +72,8 @@ final class SqlobCache {
 		extractorMap.put(Date.class, ResultSet::getDate);
 		extractorMap.put(Time.class, ResultSet::getTime);
 		extractorMap.put(Timestamp.class, ResultSet::getTimestamp);
+
+		extractorMap.put(ID_CLASS_TYPE, ResultSet::getString);
 	}
 
 	<T> SqlobClass<T> get(Class<T> type, Connection conn) throws SQLException {
@@ -87,23 +90,23 @@ final class SqlobCache {
 		}
 		return result;
 	}
-	private <T> Iterable<SqlobField> buildFields(Class<T> type, Connection conn) throws SQLException {
-		List<SqlobField> fields = new LinkedList<>();
+	private <T> Map<Class<?>, SqlobField> buildFields(Class<T> type, Connection conn) throws SQLException {
+		Map<Class<?>, SqlobField> fields = new HashMap<>();
+		Iterable<Field> persistableFields = Arrays.stream(type.getDeclaredFields())
+																							.filter(SqlobCache::isPersistable)::iterator;
 		
-		for (Field field : type.getDeclaredFields()) {
-			if (isPersistable(field)) {
-				Class<?> fieldType = wrap(field.getType());
-				String sqlType = typeMap.get(fieldType);
-				SqlobClass<?> reference = null;
+		for (Field field : persistableFields) {
+			Class<?> fieldType = wrap(field.getType());
+			String sqlType = typeMap.get(fieldType);
+			SqlobClass<?> reference = null;
 
-				if (sqlType == null) {	// Not a primitive SQL type
-					sqlType = ID_SQL_TYPE;
-					reference = get(fieldType, conn);
+			if (sqlType == null) {	// Not a primitive SQL type
+				sqlType = ID_SQL_TYPE;
+				reference = get(fieldType, conn);
 
-					log.info(() -> "Retrieved SqlobClass for referenced class " + fieldType);
-				}
-				fields.add(new SqlobField(field, extractorMap.get(fieldType), sqlType, reference));
+				log.info(() -> "Retrieved SqlobClass for referenced class " + fieldType);
 			}
+			fields.put(fieldType, new SqlobField(field, extractorMap.get(fieldType), sqlType, reference));
 		}
 		return fields;
 	}
