@@ -44,6 +44,10 @@ final class SqlobField {
 		}
 	}
 
+	Class<?> getType() {
+		return field.getType();
+	}
+
 	String getCreateSnippet() {
 		String init = name + " " + type;
 		

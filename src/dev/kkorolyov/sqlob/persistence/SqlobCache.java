@@ -90,8 +90,8 @@ final class SqlobCache {
 		}
 		return result;
 	}
-	private <T> Map<Class<?>, SqlobField> buildFields(Class<T> type, Connection conn) throws SQLException {
-		Map<Class<?>, SqlobField> fields = new HashMap<>();
+	private <T> Iterable<SqlobField> buildFields(Class<T> type, Connection conn) throws SQLException {
+		List<SqlobField> fields = new ArrayList<>();
 		Iterable<Field> persistableFields = Arrays.stream(type.getDeclaredFields())
 																							.filter(SqlobCache::isPersistable)::iterator;
 		
@@ -106,7 +106,7 @@ final class SqlobCache {
 
 				log.info(() -> "Retrieved SqlobClass for referenced class " + fieldType);
 			}
-			fields.put(fieldType, new SqlobField(field, extractorMap.get(fieldType), sqlType, reference));
+			fields.add(new SqlobField(field, extractorMap.get(fieldType), sqlType, reference));
 		}
 		return fields;
 	}

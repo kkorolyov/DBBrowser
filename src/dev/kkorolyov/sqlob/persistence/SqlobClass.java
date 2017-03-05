@@ -7,7 +7,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -26,11 +25,11 @@ final class SqlobClass<T> {
 	final String name;
 	private final Class<T> c;
 	private final Constructor<T> constructor;
-	private final Map<Class<?>, SqlobField> fields;
+	private final Iterable<SqlobField> fields;
 	private final String insert;
 	private final String fieldSelection;
 
-	SqlobClass(Class<T> c, Map<Class<?>, SqlobField> fields, Statement createStatement) throws SQLException {
+	SqlobClass(Class<T> c, Iterable<SqlobField> fields, Statement createStatement) throws SQLException {
 		this.c = c;
 		this.fields = fields;
 
@@ -45,16 +44,16 @@ final class SqlobClass<T> {
 		else if (override.value().length() <= 0) throw new NonPersistableException(c.getName() + " has table override with empty name");
 		else name = override.value();
 
-		fieldSelection = StreamSupport.stream(fields.values().spliterator(), true)	// Used in SELECT clause
+		fieldSelection = StreamSupport.stream(fields.spliterator(), true)	// Used in SELECT clause
 																	.map(field -> field.name)
 																	.collect(Collectors.joining(", "));
 		insert = "INSERT INTO " + name + " (" + ID_NAME + ", " + fieldSelection + ") "
-						 + StreamSupport.stream(fields.values().spliterator(), false)
+						 + StreamSupport.stream(fields.spliterator(), false)
 														.map(field -> "?")
 														.collect(Collectors.joining(", ", "VALUES (?, ", ")"));
 
 		String create = "CREATE TABLE IF NOT EXISTS " + name + "(" + ID_NAME + " " + ID_SQL_TYPE + " PRIMARY KEY, "
-										+ StreamSupport.stream(fields.values().spliterator(), false)
+										+ StreamSupport.stream(fields.spliterator(), false)
 																	 .map(SqlobField::getCreateSnippet)
 																	 .collect(Collectors.joining(", "))
 										+ ")";
@@ -99,7 +98,7 @@ final class SqlobClass<T> {
 				try {
 					T result = constructor.newInstance();
 
-					for (SqlobField field : fields.values()) field.populateInstance(result, rs, conn);
+					for (SqlobField field : fields) field.populateInstance(result, rs, conn);
 
 					results.add(result);
 				} catch (IllegalAccessException | InstantiationException | IllegalArgumentException | InvocationTargetException e) {
@@ -127,7 +126,7 @@ final class SqlobClass<T> {
 			s.setString(1, id.toString());
 
 			int counter = 2;
-			for (SqlobField field : fields.values()) field.populateStatement(s, counter++, instance, conn);
+			for (SqlobField field : fields) field.populateStatement(s, counter++, instance, conn);
 
 			s.executeUpdate();
 
@@ -170,8 +169,14 @@ final class SqlobClass<T> {
 		return true;
 	}
 	private Object transform(Object o, Connection conn) throws SQLException {
-		SqlobField field = fields.get(o.getClass());
+		SqlobField field = findField(o.getClass());
 		return field == null ? o : field.transform(o, conn);
+	}
+	private SqlobField findField(Class<?> c) {
+		for (SqlobField field : fields) {
+			if (field.getType() == c) return field;
+		}
+		return null;
 	}
 
 	private String generateSelect(String selection, Condition where) {
@@ -194,7 +199,7 @@ final class SqlobClass<T> {
 	private Condition generateEquals(Object instance) {
 		Condition result = null;
 		
-		for (SqlobField field : fields.values()) {
+		for (SqlobField field : fields) {
 			String attribute = field.name;
 			Object value = field.get(instance);
 			Condition currentCondition = new Condition(attribute, (value == null ? "IS" : "="), value);
