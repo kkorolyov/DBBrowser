@@ -1,5 +1,9 @@
 # Change Log
 
+## [2.1.1] - 2017-03-05
+### Fixes
+* Fixed regression of SqlobFields overwriting
+
 ## [2.1] - 2017-02-26
 ### Changes
 * `Session.flush()` no longer closes the underlying connection
