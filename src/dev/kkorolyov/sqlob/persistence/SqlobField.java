@@ -1,6 +1,6 @@
 package dev.kkorolyov.sqlob.persistence;
 
-import static dev.kkorolyov.sqlob.persistence.Constants.ID_NAME;
+import static dev.kkorolyov.sqlob.service.Constants.ID_NAME;
 
 import java.lang.reflect.Field;
 import java.sql.*;

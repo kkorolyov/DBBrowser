@@ -1,7 +1,7 @@
 package dev.kkorolyov.sqlob.persistence;
 
-import static dev.kkorolyov.sqlob.persistence.Constants.ID_NAME;
-import static dev.kkorolyov.sqlob.persistence.Constants.ID_SQL_TYPE;
+import static dev.kkorolyov.sqlob.service.Constants.ID_NAME;
+import static dev.kkorolyov.sqlob.service.Constants.ID_TYPE;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -52,7 +52,7 @@ final class SqlobClass<T> {
 														.map(field -> "?")
 														.collect(Collectors.joining(", ", "VALUES (?, ", ")"));
 
-		String create = "CREATE TABLE IF NOT EXISTS " + name + "(" + ID_NAME + " " + ID_SQL_TYPE + " PRIMARY KEY, "
+		String create = "CREATE TABLE IF NOT EXISTS " + name + "(" + ID_NAME + " " + ID_TYPE + " PRIMARY KEY, "
 										+ StreamSupport.stream(fields.spliterator(), false)
 																	 .map(SqlobField::getCreateSnippet)
 																	 .collect(Collectors.joining(", "))

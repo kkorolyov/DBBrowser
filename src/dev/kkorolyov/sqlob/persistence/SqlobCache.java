@@ -1,7 +1,7 @@
 package dev.kkorolyov.sqlob.persistence;
 
-import static dev.kkorolyov.sqlob.persistence.Constants.ID_CLASS_TYPE;
-import static dev.kkorolyov.sqlob.persistence.Constants.ID_SQL_TYPE;
+import static dev.kkorolyov.sqlob.service.Constants.ID_CLASS;
+import static dev.kkorolyov.sqlob.service.Constants.ID_TYPE;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -48,7 +48,7 @@ final class SqlobCache {
 		typeMap.put(Time.class, "TIME(6)");
 		typeMap.put(Timestamp.class, "TIMESTAMP(6)");
 
-		typeMap.put(ID_CLASS_TYPE, ID_SQL_TYPE);
+		typeMap.put(ID_CLASS, ID_TYPE);
 	}
 	private void initExtractorMap() {
 		extractorMap.put(Byte.class, ResultSet::getByte);
@@ -73,7 +73,7 @@ final class SqlobCache {
 		extractorMap.put(Time.class, ResultSet::getTime);
 		extractorMap.put(Timestamp.class, ResultSet::getTimestamp);
 
-		extractorMap.put(ID_CLASS_TYPE, ResultSet::getString);
+		extractorMap.put(ID_CLASS, ResultSet::getString);
 	}
 
 	<T> SqlobClass<T> get(Class<T> type, Connection conn) throws SQLException {
@@ -101,7 +101,7 @@ final class SqlobCache {
 			SqlobClass<?> reference = null;
 
 			if (sqlType == null) {	// Not a primitive SQL type
-				sqlType = ID_SQL_TYPE;
+				sqlType = ID_TYPE;
 				reference = get(fieldType, conn);
 
 				log.info(() -> "Retrieved SqlobClass for referenced class " + fieldType);

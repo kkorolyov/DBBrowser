@@ -47,7 +47,6 @@ public class Session implements AutoCloseable {
 	 * @return id of stored instance, or {@code null} if no such instance stored
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
-	 * @throws IllegalArgumentException if {@code o} is null
 	 */
 	public UUID getId(Object o) throws SQLException {
 		assertNotNull(o);
@@ -71,7 +70,6 @@ public class Session implements AutoCloseable {
 	 * @return instance matching {@code id}, or {@code null} if no such instance
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
-	 * @throws IllegalArgumentException if {@code c} or {@code id} is null
 	 */
 	public <T> T get(Class<T> c, UUID id) throws SQLException {
 		assertNotNull(c, id);
@@ -94,7 +92,6 @@ public class Session implements AutoCloseable {
 	 * @return all matching instances
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
-	 * @throws IllegalArgumentException if {@code c} is null
 	 */
 	public <T> Set<T> get(Class<T> c, Condition condition) throws SQLException {
 		assertNotNull(c);
@@ -118,7 +115,6 @@ public class Session implements AutoCloseable {
 	 * @return UUID of stored instance
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
-	 * @throws IllegalArgumentException if {@code o} is null
 	 */
 	public UUID put(Object o) throws SQLException {
 		assertNotNull(o);
@@ -144,7 +140,6 @@ public class Session implements AutoCloseable {
 	 * @return {@code true} if a previous instance was overwritten by {@code o}
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
-	 * @throws IllegalArgumentException if {@code id} or {@code o} is null
 	 */
 	public boolean put(UUID id, Object o) throws SQLException {
 		assertNotNull(id, o);
@@ -170,7 +165,6 @@ public class Session implements AutoCloseable {
 	 * @return {@code true} if instance deleted
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
-	 * @throws IllegalArgumentException if {@code c} or {@code id} is null
 	 */
 	public boolean drop(Class<?> c, UUID id) throws SQLException {
 		assertNotNull(c, id);
@@ -195,7 +189,6 @@ public class Session implements AutoCloseable {
 	 * @return number of deleted instances
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
-	 * @throws IllegalArgumentException if {@code c} is null
 	 */
 	public int drop(Class<?> c, Condition condition) throws SQLException {
 		assertNotNull(c);
