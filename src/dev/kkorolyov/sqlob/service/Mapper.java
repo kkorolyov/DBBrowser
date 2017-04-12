@@ -122,7 +122,7 @@ public final class Mapper {
 		return typeMap.get(c);
 	}
 	/** @return extractor associated with {@code c} */
-	<T> Extractor<T> getExtractor(Class<T> c) {
+	Extractor getExtractor(Class<?> c) {
 		return extractorMap.get(c);
 	}
 

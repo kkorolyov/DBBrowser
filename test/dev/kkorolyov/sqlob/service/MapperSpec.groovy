@@ -15,9 +15,26 @@ class MapperSpec extends Specification {
     String sqlType = "Some SQL"
 
     when:
-    mapper.put(c, sqlType, {ResultSet.getString}())
+    mapper.put(c, sqlType, {ResultSet.getString})
 
     then:
     mapper.getSql(c) == Constants.sanitize(sqlType)
+  }
+
+  def "class with same-class field noticed"() {
+    Class<?> c = SelfRefStub.class
+    String sqlType = "SelfRef"
+
+    when:
+    mapper.put(c, sqlType, {ResultSet.getString})
+
+    then:
+    Iterable<Class<?>> results = mapper.getAssociatedClasses(c)
+    results.size() == 1
+    results.contains(c)
+  }
+
+  class SelfRefStub {
+    SelfRefStub selfRef;
   }
 }
