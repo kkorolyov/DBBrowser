@@ -71,59 +71,69 @@ public final class Mapper {
 		log.debug(() -> "Put mapping: " + c + "->" + sanitizedSqlType);
 	}
 
-	Iterable<Field> getPersistableFields(Class<?> c) {
-		return StreamSupport.stream(Arrays.spliterator(c.getFields()), true)
-												.filter(Mapper::isPersistable).collect(Collectors.toSet());
+	static Iterable<Class<?>> getPersistableClasses(Class<?> c) {
+		return StreamSupport.stream(getPersistableFields(c).spliterator(), true)
+												.map(Field::getType)
+												.collect(Collectors.toSet());
+	}
+	static Iterable<Field> getPersistableFields(Class<?> c) {
+		return StreamSupport.stream(Arrays.spliterator(c.getDeclaredFields()), true)
+												.filter(Mapper::isPersistable)
+												.collect(Collectors.toSet());
 	}
 	private static boolean isPersistable(Field f) {
 		int modifiers = f.getModifiers();
-		return !(Modifier.isStatic(modifiers) ||
-						 Modifier.isTransient(modifiers)) &&
-					 f.getAnnotation(Transient.class) == null;
+		return !(Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers)) &&
+					 f.getAnnotation(Transient.class) == null &&
+					 !f.isSynthetic();
 	}
 
 	/** @return {@code c} and all persisted non-primitive classes used both directly and indirectly by {@code c} */
 	Iterable<Class<?>> getAssociatedClasses(Class<?> c) {
-		Set<Class<?>> dependencies = new HashSet<>();
+		Set<Class<?>> associated = new HashSet<>();
 		Stack<Class<?>> nonPrimitives = new Stack<>();
 
-		dependencies.add(c);
-		nonPrimitives.push(c);
-
-		while (!nonPrimitives.isEmpty()) {	// BFS until primitive classes reached or all classes seen
-			for (Field f : getPersistableFields(nonPrimitives.pop())) {
-				if (!isPrimitive(f) && !dependencies.contains(f.getClass())) {
-					Class<?> nonPrimitive = f.getClass();
-
-					dependencies.add(nonPrimitive);
-					nonPrimitives.push(nonPrimitive);
+		if (!isPrimitive(c)) {
+			associated.add(c);
+			nonPrimitives.push(c);
+		}
+		while (!nonPrimitives.isEmpty()) {	// DFS until primitive classes reached or all classes seen
+			for (Class<?> c2 : getPersistableClasses(nonPrimitives.pop())) {
+				if (!isPrimitive(c2) && !associated.contains(c2)) {
+					System.out.println(c2);
+					associated.add(c2);
+					nonPrimitives.push(c2);
 				}
 			}
 		}
-		return dependencies;
+		return associated;
 	}
 
+	/** @return {@code true} if a primitive SQL type is associated with {@code c} */
+	boolean isPrimitive(Class<?> c) {
+		return getSql(c) != null;
+	}
 	/** @return {@code true} if a primitive SQL type is associated with {@code f}'s class */
 	boolean isPrimitive(Field f) {
-		return getSql(f) == null;
-	}
-
-	/** @return SQL type associated with {@code f}'s class */
-	String getSql(Field f) {
-		return getSql(f.getClass());
-	}
-	/** @return extractor associated with {@code f}'s class */
-	Extractor<?> getExtractor(Field f) {
-		return getExtractor(f.getClass());
+		return isPrimitive(f.getClass());
 	}
 
 	/** @return SQL type associated with {@code c} */
 	String getSql(Class<?> c) {
 		return typeMap.get(c);
 	}
+	/** @return SQL type associated with {@code f}'s class */
+	String getSql(Field f) {
+		return getSql(f.getClass());
+	}
+
 	/** @return extractor associated with {@code c} */
 	Extractor getExtractor(Class<?> c) {
 		return extractorMap.get(c);
+	}
+	/** @return extractor associated with {@code f}'s class */
+	Extractor<?> getExtractor(Field f) {
+		return getExtractor(f.getClass());
 	}
 
 	@Override
