@@ -100,7 +100,6 @@ public final class Mapper {
 		while (!nonPrimitives.isEmpty()) {	// DFS until primitive classes reached or all classes seen
 			for (Class<?> c2 : getPersistableClasses(nonPrimitives.pop())) {
 				if (!isPrimitive(c2) && !associated.contains(c2)) {
-					System.out.println(c2);
 					associated.add(c2);
 					nonPrimitives.push(c2);
 				}
