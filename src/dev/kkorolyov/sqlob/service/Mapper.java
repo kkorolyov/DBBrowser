@@ -90,22 +90,19 @@ public final class Mapper {
 
 	/** @return {@code c} and all persisted non-primitive classes used both directly and indirectly by {@code c} */
 	Iterable<Class<?>> getAssociatedClasses(Class<?> c) {
-		Set<Class<?>> associated = new HashSet<>();
-		Stack<Class<?>> nonPrimitives = new Stack<>();
+		Deque<Class<?>> associateds = new ArrayDeque<>();	// Results ordered by dependency
+		Deque<Class<?>> untouched = new ArrayDeque<>();	// DFS stack
 
-		if (!isPrimitive(c)) {
-			associated.add(c);
-			nonPrimitives.push(c);
-		}
-		while (!nonPrimitives.isEmpty()) {	// DFS until primitive classes reached or all classes seen
-			for (Class<?> c2 : getPersistableClasses(nonPrimitives.pop())) {
-				if (!isPrimitive(c2) && !associated.contains(c2)) {
-					associated.add(c2);
-					nonPrimitives.push(c2);
-				}
+		if (!isPrimitive(c)) untouched.push(c);
+
+		while (!untouched.isEmpty()) {	// DFS until primitive classes reached or all classes seen
+			associateds.push(untouched.pop());
+
+			for (Class<?> associated : getPersistableClasses(associateds.peek())) {
+				if (!isPrimitive(associated) && !associateds.contains(associated)) untouched.push(associated);
 			}
 		}
-		return associated;
+		return associateds;
 	}
 
 	/** @return {@code true} if a primitive SQL type is associated with {@code c} */

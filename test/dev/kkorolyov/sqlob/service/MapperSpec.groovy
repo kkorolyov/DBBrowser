@@ -7,11 +7,8 @@ import spock.lang.Specification
 import java.lang.reflect.Field
 import java.sql.ResultSet
 
-/**
- *
- */
 class MapperSpec extends Specification {
-  def mapper = new Mapper()
+  Mapper mapper = new Mapper()
 
   def "put() uses sanitized sql type"() {
     Class<?> c = Empty
