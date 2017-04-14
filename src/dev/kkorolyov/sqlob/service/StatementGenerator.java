@@ -38,22 +38,14 @@ public final class StatementGenerator {
 	 * @param c class to generate statement for
 	 * @return SQL statement creating a table matching a class
 	 */
-	public Iterable<String> generateCreate(Class<?> c) {	// TODO Return array of create statements with dependent / foreign key table creates first
+	public Iterable<String> generateCreate(Class<?> c) {
 		List<String> statements = new ArrayList<>();
 
-		Iterable<Field> persistableFields = mapper.getPersistableFields(c);
-		Iterable<Class<?>> dependencies = StreamSupport.stream(persistableFields.spliterator(), true)
-				.filter(field -> mapper.getSql(field) == null)	// Keep only non-primitives
-				.map(field -> field.getClass());
-
-		statements.add("CREATE TABLE IF NOT EXISTS " + getName(c) + " (" + ID_NAME + " " + ID_TYPE + " PRIMARY KEY, "
-									 + generateFieldDeclarations(c) + ")");
-
+		for (Class<?> associated : mapper.getAssociatedClasses(c)) {
+			statements.add("CREATE TABLE IF NOT EXISTS " + getName(associated) + " (" + ID_NAME + " " + ID_TYPE + " PRIMARY KEY, "
+										 + generateFieldDeclarations(associated) + ")");
+		}
 		return statements;
-	}
-
-	private Iterable<Class<?>> getDependentClasses(Class<?> c) {
-
 	}
 
 	private String generateFieldDeclarations(Class<?> c) {
@@ -69,16 +61,16 @@ public final class StatementGenerator {
 	}
 
 	public String generateInsert(Class<?> c) {
-
+		return null;	// TODO
 	}
 
-	private static final String getName(Class<?> c) {
+	private static String getName(Class<?> c) {
 		Table override = c.getAnnotation(Table.class);
 		if (override != null && override.value().length() <= 0) throw new NonPersistableException(c + " has a Table annotation with an empty name");
 
 		return (override == null) ? c.getSimpleName() : override.value();
 	}
-	private static final String getName(Field f) {
+	private static String getName(Field f) {
 		Column override = f.getAnnotation(Column.class);
 		if (override != null && override.value().length() <= 0) throw new NonPersistableException(f + " has a Column annotation with an empty name");
 

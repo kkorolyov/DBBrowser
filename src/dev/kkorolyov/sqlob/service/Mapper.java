@@ -21,7 +21,7 @@ import dev.kkorolyov.sqlob.persistence.Extractor;
 /**
  * Provides for data mapping between Java and SQL.
  */
-public final class Mapper {
+public class Mapper {
 	private static final Logger log = Logger.getLogger(Mapper.class.getName());
 
 	private final Map<Class<?>, String> typeMap = new HashMap<>();
