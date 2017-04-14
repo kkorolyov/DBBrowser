@@ -3,6 +3,7 @@ package dev.kkorolyov.sqlob.service
 import dev.kkorolyov.sqlob.annotation.Column
 import dev.kkorolyov.sqlob.annotation.Table
 import dev.kkorolyov.sqlob.persistence.NonPersistableException
+import groovy.transform.PackageScope
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -16,6 +17,11 @@ class StatementGeneratorSpec extends Specification {
 
   Mapper mapper = Mock()
   StatementGenerator generator = new StatementGenerator(mapper)
+
+  def "generateCreate() returns statement for each associated class"() {
+    expect:
+    generator.generateCreate()
+  }
 
   def "getName(Class) returns simple name of non-Table-tagged class"() {
     expect:
@@ -92,5 +98,14 @@ class StatementGeneratorSpec extends Specification {
   }
   @Table("") class EmptyTagged {
     @Column("") String s
+  }
+
+  class HasPrimitive {
+    private String s
+  }
+  class HasNonPrimitive {
+    HasPrimitive e1
+    @PackageScope HasPrimitive e2
+    private HasPrimitive e3
   }
 }

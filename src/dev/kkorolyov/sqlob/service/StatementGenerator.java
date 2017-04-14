@@ -57,7 +57,7 @@ public final class StatementGenerator {
 		String name = getName(f);
 		String primitive = mapper.getSql(f);
 
-		return name + " " + ((primitive != null) ? primitive : ID_TYPE + ", FOREIGN KEY (" + name + ") REFERENCES " + getName(f.getClass()) + " (" + ID_NAME + ")");
+		return name + " " + (primitive != null ? primitive : ID_TYPE + ", FOREIGN KEY (" + name + ") REFERENCES " + getName(f.getClass()) + " (" + ID_NAME + ")");
 	}
 
 	public String generateInsert(Class<?> c) {
