@@ -74,12 +74,12 @@ public class Mapper {
 	static Iterable<Class<?>> getPersistableClasses(Class<?> c) {
 		return StreamSupport.stream(getPersistableFields(c).spliterator(), true)
 												.map(Field::getType)
-												.collect(Collectors.toSet());
+												.collect(Collectors.toList());
 	}
 	static Iterable<Field> getPersistableFields(Class<?> c) {
 		return StreamSupport.stream(Arrays.spliterator(c.getDeclaredFields()), true)
 												.filter(Mapper::isPersistable)
-												.collect(Collectors.toSet());
+												.collect(Collectors.toList());
 	}
 	private static boolean isPersistable(Field f) {
 		int modifiers = f.getModifiers();
@@ -99,7 +99,7 @@ public class Mapper {
 			associateds.push(untouched.pop());
 
 			for (Class<?> associated : getPersistableClasses(associateds.peek())) {
-				if (!isPrimitive(associated) && !associateds.contains(associated)) untouched.push(associated);
+				if (!isPrimitive(associated) && !associateds.contains(associated) && !untouched.contains(associated)) untouched.push(associated);
 			}
 		}
 		return associateds;
@@ -109,27 +109,36 @@ public class Mapper {
 	boolean isPrimitive(Class<?> c) {
 		return getSql(c) != null;
 	}
-	/** @return {@code true} if a primitive SQL type is associated with {@code f}'s class */
+	/** @return {@code true} if a primitive SQL type is associated with {@code f}'s type */
 	boolean isPrimitive(Field f) {
-		return isPrimitive(f.getClass());
+		return isPrimitive(f.getType());
+	}
+
+	/** @return {@code true} if no primitive SQL type is associated with {@code c} */
+	boolean isComplex(Class<?> c) {
+		return getSql(c) == null;
+	}
+	/** @return {@code true} if no primitive SQL type is associated with {@code f}'s type */
+	boolean isComplex(Field f) {
+		return isComplex(f.getType());
 	}
 
 	/** @return SQL type associated with {@code c} */
 	String getSql(Class<?> c) {
 		return typeMap.get(c);
 	}
-	/** @return SQL type associated with {@code f}'s class */
+	/** @return SQL type associated with {@code f}'s type */
 	String getSql(Field f) {
-		return getSql(f.getClass());
+		return getSql(f.getType());
 	}
 
 	/** @return extractor associated with {@code c} */
 	Extractor getExtractor(Class<?> c) {
 		return extractorMap.get(c);
 	}
-	/** @return extractor associated with {@code f}'s class */
+	/** @return extractor associated with {@code f}'s type */
 	Extractor<?> getExtractor(Field f) {
-		return getExtractor(f.getClass());
+		return getExtractor(f.getType());
 	}
 
 	@Override

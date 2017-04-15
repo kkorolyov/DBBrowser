@@ -6,17 +6,21 @@ import static dev.kkorolyov.sqlob.service.Constants.ID_TYPE;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import dev.kkorolyov.sqlob.annotation.Column;
 import dev.kkorolyov.sqlob.annotation.Table;
+import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.persistence.NonPersistableException;
 
 /**
  * Generates SQL statements.
  */
 public final class StatementGenerator {
+	private static final Logger log = Logger.getLogger(StatementGenerator.class.getName());
+
 	private final Mapper mapper;
 
 	/**
@@ -34,7 +38,7 @@ public final class StatementGenerator {
 	}
 
 	/**
-	 * Generates a CREATE TABLE statement for a class.
+	 * Generates all CREATE TABLE statements required to represent a class as a relational table.
 	 * @param c class to generate statement for
 	 * @return SQL statement creating a table matching a class
 	 */
@@ -42,16 +46,21 @@ public final class StatementGenerator {
 		List<String> statements = new ArrayList<>();
 
 		for (Class<?> associated : mapper.getAssociatedClasses(c)) {
-			statements.add("CREATE TABLE IF NOT EXISTS " + getName(associated) + " (" + ID_NAME + " " + ID_TYPE + " PRIMARY KEY, "
-										 + generateFieldDeclarations(associated) + ")");
+			String statement = "CREATE TABLE IF NOT EXISTS " + getName(associated) + " " + generateFieldDeclarations(associated);
+			statements.add(statement);
+			log.debug(() -> "Added to CREATE statements for " + c + ": " + statement);
 		}
 		return statements;
 	}
-
 	private String generateFieldDeclarations(Class<?> c) {
-		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
-												.map(this::generateFieldDeclaration)
-												.collect(Collectors.joining(", "));
+		StringJoiner declarations = new StringJoiner(", ", "(", ")");
+
+		declarations.add(ID_NAME + " " + ID_TYPE + " PRIMARY KEY");
+		declarations.add(StreamSupport.stream(Mapper.getPersistableFields(c).spliterator(), true)
+																	.map(this::generateFieldDeclaration)
+																	.collect(Collectors.joining(", ")));
+
+		return declarations.toString();
 	}
 	private String generateFieldDeclaration(Field f) {
 		String name = getName(f);
@@ -60,8 +69,34 @@ public final class StatementGenerator {
 		return name + " " + (primitive != null ? primitive : ID_TYPE + ", FOREIGN KEY (" + name + ") REFERENCES " + getName(f.getClass()) + " (" + ID_NAME + ")");
 	}
 
-	public String generateInsert(Class<?> c) {
-		return null;	// TODO
+	/**
+	 * Generates all INSERT INTO statements required to insert data into a relational table mapped to a class.
+	 * @param c class to generate statement for
+	 * @return SQL statement inserting into a table mapped to a class
+	 */
+	public Iterable<String> generateInsert(Class<?> c) {
+		List<String> statements = new ArrayList<>();
+
+		StreamSupport.stream(Mapper.getPersistableFields(c).spliterator(), true)
+								 .filter(mapper::isComplex)	// TODO Mapper.getPersistableFields(complexOnly)
+								 .forEach(field -> {
+								 		for (String statement : generateInsert(field.getType())) statements.add(statement);
+								 });
+		String statement = "INSERT INTO TABLE " + getName(c) + " " + generateColumns(c) + " VALUES " + generatePlaceholders(c);
+		statements.add(statement);
+		log.debug(() -> "Added to INSERT statements for " + c + ": " + statement);
+
+		return statements;
+	}
+	private static String generateColumns(Class<?> c) {
+		return StreamSupport.stream(Mapper.getPersistableFields(c).spliterator(), true)
+												.map(StatementGenerator::getName)
+												.collect(Collectors.joining(", ", "(", ")"));
+	}
+	private static String generatePlaceholders(Class<?> c) {
+		return StreamSupport.stream(Mapper.getPersistableFields(c).spliterator(), true)
+												.map(field -> "?")
+												.collect(Collectors.joining(", ", "(", ")"));
 	}
 
 	private static String getName(Class<?> c) {

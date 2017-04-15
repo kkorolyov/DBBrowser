@@ -1,5 +1,6 @@
 package dev.kkorolyov.sqlob.service
 
+import dev.kkorolyov.simplelogs.Logger
 import dev.kkorolyov.sqlob.annotation.Column
 import dev.kkorolyov.sqlob.annotation.Table
 import dev.kkorolyov.sqlob.persistence.NonPersistableException
@@ -12,15 +13,40 @@ import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
 class StatementGeneratorSpec extends Specification {
+  static {
+    Logger.getLogger("dev.kkorolyov.sqlob", Logger.Level.DEBUG, new PrintWriter(System.err));	// Enable logging
+  }
+
   @Shared Method getNameClass = getGetNameClassMethod()
   @Shared Method getNameField = getGetNameFieldMethod()
 
   Mapper mapper = Mock()
-  StatementGenerator generator = new StatementGenerator(mapper)
+  StatementGenerator generator = new StatementGenerator()
 
-  def "generateCreate() returns statement for each associated class"() {
+  def "generateCreate() returns statement for class and per associated class"() {
     expect:
-    generator.generateCreate()
+    generator.generateCreate(c).size() == size
+
+    where:
+    c << [HasPrimitive, HasComplexes]
+    size << [1, 2]
+  }
+
+  def "generateInsert() returns statement for class and per complex field"() {
+    expect:
+    generator.generateInsert(c).size() == size
+
+    where:
+    c << [HasPrimitive, HasComplexes]
+    size << [1, 4]
+  }
+  def "generateInsert() returns statement for class last"() {
+    expect:
+    generator.generateInsert(c).last() == statement
+
+    where:
+    c << [HasComplexes]
+    statement << ["INSERT INTO TABLE HasComplexes (e1, e2, e3) VALUES (?, ?, ?)"]
   }
 
   def "getName(Class) returns simple name of non-Table-tagged class"() {
@@ -103,7 +129,7 @@ class StatementGeneratorSpec extends Specification {
   class HasPrimitive {
     private String s
   }
-  class HasNonPrimitive {
+  class HasComplexes {
     HasPrimitive e1
     @PackageScope HasPrimitive e2
     private HasPrimitive e3
