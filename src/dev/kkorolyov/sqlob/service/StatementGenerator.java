@@ -56,7 +56,7 @@ public final class StatementGenerator {
 		StringJoiner declarations = new StringJoiner(", ", "(", ")");
 
 		declarations.add(ID_NAME + " " + ID_TYPE + " PRIMARY KEY");
-		declarations.add(StreamSupport.stream(Mapper.getPersistableFields(c).spliterator(), true)
+		declarations.add(StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
 																	.map(this::generateFieldDeclaration)
 																	.collect(Collectors.joining(", ")));
 
@@ -77,8 +77,8 @@ public final class StatementGenerator {
 	public Iterable<String> generateInsert(Class<?> c) {
 		List<String> statements = new ArrayList<>();
 
-		StreamSupport.stream(Mapper.getPersistableFields(c).spliterator(), true)
-								 .filter(mapper::isComplex)	// TODO Mapper.getPersistableFields(complexOnly)
+		StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
+								 .filter(mapper::isComplex)
 								 .forEach(field -> {
 								 		for (String statement : generateInsert(field.getType())) statements.add(statement);
 								 });
@@ -88,13 +88,13 @@ public final class StatementGenerator {
 
 		return statements;
 	}
-	private static String generateColumns(Class<?> c) {
-		return StreamSupport.stream(Mapper.getPersistableFields(c).spliterator(), true)
+	private String generateColumns(Class<?> c) {
+		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
 												.map(StatementGenerator::getName)
 												.collect(Collectors.joining(", ", "(", ")"));
 	}
-	private static String generatePlaceholders(Class<?> c) {
-		return StreamSupport.stream(Mapper.getPersistableFields(c).spliterator(), true)
+	private String generatePlaceholders(Class<?> c) {
+		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
 												.map(field -> "?")
 												.collect(Collectors.joining(", ", "(", ")"));
 	}

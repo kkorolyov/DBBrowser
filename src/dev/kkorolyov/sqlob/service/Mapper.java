@@ -19,13 +19,15 @@ import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.persistence.Extractor;
 
 /**
- * Provides for data mapping between Java and SQL.
+ * Manages data mapping between Java and SQL.
  */
 public class Mapper {
 	private static final Logger log = Logger.getLogger(Mapper.class.getName());
 
 	private final Map<Class<?>, String> typeMap = new HashMap<>();
 	private final Map<Class<?>, Extractor> extractorMap = new HashMap<>();
+
+	private final Map<Class<?>, Iterable<Field>> persistableFields = new HashMap<>();	// Cache
 
 	/**
 	 * Constructs a new mapper with default mappings.
@@ -71,15 +73,11 @@ public class Mapper {
 		log.debug(() -> "Put mapping: " + c + "->" + sanitizedSqlType);
 	}
 
-	static Iterable<Class<?>> getPersistableClasses(Class<?> c) {
-		return StreamSupport.stream(getPersistableFields(c).spliterator(), true)
-												.map(Field::getType)
-												.collect(Collectors.toList());
-	}
-	static Iterable<Field> getPersistableFields(Class<?> c) {
-		return StreamSupport.stream(Arrays.spliterator(c.getDeclaredFields()), true)
-												.filter(Mapper::isPersistable)
-												.collect(Collectors.toList());
+	/** @return all persistable fields of a class */
+	Iterable<Field> getPersistableFields(Class<?> c) {
+		return persistableFields.computeIfAbsent(c, k -> StreamSupport.stream(Arrays.spliterator(k.getDeclaredFields()), true)
+																																	.filter(Mapper::isPersistable)
+																																	.collect(Collectors.toCollection(LinkedHashSet::new)));
 	}
 	private static boolean isPersistable(Field f) {
 		int modifiers = f.getModifiers();
@@ -99,10 +97,15 @@ public class Mapper {
 			associateds.push(untouched.pop());
 
 			for (Class<?> associated : getPersistableClasses(associateds.peek())) {
-				if (!isPrimitive(associated) && !associateds.contains(associated) && !untouched.contains(associated)) untouched.push(associated);
+				if (isComplex(associated) && !associateds.contains(associated)) untouched.push(associated);
 			}
 		}
 		return associateds;
+	}
+	Iterable<Class<?>> getPersistableClasses(Class<?> c) {
+		return StreamSupport.stream(getPersistableFields(c).spliterator(), true)
+												.map(Field::getType)
+												.collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 	/** @return {@code true} if a primitive SQL type is associated with {@code c} */
