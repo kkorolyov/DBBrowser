@@ -8,6 +8,8 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.*;
 
+import dev.kkorolyov.sqlob.utility.Condition;
+
 class ConditionTest {
 	private static final String DEFAULT_ATTRIBUTE = "Something";
 	private static final String DEFAULT_OPERATOR = "=";

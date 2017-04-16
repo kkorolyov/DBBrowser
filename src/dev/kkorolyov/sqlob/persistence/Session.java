@@ -8,6 +8,7 @@ import java.util.UUID;
 import javax.sql.DataSource;
 
 import dev.kkorolyov.sqlob.logging.Logger;
+import dev.kkorolyov.sqlob.utility.Condition;
 
 /**
  * Persists objects using an external SQL database.

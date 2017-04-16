@@ -14,6 +14,7 @@ import dev.kkorolyov.sqlob.annotation.Column;
 import dev.kkorolyov.sqlob.annotation.Table;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.persistence.NonPersistableException;
+import dev.kkorolyov.sqlob.utility.Condition;
 
 /**
  * Generates SQL statements.
@@ -70,7 +71,7 @@ public final class StatementGenerator {
 	}
 
 	/**
-	 * Generates all INSERT INTO statements required to insert data into a relational table mapped to a class.
+	 * Generates all INSERT INTO statements required to insert data into a relational table corresponding to a class.
 	 * @param c class to generate statement for
 	 * @return SQL statement inserting into a table mapped to a class
 	 */
@@ -97,6 +98,40 @@ public final class StatementGenerator {
 		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
 												.map(field -> "?")
 												.collect(Collectors.joining(", ", "(", ")"));
+	}
+
+	/**
+	 * Generates a SELECT statement for selecting all persisted instances of a class from the corresponding relational table.
+	 * @param c class to generate statement for
+	 * @return SQL statement selecting all persisted instances of {@code c}
+	 */
+	public String generateSelect(Class<?> c) {
+		return generateSelect(c, null);
+	}
+	/**
+	 * Generates a SELECT statement for selecting instances of a class matching a condition.
+	 * @param c class to generate statement for
+	 * @param where condition to match
+	 * @return SQL statement selecting instances of {@code c} matching {@code where}
+	 */
+	public String generateSelect(Class<?> c, Condition where) {
+		return generateSelect(c, where, false);
+	}
+
+	/**
+	 * Generates a SELECT statement for selecting the ID of a class instance matching a condition.
+	 * @param c class to generate statement for
+	 * @param where condition to match
+	 * @return SQL statement selecting ID
+	 */
+	public String generateSelectId(Class<?> c, Condition where) {
+		return generateSelect(c, where, true);
+	}
+
+	private String generateSelect(Class<?> c, Condition where, boolean idOnly) {
+		return "SELECT " + (idOnly ? ID_NAME : "*")
+					 + " FROM " + getName(c)
+					 + (where == null ? "" : " WHERE " + where.toString());
 	}
 
 	private static String getName(Class<?> c) {

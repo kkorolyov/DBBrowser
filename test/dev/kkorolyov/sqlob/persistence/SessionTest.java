@@ -20,6 +20,7 @@ import org.junit.jupiter.api.TestFactory;
 
 import dev.kkorolyov.sqlob.JDBCMocks;
 import dev.kkorolyov.sqlob.Stub.BasicStub;
+import dev.kkorolyov.sqlob.utility.Condition;
 
 class SessionTest {
 	private static final int NUM_PARAMETERIZED_TESTS = 10;

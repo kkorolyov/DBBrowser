@@ -14,6 +14,7 @@ import java.util.stream.StreamSupport;
 
 import dev.kkorolyov.sqlob.annotation.Table;
 import dev.kkorolyov.sqlob.logging.Logger;
+import dev.kkorolyov.sqlob.utility.Condition;
 
 /**
  * Manages persistence at the class/table level.

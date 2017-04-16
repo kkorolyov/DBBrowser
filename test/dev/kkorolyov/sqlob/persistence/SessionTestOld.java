@@ -25,6 +25,7 @@ import dev.kkorolyov.sqlob.Stub.AnnotatedStub;
 import dev.kkorolyov.sqlob.Stub.BasicStub;
 import dev.kkorolyov.sqlob.Stub.SmartStub;
 import dev.kkorolyov.sqlob.TestAssets;
+import dev.kkorolyov.sqlob.utility.Condition;
 
 @SuppressWarnings("javadoc")
 @RunWith(Parameterized.class)

@@ -4,6 +4,7 @@ import dev.kkorolyov.simplelogs.Logger
 import dev.kkorolyov.sqlob.annotation.Column
 import dev.kkorolyov.sqlob.annotation.Table
 import dev.kkorolyov.sqlob.persistence.NonPersistableException
+import dev.kkorolyov.sqlob.utility.Condition
 import groovy.transform.PackageScope
 import spock.lang.Shared
 import spock.lang.Specification
@@ -11,6 +12,8 @@ import spock.lang.Specification
 import java.lang.reflect.Field
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
+
+import static dev.kkorolyov.sqlob.service.Constants.*
 
 class StatementGeneratorSpec extends Specification {
   static {
@@ -47,6 +50,37 @@ class StatementGeneratorSpec extends Specification {
     where:
     c << [HasComplexes]
     statement << ["INSERT INTO TABLE HasComplexes (e1, e2, e3) VALUES (?, ?, ?)"]
+  }
+
+  def "generateSelect() uses getName()"() {
+    expect:
+    generator.generateSelect(c) == statement
+
+    where:
+    c << [NonTagged, Tagged]
+    statement << ["SELECT * FROM NonTagged",
+                  "SELECT * FROM CustomTable"]
+  }
+  def "generateSelect() appends WHERE if condition not null"() {
+    expect:
+    generator.generateSelect(c, where) == statement
+
+    where:
+    c << [HasPrimitive, HasPrimitive, HasPrimitive]
+    where << [new Condition("s", "==", "test"), new Condition("s", "LIKE", "nothing"), null]
+    statement << ["SELECT * FROM HasPrimitive WHERE s == ?",
+                  "SELECT * FROM HasPrimitive WHERE s LIKE ?",
+                  "SELECT * FROM HasPrimitive"]
+  }
+  def "generateSelectId() selects only id field"() {
+    expect:
+    generator.generateSelectId(c, where) == statement
+
+    where:
+    c << [HasPrimitive, HasPrimitive]
+    where << [new Condition("s", "==", "s"), null]
+    statement << ["SELECT " + ID_NAME + " FROM HasPrimitive WHERE s == ?",
+                  "SELECT " + ID_NAME + " FROM HasPrimitive"]
   }
 
   def "getName(Class) returns simple name of non-Table-tagged class"() {

@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.persistence;
+package dev.kkorolyov.sqlob.utility;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -46,7 +46,7 @@ public class Condition {
 	 */
 	public Condition or(Condition condition) {
 		if (sql.length() > 0) sql.append(" OR ");
-		sql.append(" (").append(condition).append(")");
+		sql.append("(").append(condition).append(")");
 
 		appendValues(condition);
 
