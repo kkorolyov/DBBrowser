@@ -71,36 +71,6 @@ public final class StatementGenerator {
 	}
 
 	/**
-	 * Generates all INSERT INTO statements required to insert data into a relational table corresponding to a class.
-	 * @param c class to generate statement for
-	 * @return SQL statement inserting into a table mapped to a class
-	 */
-	public Iterable<String> generateInsert(Class<?> c) {
-		List<String> statements = new ArrayList<>();
-
-		StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
-								 .filter(mapper::isComplex)
-								 .forEach(field -> {
-								 		for (String statement : generateInsert(field.getType())) statements.add(statement);
-								 });
-		String statement = "INSERT INTO TABLE " + getName(c) + " " + generateColumns(c) + " VALUES " + generatePlaceholders(c);
-		statements.add(statement);
-		log.debug(() -> "Added to INSERT statements for " + c + ": " + statement);
-
-		return statements;
-	}
-	private String generateColumns(Class<?> c) {
-		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
-												.map(StatementGenerator::getName)
-												.collect(Collectors.joining(", ", "(", ")"));
-	}
-	private String generatePlaceholders(Class<?> c) {
-		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
-												.map(field -> "?")
-												.collect(Collectors.joining(", ", "(", ")"));
-	}
-
-	/**
 	 * Generates a SELECT statement for selecting all persisted instances of a class from the corresponding relational table.
 	 * @param c class to generate statement for
 	 * @return SQL statement selecting all persisted instances of {@code c}
@@ -131,6 +101,66 @@ public final class StatementGenerator {
 	private String generateSelect(Class<?> c, Condition where, boolean idOnly) {
 		return "SELECT " + (idOnly ? ID_NAME : "*")
 					 + " FROM " + getName(c)
+					 + (where == null ? "" : " WHERE " + where.toString());
+	}
+
+	/**
+	 * Generates all INSERT INTO statements required to insert data into a relational table corresponding to a class.
+	 * @param c class to generate statement for
+	 * @return SQL statement inserting into a table mapped to a class
+	 */
+	public Iterable<String> generateInsert(Class<?> c) {
+		List<String> statements = new ArrayList<>();
+
+		StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
+								 .filter(mapper::isComplex)
+								 .forEach(field -> {
+									 for (String statement : generateInsert(field.getType())) statements.add(statement);
+								 });
+		String statement = "INSERT INTO TABLE " + getName(c)
+											 + " " + generateColumns(c)
+											 + " VALUES " + generatePlaceholders(c);
+		statements.add(statement);
+		log.debug(() -> "Added to INSERT statements for " + c + ": " + statement);
+
+		return statements;
+	}
+	private String generateColumns(Class<?> c) {
+		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
+												.map(StatementGenerator::getName)
+												.collect(Collectors.joining(", ", "(" + ID_NAME + ", ", ")"));	// Sneak in ID column
+	}
+	private String generatePlaceholders(Class<?> c) {
+		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
+												.map(field -> "?")
+												.collect(Collectors.joining(", ", "(?, ", ")"));	// Sneak in ID column placeholder
+	}
+
+	/**
+	 * Generates an UPDATE statement for updating a class instance.
+	 * @param c class to generate statement for
+	 * @param where update criteria, may not be {@code null}
+	 * @return SQL statement updating an instance of {@code c}
+	 */
+	public String generateUpdate(Class<?> c, Condition where) {
+		return "UPDATE " + getName(c)
+					 + " SET " + generateSet(c)
+					 + " WHERE " + where.toString();
+	}
+	private String generateSet(Class<?> c) {
+		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
+												.map(field -> getName(field) + " = ?")
+												.collect(Collectors.joining(", "));
+	}
+
+	/**
+	 * Generates a DELETE statement for deleting a class instance.
+	 * @param c class to generate statement for
+	 * @param where deletion criteria
+	 * @return SQL statement deleting an instance of {@code c}
+	 */
+	public String generateDelete(Class<?> c, Condition where) {
+		return "DELETE FROM " + getName(c)
 					 + (where == null ? "" : " WHERE " + where.toString());
 	}
 

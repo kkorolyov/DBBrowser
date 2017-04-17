@@ -49,7 +49,17 @@ class StatementGeneratorSpec extends Specification {
 
     where:
     c << [HasComplexes]
-    statement << ["INSERT INTO TABLE HasComplexes (e1, e2, e3) VALUES (?, ?, ?)"]
+    statement << ["INSERT INTO TABLE HasComplexes (" + ID_NAME + ", e1, e2, e3) VALUES (?, ?, ?, ?)"]
+  }
+
+  def "generateUpdate() uses getName()"() {
+    expect:
+    generator.generateUpdate(c, new Condition()) == statement
+
+    where:
+    c << [NonTagged, Tagged]
+    statement << ["UPDATE NonTagged SET s = ? WHERE ",
+                  "UPDATE CustomTable SET CustomColumn = ? WHERE "]
   }
 
   def "generateSelect() uses getName()"() {
@@ -66,10 +76,9 @@ class StatementGeneratorSpec extends Specification {
     generator.generateSelect(c, where) == statement
 
     where:
-    c << [HasPrimitive, HasPrimitive, HasPrimitive]
-    where << [new Condition("s", "==", "test"), new Condition("s", "LIKE", "nothing"), null]
+    c << [HasPrimitive, HasPrimitive]
+    where << [new Condition("s", "==", "test"), null]
     statement << ["SELECT * FROM HasPrimitive WHERE s == ?",
-                  "SELECT * FROM HasPrimitive WHERE s LIKE ?",
                   "SELECT * FROM HasPrimitive"]
   }
   def "generateSelectId() selects only id field"() {
@@ -81,6 +90,25 @@ class StatementGeneratorSpec extends Specification {
     where << [new Condition("s", "==", "s"), null]
     statement << ["SELECT " + ID_NAME + " FROM HasPrimitive WHERE s == ?",
                   "SELECT " + ID_NAME + " FROM HasPrimitive"]
+  }
+
+  def "generateDelete() uses getName()"() {
+    expect:
+    generator.generateDelete(c, null) == statement
+
+    where:
+    c << [NonTagged, Tagged]
+    statement << ["DELETE FROM NonTagged",
+                  "DELETE FROM CustomTable"]
+  }
+  def "generateDelete() appends WHERE if condition not null"() {
+    expect:
+    generator.generateDelete(c, where) == statement
+
+    where:
+    c << [HasPrimitive]
+    where << [new Condition("s", "==", "test")]
+    statement << ["DELETE FROM HasPrimitive WHERE s == ?"]
   }
 
   def "getName(Class) returns simple name of non-Table-tagged class"() {
