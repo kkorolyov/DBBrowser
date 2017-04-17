@@ -25,7 +25,7 @@ public final class StatementGenerator {
 	private final Mapper mapper;
 
 	/**
-	 * Constructs a new statement generator using the default mapper.
+	 * Constructs a new statement generator using the default @{code Mapper}.
 	 */
 	public StatementGenerator() {
 		this(new Mapper());
