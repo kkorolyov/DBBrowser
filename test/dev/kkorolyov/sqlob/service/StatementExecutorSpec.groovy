@@ -5,7 +5,11 @@ import spock.lang.Specification
 
 import java.sql.Connection
 
-class StatementEvaluatorSpec extends Specification {
+class StatementExecutorSpec extends Specification {
   @Shared Connection conn = Mock()
   @Shared Mapper mapper = Mock()
+
+	def "create() executes all statements in order"() {
+
+	}
 }
