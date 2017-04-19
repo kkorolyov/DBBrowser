@@ -12,7 +12,6 @@ import javax.sql.DataSource;
 import org.postgresql.ds.PGSimpleDataSource;
 
 import dev.kkorolyov.sqlob.Stub.SmartStub;
-import dev.kkorolyov.sqlob.persistence.Session;
 
 public class ProfilerTest {
 	public static void main(String[] args) {

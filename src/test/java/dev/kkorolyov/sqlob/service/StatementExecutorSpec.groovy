@@ -4,12 +4,32 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import java.sql.Connection
+import java.sql.Statement
 
 class StatementExecutorSpec extends Specification {
-  @Shared Connection conn = Mock()
   @Shared Mapper mapper = Mock()
+	Statement statement = Mock()
+	Connection conn = Mock()
 
-	def "create() executes all statements in order"() {
+	StatementExecutor executor = new StatementExecutor(conn, mapper)
 
+	def "create() batch executes all statements in order"() {
+		1 * conn.createStatement() >> statement
+
+		Iterable<String> creates = ["0", "1", "2", "3"]
+
+		when:
+		executor.create(creates)
+
+		then:
+		1 * statement.addBatch(creates[0])
+		then:
+		1 * statement.addBatch(creates[1])
+		then:
+		1 * statement.addBatch(creates[2])
+		then:
+		1 * statement.addBatch(creates[3])
+		then:
+		1 * statement.executeBatch()
 	}
 }

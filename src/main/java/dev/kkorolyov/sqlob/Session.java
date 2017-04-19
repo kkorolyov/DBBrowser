@@ -1,13 +1,19 @@
-package dev.kkorolyov.sqlob.persistence;
+package dev.kkorolyov.sqlob;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
 import javax.sql.DataSource;
 
 import dev.kkorolyov.sqlob.logging.Logger;
+import dev.kkorolyov.sqlob.persistence.Extractor;
+import dev.kkorolyov.sqlob.persistence.NonPersistableException;
+import dev.kkorolyov.sqlob.persistence.SqlobCache;
+import dev.kkorolyov.sqlob.service.Mapper;
+import dev.kkorolyov.sqlob.service.StatementExecutor;
 import dev.kkorolyov.sqlob.utility.Condition;
 
 /**
@@ -18,9 +24,13 @@ public class Session implements AutoCloseable {
 	private static final Logger log = Logger.getLogger(Session.class.getName());
 	
 	private final DataSource ds;
+	private final Mapper mapper;
+	private final StatementExecutor executor;
 	private final int bufferSize;
 	private int bufferCounter = 0;
 	private Connection conn;
+	private final Set<Class<?>> initialized = new HashSet<>();
+
 	private final SqlobCache cache = new SqlobCache();
 
 	/**

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 import dev.kkorolyov.sqlob.JDBCMocks;
+import dev.kkorolyov.sqlob.Session;
 import dev.kkorolyov.sqlob.Stub.BasicStub;
 import dev.kkorolyov.sqlob.utility.Condition;
 

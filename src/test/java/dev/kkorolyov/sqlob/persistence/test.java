@@ -3,6 +3,7 @@ package dev.kkorolyov.sqlob.persistence;
 import java.sql.SQLException;
 
 import dev.kkorolyov.sqlob.JDBCMocks;
+import dev.kkorolyov.sqlob.Session;
 import dev.kkorolyov.sqlob.Stub.BasicStub;
 
 /**

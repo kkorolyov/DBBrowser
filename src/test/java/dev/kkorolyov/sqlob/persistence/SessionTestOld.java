@@ -21,6 +21,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import dev.kkorolyov.sqlob.Session;
 import dev.kkorolyov.sqlob.Stub.AnnotatedStub;
 import dev.kkorolyov.sqlob.Stub.BasicStub;
 import dev.kkorolyov.sqlob.Stub.SmartStub;

@@ -22,6 +22,7 @@ import org.junit.runners.Parameterized.Parameters;
 import org.sqlite.SQLiteDataSource;
 
 import dev.kkorolyov.simplelogs.Logger;
+import dev.kkorolyov.sqlob.Session;
 import dev.kkorolyov.sqlob.Stub.BasicStub;
 import dev.kkorolyov.sqlob.Stub.SmartStub;
 import dev.kkorolyov.sqlob.TestAssets;
