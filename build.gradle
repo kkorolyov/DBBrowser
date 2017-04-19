@@ -1,0 +1,17 @@
+plugins {
+	id 'java'
+}
+
+group = 'dev.kkorolyov'
+version = '3.0-SNAPSHOT'
+description = """Java library providing for persistence of Java objects in a SQL database"""
+
+repositories {
+	flatDir { dirs "C:/Dev/lib" }
+}
+
+dependencies {
+	compileOnly ':simple-logs:2.+'
+	testCompile ':simple-props:4.+'
+}
+

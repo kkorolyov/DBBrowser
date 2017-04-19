@@ -1,21 +1,9 @@
-# Bin
-bin/
-target/
-*.class
+# Build
+build/
+.gradle/
 
-# Package
-*.jar
-*.war
-*.ear
-
-# Eclipse
-*.project
-*.classpath
-.settings/
-
-# Intellij
+# IDE
 .idea/
-*.iml
 
 # Project
 *.ini
