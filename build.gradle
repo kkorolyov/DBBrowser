@@ -8,13 +8,14 @@ description = """Java library providing for persistence of Java objects in a SQL
 
 repositories {
 	jcenter()
-	flatDir { dirs "C:/Dev/lib" }
+	flatDir { dirs "lib" }
 }
 
 dependencies {
 	compileOnly ':simple-logs:2.+'
 	testCompile 'org.spockframework:spock-core:1.1-groovy-2.4-rc-4',
 			'net.bytebuddy:byte-buddy:1.6.13',
+			':simple-logs:2.+',
 			':simple-props:4.+'
 }
 

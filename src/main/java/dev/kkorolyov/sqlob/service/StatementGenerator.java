@@ -10,16 +10,13 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import dev.kkorolyov.sqlob.annotation.Column;
-import dev.kkorolyov.sqlob.annotation.Table;
 import dev.kkorolyov.sqlob.logging.Logger;
-import dev.kkorolyov.sqlob.persistence.NonPersistableException;
 import dev.kkorolyov.sqlob.utility.Condition;
 
 /**
  * Generates SQL statements.
  */
-public final class StatementGenerator {
+public class StatementGenerator {
 	private static final Logger log = Logger.getLogger(StatementGenerator.class.getName());
 
 	private final Mapper mapper;
@@ -32,7 +29,7 @@ public final class StatementGenerator {
 	}
 	/**
 	 * Constructs a new statement generator.
-	 * @param mapper Java-SQL mapper
+	 * @param mapper Java-relational mapper
 	 */
 	public StatementGenerator(Mapper mapper) {
 		this.mapper = mapper;
@@ -47,7 +44,7 @@ public final class StatementGenerator {
 		List<String> statements = new ArrayList<>();
 
 		for (Class<?> associated : mapper.getAssociatedClasses(c)) {
-			String statement = "CREATE TABLE IF NOT EXISTS " + getName(associated) + " " + generateFieldDeclarations(associated);
+			String statement = "CREATE TABLE IF NOT EXISTS " + mapper.getName(associated) + " " + generateFieldDeclarations(associated);
 			statements.add(statement);
 			log.debug(() -> "Added to CREATE statements for " + c + ": " + statement);
 		}
@@ -64,10 +61,10 @@ public final class StatementGenerator {
 		return declarations.toString();
 	}
 	private String generateFieldDeclaration(Field f) {
-		String name = getName(f);
-		String primitive = mapper.getSql(f);
+		String name = mapper.getName(f);
+		String primitive = mapper.getSqlType(f);
 
-		return name + " " + (primitive != null ? primitive : ID_TYPE + ", FOREIGN KEY (" + name + ") REFERENCES " + getName(f.getClass()) + " (" + ID_NAME + ")");
+		return name + " " + (primitive != null ? primitive : ID_TYPE + ", FOREIGN KEY (" + name + ") REFERENCES " + mapper.getName(f.getClass()) + " (" + ID_NAME + ")");
 	}
 
 	/**
@@ -99,9 +96,9 @@ public final class StatementGenerator {
 	}
 
 	private String generateSelect(Class<?> c, Condition where, boolean idOnly) {
-		return "SELECT " + (idOnly ? ID_NAME : "*")
-					 + " FROM " + getName(c)
-					 + (where == null ? "" : " WHERE " + where.toString());
+		return "SELECT " + (idOnly ? ID_NAME : "*") +
+					 " FROM " + mapper.getName(c) +
+					 (where == null ? "" : " WHERE " + where.toString());
 	}
 
 	/**
@@ -117,9 +114,9 @@ public final class StatementGenerator {
 								 .forEach(field -> {
 									 for (String statement : generateInsert(field.getType())) statements.add(statement);
 								 });
-		String statement = "INSERT INTO TABLE " + getName(c)
-											 + " " + generateColumns(c)
-											 + " VALUES " + generatePlaceholders(c);
+		String statement = "INSERT INTO TABLE " + mapper.getName(c) +
+											 " " + generateColumns(c) +
+											 " VALUES " + generatePlaceholders(c);
 		statements.add(statement);
 		log.debug(() -> "Added to INSERT statements for " + c + ": " + statement);
 
@@ -127,7 +124,7 @@ public final class StatementGenerator {
 	}
 	private String generateColumns(Class<?> c) {
 		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
-												.map(StatementGenerator::getName)
+												.map(mapper::getName)
 												.collect(Collectors.joining(", ", "(" + ID_NAME + ", ", ")"));	// Sneak in ID column
 	}
 	private String generatePlaceholders(Class<?> c) {
@@ -143,13 +140,13 @@ public final class StatementGenerator {
 	 * @return SQL statement updating an instance of {@code c}
 	 */
 	public String generateUpdate(Class<?> c, Condition where) {
-		return "UPDATE " + getName(c)
-					 + " SET " + generateSet(c)
-					 + " WHERE " + where.toString();
+		return "UPDATE " + mapper.getName(c) +
+					 " SET " + generateSet(c) +
+					 " WHERE " + where.toString();
 	}
 	private String generateSet(Class<?> c) {
 		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
-												.map(field -> getName(field) + " = ?")
+												.map(field -> mapper.getName(field) + " = ?")
 												.collect(Collectors.joining(", "));
 	}
 
@@ -160,20 +157,7 @@ public final class StatementGenerator {
 	 * @return SQL statement deleting an instance of {@code c}
 	 */
 	public String generateDelete(Class<?> c, Condition where) {
-		return "DELETE FROM " + getName(c)
-					 + (where == null ? "" : " WHERE " + where.toString());
-	}
-
-	private static String getName(Class<?> c) {
-		Table override = c.getAnnotation(Table.class);
-		if (override != null && override.value().length() <= 0) throw new NonPersistableException(c + " has a Table annotation with an empty name");
-
-		return (override == null) ? c.getSimpleName() : override.value();
-	}
-	private static String getName(Field f) {
-		Column override = f.getAnnotation(Column.class);
-		if (override != null && override.value().length() <= 0) throw new NonPersistableException(f + " has a Column annotation with an empty name");
-
-		return (override == null) ? f.getName() : override.value();
+		return "DELETE FROM " + mapper.getName(c) +
+					 (where == null ? "" : " WHERE " + where.toString());
 	}
 }

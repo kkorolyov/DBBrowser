@@ -14,12 +14,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import dev.kkorolyov.sqlob.annotation.Column;
+import dev.kkorolyov.sqlob.annotation.Table;
 import dev.kkorolyov.sqlob.annotation.Transient;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.persistence.Extractor;
+import dev.kkorolyov.sqlob.persistence.NonPersistableException;
 
 /**
- * Manages data mapping between Java and SQL.
+ * Manages data mapping between Java and relational domains.
  */
 public class Mapper {
 	private static final Logger log = Logger.getLogger(Mapper.class.getName());
@@ -76,14 +79,21 @@ public class Mapper {
 	/** @return all persistable fields of a class */
 	Iterable<Field> getPersistableFields(Class<?> c) {
 		return persistableFields.computeIfAbsent(c, k -> StreamSupport.stream(Arrays.spliterator(k.getDeclaredFields()), true)
-																																	.filter(Mapper::isPersistable)
+																																	.filter(this::isPersistable)
 																																	.collect(Collectors.toCollection(LinkedHashSet::new)));
 	}
-	private static boolean isPersistable(Field f) {
+	private boolean isPersistable(Field f) {
 		int modifiers = f.getModifiers();
 		return !(Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers)) &&
 					 f.getAnnotation(Transient.class) == null &&
 					 !f.isSynthetic();
+	}
+
+	/** @return types of all persistable fields of a class */
+	Iterable<Class<?>> getPersistableFieldTypes(Class<?> c) {
+		return StreamSupport.stream(getPersistableFields(c).spliterator(), true)
+												.map(Field::getType)
+												.collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 	/** @return {@code c} and all persisted non-primitive classes used both directly and indirectly by {@code c} */
@@ -96,21 +106,16 @@ public class Mapper {
 		while (!untouched.isEmpty()) {	// DFS until primitive classes reached or all classes seen
 			associateds.push(untouched.pop());
 
-			for (Class<?> associated : getPersistableClasses(associateds.peek())) {
+			for (Class<?> associated : getPersistableFieldTypes(associateds.peek())) {
 				if (isComplex(associated) && !associateds.contains(associated)) untouched.push(associated);
 			}
 		}
 		return associateds;
 	}
-	Iterable<Class<?>> getPersistableClasses(Class<?> c) {
-		return StreamSupport.stream(getPersistableFields(c).spliterator(), true)
-												.map(Field::getType)
-												.collect(Collectors.toCollection(LinkedHashSet::new));
-	}
 
 	/** @return {@code true} if a primitive SQL type is associated with {@code c} */
 	boolean isPrimitive(Class<?> c) {
-		return getSql(c) != null;
+		return getSqlType(c) != null;
 	}
 	/** @return {@code true} if a primitive SQL type is associated with {@code f}'s type */
 	boolean isPrimitive(Field f) {
@@ -119,20 +124,35 @@ public class Mapper {
 
 	/** @return {@code true} if no primitive SQL type is associated with {@code c} */
 	boolean isComplex(Class<?> c) {
-		return getSql(c) == null;
+		return getSqlType(c) == null;
 	}
 	/** @return {@code true} if no primitive SQL type is associated with {@code f}'s type */
 	boolean isComplex(Field f) {
 		return isComplex(f.getType());
 	}
 
+	/** @return equivalent relational table name for a Java class */
+	String getName(Class<?> c) {
+		Table override = c.getAnnotation(Table.class);
+		if (override != null && override.value().length() <= 0) throw new NonPersistableException(c + " has a Table annotation with an empty name");
+
+		return (override == null) ? c.getSimpleName() : override.value();
+	}
+	/** @return equivalent relational column name for a Java field */
+	String getName(Field f) {
+		Column override = f.getAnnotation(Column.class);
+		if (override != null && override.value().length() <= 0) throw new NonPersistableException(f + " has a Column annotation with an empty name");
+
+		return (override == null) ? f.getName() : override.value();
+	}
+
 	/** @return SQL type associated with {@code c} */
-	String getSql(Class<?> c) {
+	String getSqlType(Class<?> c) {
 		return typeMap.get(c);
 	}
 	/** @return SQL type associated with {@code f}'s type */
-	String getSql(Field f) {
-		return getSql(f.getType());
+	String getSqlType(Field f) {
+		return getSqlType(f.getType());
 	}
 
 	/** @return extractor associated with {@code c} */
@@ -164,6 +184,7 @@ public class Mapper {
 		return "Mapper{" +
 					 "typeMap=" + typeMap +
 					 ", extractorMap=" + extractorMap +
+					 ", persistableFields=" + persistableFields +
 					 '}';
 	}
 }
