@@ -24,14 +24,9 @@ public class Session implements AutoCloseable {
 	private static final Logger log = Logger.getLogger(Session.class.getName());
 	
 	private final DataSource ds;
-	private final Mapper mapper;
 	private final StatementExecutor executor;
 	private final int bufferSize;
 	private int bufferCounter = 0;
-	private Connection conn;
-	private final Set<Class<?>> initialized = new HashSet<>();
-
-	private final SqlobCache cache = new SqlobCache();
 
 	/**
 	 * Constructs a new session with a default buffer size of {@code 100}.
@@ -56,10 +51,9 @@ public class Session implements AutoCloseable {
 	 * Retrieves the ID of an instance of a class.
 	 * @param o stored instance
 	 * @return id of stored instance, or {@code null} if no such instance stored
-	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
-	public UUID getId(Object o) throws SQLException {
+	public UUID getId(Object o) {
 		assertNotNull(o);
 
 		Connection conn = getConn();
