@@ -62,7 +62,7 @@ public class StatementGenerator {
 	}
 	private String generateFieldDeclaration(Field f) {
 		String name = mapper.getName(f);
-		String primitive = mapper.getSqlType(f);
+		String primitive = mapper.sql(f);
 
 		return name + " " + (primitive != null ? primitive : ID_TYPE + ", FOREIGN KEY (" + name + ") REFERENCES " + mapper.getName(f.getClass()) + " (" + ID_NAME + ")");
 	}
@@ -76,20 +76,20 @@ public class StatementGenerator {
 		return generateSelect(c, null);
 	}
 	/**
-	 * Generates a SELECT statement for selecting instances of a class matching a condition.
+	 * Generates a parametrized SELECT statement for selecting instances of a class matching a condition.
 	 * @param c class to generate statement for
 	 * @param where condition to match
-	 * @return SQL statement selecting instances of {@code c} matching {@code where}
+	 * @return parametrized SQL statement selecting instances of {@code c} matching {@code where}
 	 */
 	public String generateSelect(Class<?> c, Condition where) {
 		return generateSelect(c, where, false);
 	}
 
 	/**
-	 * Generates a SELECT statement for selecting the ID of a class instance matching a condition.
+	 * Generates a parametrized SELECT statement for selecting the ID of a class instance matching a condition.
 	 * @param c class to generate statement for
 	 * @param where condition to match
-	 * @return SQL statement selecting ID
+	 * @return parametrized SQL statement selecting ID
 	 */
 	public String generateSelectId(Class<?> c, Condition where) {
 		return generateSelect(c, where, true);
@@ -102,25 +102,14 @@ public class StatementGenerator {
 	}
 
 	/**
-	 * Generates all INSERT INTO statements required to insert data into a relational table corresponding to a class.
+	 * Generates a parametrized INSERT statement for inserting an instance of a class into the corresponding relational table.
 	 * @param c class to generate statement for
-	 * @return SQL statement inserting into a table mapped to a class
+	 * @return parametrized SQL statement inserting an instance
 	 */
-	public Iterable<String> generateInsert(Class<?> c) {
-		List<String> statements = new ArrayList<>();
-
-		StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
-								 .filter(mapper::isComplex)
-								 .forEach(field -> {
-									 for (String statement : generateInsert(field.getType())) statements.add(statement);
-								 });
-		String statement = "INSERT INTO TABLE " + mapper.getName(c) +
-											 " " + generateColumns(c) +
-											 " VALUES " + generatePlaceholders(c);
-		statements.add(statement);
-		log.debug(() -> "Added to INSERT statements for " + c + ": " + statement);
-
-		return statements;
+	public String generateInsert(Class<?> c) {
+		return "INSERT INTO TABLE " + mapper.getName(c) +
+					 " " + generateColumns(c) +
+					 " VALUES " + generatePlaceholders(c);
 	}
 	private String generateColumns(Class<?> c) {
 		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
@@ -134,10 +123,10 @@ public class StatementGenerator {
 	}
 
 	/**
-	 * Generates an UPDATE statement for updating a class instance.
+	 * Generates a parametrized UPDATE statement for updating a class instance.
 	 * @param c class to generate statement for
 	 * @param where update criteria, may not be {@code null}
-	 * @return SQL statement updating an instance of {@code c}
+	 * @return parametrized SQL statement updating an instance of {@code c}
 	 */
 	public String generateUpdate(Class<?> c, Condition where) {
 		return "UPDATE " + mapper.getName(c) +
@@ -151,10 +140,10 @@ public class StatementGenerator {
 	}
 
 	/**
-	 * Generates a DELETE statement for deleting a class instance.
+	 * Generates a parametrized DELETE statement for deleting a class instance.
 	 * @param c class to generate statement for
 	 * @param where deletion criteria
-	 * @return SQL statement deleting an instance of {@code c}
+	 * @return parametrized SQL statement deleting an instance of {@code c}
 	 */
 	public String generateDelete(Class<?> c, Condition where) {
 		return "DELETE FROM " + mapper.getName(c) +

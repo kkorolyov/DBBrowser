@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.persistence;
+package dev.kkorolyov.sqlob.utility;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

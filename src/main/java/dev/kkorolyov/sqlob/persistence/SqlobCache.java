@@ -12,6 +12,7 @@ import java.util.*;
 
 import dev.kkorolyov.sqlob.annotation.Transient;
 import dev.kkorolyov.sqlob.logging.Logger;
+import dev.kkorolyov.sqlob.utility.Extractor;
 
 /**
  * Operates on a dynamically-cached ({@link Class} -> {@link SqlobClass}) map.

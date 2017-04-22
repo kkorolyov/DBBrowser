@@ -1,5 +1,6 @@
 package dev.kkorolyov.sqlob.service;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -21,7 +22,7 @@ public class StatementExecutor implements AutoCloseable {
 	private final StatementGenerator generator;
 	private Connection conn;
 
-	private final Map<Class<?>, Iterable<PreparedStatement>> insertStatements = new HashMap<>();
+	private final Map<Class<?>, PreparedStatement> inserts = new HashMap<>();
 
 	/**
 	 * Constructs a new evaluator using the default {@code Mapper}.
@@ -61,12 +62,38 @@ public class StatementExecutor implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Executes an INSERT statement persisting {@code o}.
+	 * @param o object to persist
+	 * @return ID of relational representation of {@code o}
+	 */
 	public UUID insert(Object o) {
-		PreparedStatement statement = getStatement(o);
-	}
+		try {
+			PreparedStatement statement = inserts.computeIfAbsent(o.getClass(), k -> {
+				try {
+					return conn.prepareStatement(generator.generateInsert(k));
+				} catch (SQLException e) {
+					throw new RuntimeException(e);
+				}
+			});
+			UUID id = UUID.randomUUID();
+			statement.setObject(1, mapper.convert(id));	// Apply ID to 1st param
 
-	private PreparedStatement getStatement(Object o) {
-
+			int indexer = 2;
+			for (Field f : mapper.getPersistableFields(o.getClass())) {
+				Object value = mapper.convert(f.get(o));
+				if (mapper.isComplex(f)) {
+					log.debug(() -> f + " is complex, inserting before continuing with " + o + "...");
+					value = insert(value);  // Insert, store ID ref if complex
+				}
+				statement.setObject(indexer++, value);
+			}
+			return id;
+		} catch (IllegalAccessException e) {
+			throw new NonPersistableException("Unable to get field value from " + o, e);
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
@@ -90,11 +117,12 @@ public class StatementExecutor implements AutoCloseable {
 				log.info(() -> "Flushed " + this);
 			} catch (SQLException e) {
 				try {
+					log.warning(() -> "Exception during flush, attempting rollback...");
 					conn.rollback();
 				} catch (SQLException e1) {
+					log.severe(() -> "Exception during rollback, crashing spectacularly...");
 					throw new RuntimeException(e1);
 				}
-				log.exception(e);
 				throw new RuntimeException(e);
 			}
 		}
@@ -107,6 +135,7 @@ public class StatementExecutor implements AutoCloseable {
 		if (conn != null) {
 			flush();
 
+			inserts.clear();	// All cached statements closed anyway
 			conn.close();
 			conn = null;
 		}

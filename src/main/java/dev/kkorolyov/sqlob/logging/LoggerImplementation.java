@@ -16,6 +16,15 @@ class LoggerImplementation extends Logger {
 	public void exception(Exception e) {
 		log.exception(e);
 	}
+
+	@Override
+	public void severe(LazyMessage message) {
+		log.severe(message::execute);
+	}
+	@Override
+	public void warning(LazyMessage message) {
+		log.warning(message::execute);
+	}
 	@Override
 	public void info(LazyMessage message) {
 		log.info(message::execute);

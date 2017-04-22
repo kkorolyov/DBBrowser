@@ -7,6 +7,7 @@ import java.sql.*;
 import java.util.UUID;
 
 import dev.kkorolyov.sqlob.annotation.Column;
+import dev.kkorolyov.sqlob.utility.Extractor;
 
 /**
  * Manages persistence at the field/column level.

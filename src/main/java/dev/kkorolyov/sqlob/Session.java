@@ -2,17 +2,14 @@ package dev.kkorolyov.sqlob;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
 import javax.sql.DataSource;
 
 import dev.kkorolyov.sqlob.logging.Logger;
-import dev.kkorolyov.sqlob.persistence.Extractor;
+import dev.kkorolyov.sqlob.utility.Extractor;
 import dev.kkorolyov.sqlob.persistence.NonPersistableException;
-import dev.kkorolyov.sqlob.persistence.SqlobCache;
-import dev.kkorolyov.sqlob.service.Mapper;
 import dev.kkorolyov.sqlob.service.StatementExecutor;
 import dev.kkorolyov.sqlob.utility.Condition;
 

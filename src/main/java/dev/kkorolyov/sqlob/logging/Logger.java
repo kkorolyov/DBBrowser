@@ -29,6 +29,17 @@ public class Logger {
 	 * @param e exception to log
 	 */
 	public void exception(Exception e) {/*Default no-op*/}
+
+	/**
+	 * Logs a {@code SEVERE}-level message.
+	 * @param message message to log
+	 */
+	public void severe(LazyMessage message) {/*Default no-op*/}
+	/**
+	 * Logs a {@code WARNING}-level message.
+	 * @param message message to log
+	 */
+	public void warning(LazyMessage message) {/*Default no-op*/}
 	/**
 	 * Logs an {@code INFO}-level message.
 	 * @param message message to log
