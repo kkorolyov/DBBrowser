@@ -6,8 +6,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import dev.kkorolyov.sqlob.logging.Logger;
+import dev.kkorolyov.sqlob.persistence.NonPersistableException;
 
 /**
  * Executes statements on a {@link Connection}.
@@ -57,6 +59,14 @@ public class StatementExecutor implements AutoCloseable {
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	public UUID insert(Object o) {
+		PreparedStatement statement = getStatement(o);
+	}
+
+	private PreparedStatement getStatement(Object o) {
+
 	}
 
 	/**
