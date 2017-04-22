@@ -1,23 +1,91 @@
 package dev.kkorolyov.sqlob.service
 
+import dev.kkorolyov.simplelogs.Logger
 import dev.kkorolyov.sqlob.annotation.Column
 import dev.kkorolyov.sqlob.annotation.Table
 import dev.kkorolyov.sqlob.annotation.Transient
 import dev.kkorolyov.sqlob.persistence.NonPersistableException
+import dev.kkorolyov.sqlob.utility.Converter
+import dev.kkorolyov.sqlob.utility.Extractor
 import groovy.transform.PackageScope
 import spock.lang.Shared
 import spock.lang.Specification
 
 import java.lang.reflect.Field
-import java.sql.ResultSet
 
 class MapperSpec extends Specification {
-  @Shared String stubSqlType = "SomeSQL"
-  @Shared Closure<?> stubExtractor = {ResultSet.getString}
+	static {
+		Logger.getLogger("dev.kkorolyov.sqlob", Logger.Level.DEBUG, new PrintWriter(System.err));	// Enable logging
+	}
+
+  @Shared String stubSqlType = Constants.sanitize("SomeSQL")
+	@Shared Converter stubConverter = { o -> o }
+	@Shared Extractor stubExtractor = { rs, column -> rs.getString(column) }
 
   Mapper mapper = new Mapper()
 
-  def "getPersistableFields() returns one of each persistable field"() {
+	def "returns typemapped sqlType for class"() {
+		Class c = Empty
+		String sqlType = stubSqlType
+
+		when:
+		mapper.put(c, sqlType, stubExtractor)
+
+		then:
+		mapper.sql(c) == sqlType
+	}
+	def "returns typemapped sqlType for field"() {
+		Class c = Empty
+		String sqlType = stubSqlType
+
+		when:
+		mapper.put(c, sqlType, stubExtractor)
+
+		then:
+		mapper.sql(f) == sqlType
+
+		where:
+		f << [Multi.getDeclaredField("e1"),
+					Multi.getDeclaredField("e2"),
+					Multi.getDeclaredField("e3")]
+	}
+	def "sqlType is sanitized"() {
+		Class<?> c = Empty
+		String sqlType = "Bad SQ;L"
+
+		when:
+		mapper.put(c, sqlType, stubConverter, stubExtractor)
+
+		then:
+		mapper.sql(c) != sqlType
+		mapper.sql(c) == Constants.sanitize(sqlType)
+	}
+
+	def "converts using typemapped converter"() {
+		Class c = Empty
+		Converter converter = { o -> "HI" }
+		Object o = c.newInstance()
+
+		when:
+		mapper.put(c, stubSqlType, converter, stubExtractor)
+
+		then:
+		mapper.convert(o) != o
+		mapper.convert(o) == converter.execute(o)
+	}
+	def "no conversion if no typemapped converter"() {
+		Class c = Empty
+		Object o = c.newInstance()
+
+		expect:
+		mapper.convert(o) == o
+	}
+
+	def "extracts using typemapped extractor"() {
+		// TODO
+	}
+
+	def "getPersistableFields() returns one of each persistable field"() {
     expect:
     Iterable<Field> results = mapper.getPersistableFields(c)
 
@@ -118,17 +186,6 @@ class MapperSpec extends Specification {
 		then:
 		thrown NonPersistableException
 	}
-
-  def "put() uses sanitized sql type"() {
-    Class<?> c = Empty
-    String sqlType = stubSqlType
-
-    when:
-    mapper.put(c, sqlType, stubExtractor)
-
-    then:
-    mapper.getSqlType(c) == Constants.sanitize(sqlType)
-  }
 
   def "typemapped classes are primitive"() {
     Class<?> c = Empty

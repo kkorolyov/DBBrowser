@@ -8,6 +8,6 @@ final class Constants {
 	static final String ID_TYPE = "CHAR(36)";
 
 	static String sanitize(String sql) {
-		return sql.replaceAll("\\s+", "");
+		return sql.replaceAll("\\s+|;", "");
 	}
 }
