@@ -12,6 +12,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import java.lang.reflect.Field
+import java.sql.ResultSet
 
 class MapperSpec extends Specification {
 	static {
@@ -24,7 +25,14 @@ class MapperSpec extends Specification {
 
   Mapper mapper = new Mapper()
 
-	def "returns typemapped sqlType for class"() {
+	class Empty {}
+	class Multi {
+		Empty e1
+		@PackageScope Empty e2
+		private Empty e3
+	}
+
+	def "returns typemapped sqlType"() {
 		Class c = Empty
 		String sqlType = stubSqlType
 
@@ -33,15 +41,6 @@ class MapperSpec extends Specification {
 
 		then:
 		mapper.sql(c) == sqlType
-	}
-	def "returns typemapped sqlType for field"() {
-		Class c = Empty
-		String sqlType = stubSqlType
-
-		when:
-		mapper.put(c, sqlType, stubExtractor)
-
-		then:
 		mapper.sql(f) == sqlType
 
 		where:
@@ -49,6 +48,7 @@ class MapperSpec extends Specification {
 					Multi.getDeclaredField("e2"),
 					Multi.getDeclaredField("e3")]
 	}
+
 	def "sqlType is sanitized"() {
 		Class<?> c = Empty
 		String sqlType = "Bad SQ;L"
@@ -82,23 +82,47 @@ class MapperSpec extends Specification {
 	}
 
 	def "extracts using typemapped extractor"() {
-		// TODO
+		Class c = Empty
+		Extractor extractor = { rs, column -> rs.getObject(column) }
+		String column = "TestCol"
+
+		when:
+		Empty expected = new Empty()
+		ResultSet rs = Mock()
+		2 * rs.getObject(column) >> expected
+
+		mapper.put(c, stubSqlType, extractor)
+
+		then:
+		mapper.extract(c, rs, column) == expected
+		mapper.extract(f, rs, column) == expected
+
+		where:
+		f << [Multi.getDeclaredField("e1"),
+					Multi.getDeclaredField("e2"),
+					Multi.getDeclaredField("e3")]
 	}
 
-	def "getPersistableFields() returns one of each persistable field"() {
+	def "persistable fields are one of each basic field"() {
     expect:
-    Iterable<Field> results = mapper.getPersistableFields(c)
+    Iterable<Field> results = mapper.getPersistableFields(Multi)
 
-    results.containsAll(fields)
-    results.size() == size
-
-    where:
-    c << [Multi]
-    fields << [[Multi.getDeclaredField("e1"), Multi.getDeclaredField("e2"), Multi.getDeclaredField("e3")]]
-    size << [3]
+    results.containsAll([Multi.getDeclaredField("e1"),
+												 Multi.getDeclaredField("e2"),
+												 Multi.getDeclaredField("e3")])
+    results.size() == 3
   }
 
-  def "getPersistableFields() ignores Transient-tagged fields"() {
+	static class TransientTag {
+		@Transient
+		private Empty e
+	}
+	static class TransientTagPlusOne {
+		@Transient
+		private Empty e1
+		private Empty e2
+	}
+  def "Transient-tagged fields are not persistable"() {
     expect:
     mapper.getPersistableFields(c).size() == size
 
@@ -106,7 +130,15 @@ class MapperSpec extends Specification {
     c << [TransientTag, TransientTagPlusOne]
     size << [0, 1]
   }
-  def "getPersistableFields() ignores transient fields"() {
+
+	static class TransientModifier {
+		private transient Empty e
+	}
+	static class TransientModifierPlusOne {
+		private transient Empty e1
+		private Empty e2
+	}
+  def "transient fields are not persistable"() {
     expect:
     mapper.getPersistableFields(c).size() == size
 
@@ -114,7 +146,15 @@ class MapperSpec extends Specification {
     c << [TransientModifier, TransientModifierPlusOne]
     size << [0, 1]
   }
-  def  "getPersistedFields() ignores static fields"() {
+
+	static class StaticModifier {
+		private static Empty e
+	}
+	static class StaticModifierPlusOne {
+		private static Empty e1
+		private Empty e2
+	}
+  def  "static fields are not persistable"() {
     expect:
     mapper.getPersistableFields(c).size() == size
 
@@ -123,7 +163,18 @@ class MapperSpec extends Specification {
     size << [0, 1]
   }
 
-  def "getAssociatedClasses() returns one of each class"() {
+	class SelfRef {
+		SelfRef selfRef1;
+		@PackageScope SelfRef selfRef2
+		private SelfRef selfRef2
+	}
+	class RefLoop1 {
+		RefLoop2 ref
+	}
+	class RefLoop2 {
+		RefLoop1 ref
+	}
+  def "associated classes composed of the given class and its distinct field types"() {
     expect:
     Iterable<Class<?>> results = mapper.getAssociatedClasses(c)
 
@@ -138,6 +189,50 @@ class MapperSpec extends Specification {
                 [RefLoop1, RefLoop2]]
     size << [2, 1, 2, 2]
   }
+
+	def "typemapped classes are primitive"() {
+		Class<?> c = Empty
+
+		when:
+		mapper.put(c, stubSqlType, stubExtractor)
+
+		then:
+		mapper.isPrimitive(c)
+		!mapper.isComplex(c)
+
+		mapper.isPrimitive(f)
+		!mapper.isComplex(f)
+
+		where:
+		f << [Multi.getDeclaredField("e1"),
+					Multi.getDeclaredField("e2"),
+					Multi.getDeclaredField("e3")]
+	}
+	def "non-typemapped classes are complex"() {
+		Class<?> c = Empty
+
+		expect:
+		mapper.isComplex(c)
+		!mapper.isPrimitive(c)
+
+		mapper.isComplex(f)
+		!mapper.isPrimitive(f)
+
+		where:
+		f << [Multi.getDeclaredField("e1"),
+					Multi.getDeclaredField("e2"),
+					Multi.getDeclaredField("e3")]
+	}
+
+	static class NonTagged {
+		String s
+	}
+	@Table("CustomTable") static class Tagged {
+		@Column("CustomColumn") String s
+	}
+	@Table("") static class EmptyTagged {
+		@Column("") String s
+	}
 
 	def "getName(Class) returns simple name of non-Table-tagged class"() {
 		expect:
@@ -185,100 +280,5 @@ class MapperSpec extends Specification {
 
 		then:
 		thrown NonPersistableException
-	}
-
-  def "typemapped classes are primitive"() {
-    Class<?> c = Empty
-
-    when:
-    mapper.put(c, stubSqlType, stubExtractor)
-
-    then:
-    mapper.isPrimitive(c)
-    !mapper.isComplex(c)
-  }
-  def "non-typemapped classes are complex"() {
-    Class<?> c = Empty
-
-    expect:
-    mapper.isComplex(c)
-    !mapper.isPrimitive(c)
-  }
-
-  def "fields of typemapped class are primitive"() {
-    when:
-    mapper.put(Empty, stubSqlType, stubExtractor)
-
-    then:
-    mapper.isPrimitive(f)
-    !mapper.isComplex(f)
-
-    where:
-    f << [Multi.getDeclaredField("e1"), Multi.getDeclaredField("e2"), Multi.getDeclaredField("e3")]
-  }
-  def "fields of non-typemapped class are complex"() {
-    expect:
-    mapper.isComplex(f)
-    !mapper.isPrimitive(f)
-
-    where:
-    f << [Multi.getDeclaredField("e1"), Multi.getDeclaredField("e2"), Multi.getDeclaredField("e3")]
-  }
-
-  class Empty {}
-
-  class TransientTag {
-    @Transient
-    private Empty e
-  }
-  class TransientTagPlusOne {
-    @Transient
-    private Empty e1
-    private Empty e2
-  }
-
-  class TransientModifier {
-    private transient Empty e
-  }
-  class TransientModifierPlusOne {
-    private transient Empty e1
-    private Empty e2
-  }
-
-  class StaticModifier {
-    private static Empty e
-  }
-  class StaticModifierPlusOne {
-    private static Empty e1
-    private Empty e2
-  }
-
-  class Multi {
-    Empty e1
-    @PackageScope Empty e2
-    private Empty e3
-  }
-
-  class SelfRef {
-    SelfRef selfRef1;
-    @PackageScope SelfRef selfRef2
-    private SelfRef selfRef2
-  }
-
-  class RefLoop1 {
-    RefLoop2 ref
-  }
-  class RefLoop2 {
-    RefLoop1 ref
-  }
-
-	class NonTagged {
-		String s
-	}
-	@Table("CustomTable") class Tagged {
-		@Column("CustomColumn") String s
-	}
-	@Table("") class EmptyTagged {
-		@Column("") String s
 	}
 }
