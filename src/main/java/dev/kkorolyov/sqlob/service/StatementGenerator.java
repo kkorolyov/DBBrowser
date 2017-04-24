@@ -68,17 +68,9 @@ public class StatementGenerator {
 	}
 
 	/**
-	 * Generates a SELECT statement for selecting all persisted instances of a class from the corresponding relational table.
-	 * @param c class to generate statement for
-	 * @return SQL statement selecting all persisted instances of {@code c}
-	 */
-	public String generateSelect(Class<?> c) {
-		return generateSelect(c, null);
-	}
-	/**
 	 * Generates a parametrized SELECT statement for selecting instances of a class matching a condition.
 	 * @param c class to generate statement for
-	 * @param where condition to match
+	 * @param where condition to match, {@code null} implies no condition
 	 * @return parametrized SQL statement selecting instances of {@code c} matching {@code where}
 	 */
 	public String generateSelect(Class<?> c, Condition where) {

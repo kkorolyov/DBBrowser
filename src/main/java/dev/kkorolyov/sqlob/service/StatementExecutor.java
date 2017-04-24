@@ -64,7 +64,7 @@ public class StatementExecutor implements AutoCloseable {
 	/**
 	 * Executes a SELECT statement retrieving instances of {@code c} matching {@code where}.
 	 * @param c type to retrieve
-	 * @param where condition to match
+	 * @param where condition to match, {@code null} implies no condition
 	 * @return matching {@code c} instances mapped to their respective IDs
 	 */
 	public <T> Map<UUID, T> select(Class<T> c, Condition where) {
@@ -138,20 +138,11 @@ public class StatementExecutor implements AutoCloseable {
 				}
 			});
 			UUID id = UUID.randomUUID();
-			statement.setObject(1, mapper.convert(id));	// Apply ID to 1st param
 
-			int indexer = 2;
-			for (Field f : mapper.getPersistableFields(o.getClass())) {
-				Object value = mapper.convert(f.get(o));
-				if (mapper.isComplex(f)) {
-					log.debug(() -> f + " is complex, inserting before continuing with " + o + "...");
-					value = insert(value);  // Insert, store ID ref if complex
-				}
-				statement.setObject(indexer++, value);
-			}
+			statement.setObject(1, mapper.convert(id));	// Apply ID to 1st param
+			applyInstance(statement, o, 2);
+
 			return id;
-		} catch (IllegalAccessException e) {
-			throw new NonPersistableException("Unable to get field value from " + o, e);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -161,8 +152,9 @@ public class StatementExecutor implements AutoCloseable {
 	 * Executes an UPDATE statement updating the instance at {@code id} with {@code o}.
 	 * @param id ID of persisted instance to update
 	 * @param o updated instance
+	 * @return {@code true} if instance at {@code id} updated successfully
 	 */
-	public void update(UUID id, Object o) {
+	public boolean update(UUID id, Object o) {
 		Condition where = new Condition(ID_NAME, "=", id);
 		try {
 			PreparedStatement statement = updates.computeIfAbsent(o.getClass(), k -> {
@@ -172,32 +164,53 @@ public class StatementExecutor implements AutoCloseable {
 					throw new RuntimeException(e);
 				}
 			});
-			int indexer = 1;
+			int nextI = applyInstance(statement, o, 1);
+			applyWhere(statement, where, nextI);
+
+			return statement.executeUpdate() > 0;
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public int delete(Class<?> c, Condition where) {
+		try (PreparedStatement statement = conn.prepareStatement(generator.generateDelete(c, where))) {
+			applyWhere(statement, where, 1);
+
+			return statement.executeUpdate();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/** Applies instance values to statement parameters, returns index of next unapplied parameter */
+	private int applyInstance(PreparedStatement statement, Object o, int startI) {
+		int i = startI;
+		try {
 			for (Field f : mapper.getPersistableFields(o.getClass())) {
 				Object value = mapper.convert(f.get(o));
 				if (mapper.isComplex(f)) {
 					log.debug(() -> f + " is complex, inserting before continuing with " + o + "...");
-					value = insert(value);
+					value = insert(value);  // Insert, store ID ref if complex
 				}
-				statement.setObject(indexer++, value);
+				statement.setObject(i++, value);
 			}
-			applyWhere(statement, where, indexer);
-
-			statement.execute();
+			return i;
 		} catch (IllegalAccessException e) {
 			throw new NonPersistableException("Unable to get field value from " + o, e);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
 	}
-
-	private void applyWhere(PreparedStatement statement, Condition where, int startI) {
-		int index = startI;
+	/** Applies condition values to statement parameters, returns index of next unapplied parameter */
+	private int applyWhere(PreparedStatement statement, Condition where, int startI) {
+		int i = startI;
 		try {
 			for (Object value : where.values()) {
-				statement.setObject(index++, mapper.convert(value));
+				statement.setObject(i++, mapper.convert(value));
 				log.debug(() -> "Applied WHERE value: " + value);
 			}
+			return i;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
