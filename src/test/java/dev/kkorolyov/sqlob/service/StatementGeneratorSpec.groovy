@@ -1,8 +1,6 @@
 package dev.kkorolyov.sqlob.service
 
 import dev.kkorolyov.simplelogs.Logger
-import dev.kkorolyov.sqlob.annotation.Column
-import dev.kkorolyov.sqlob.annotation.Table
 import dev.kkorolyov.sqlob.utility.Condition
 import groovy.transform.PackageScope
 import spock.lang.Specification
@@ -42,16 +40,36 @@ class StatementGeneratorSpec extends Specification {
 		3 * mapper.getName(f) >> "FakeField"
 	}
 
-  def "generateCreate() returns statement for class and per associated class"() {
-    expect:
-    generator.generateCreate(c).size() == size
+	def "create statements create each associated class"() {
+		Object cInner1 = new Object() {}
+		Object cInner2 = new Object() {}
+		Class c = new Object() {
+			private Object o1 = cInner1
+			Object o2 = cInner2
+		}.class
 
-    where:
-    c << [HasPrimitive, HasComplexes]
-    size << [1, 2]
-  }
+		when:
+		1 * mapper.getName(cInner1.class) >> cInner1.class.getName()
+		1 * mapper.getName(cInner2.class) >> cInner2.class.getName()
+		1 * mapper.getName(c) >> c.getName()
 
-  def "generateInsert() returns statement for class and per complex field"() {
+		1 * mapper.getPersistableFields(c) >> [c.getDeclaredField("o1"),
+																					 c.getDeclaredField("o2")]
+		2 * mapper.getPersistableFields(_) >> []
+		1 * mapper.getAssociatedClasses(c) >> [cInner1.class,
+																					 cInner2.class,
+																					 c]
+
+		Iterable statements = generator.generateCreate(c)
+
+		then:
+		statements.size() == 3
+		statements[0].contains(cInner1.class.getName())
+		statements[1].contains(cInner2.class.getName())
+		statements[2].contains(c.getName())
+	}
+
+	def "generateInsert() returns statement for class and per complex field"() {
     expect:
     generator.generateInsert(c).size() == size
 
@@ -68,15 +86,6 @@ class StatementGeneratorSpec extends Specification {
     statement << ["INSERT INTO TABLE HasComplexes (" + ID_NAME + ", e1, e2, e3) VALUES (?, ?, ?, ?)"]
   }
 
-  def "generateSelect() uses getName()"() {
-    expect:
-    generator.generateSelect(c) == statement
-
-    where:
-    c << [NonTagged, Tagged]
-    statement << ["SELECT * FROM NonTagged",
-                  "SELECT * FROM CustomTable"]
-  }
   def "generateSelect() appends WHERE if condition not null"() {
     expect:
     generator.generateSelect(c, where) == statement
@@ -98,15 +107,6 @@ class StatementGeneratorSpec extends Specification {
                   "SELECT " + ID_NAME + " FROM HasPrimitive"]
   }
 
-  def "generateDelete() uses getName()"() {
-    expect:
-    generator.generateDelete(c, null) == statement
-
-    where:
-    c << [NonTagged, Tagged]
-    statement << ["DELETE FROM NonTagged",
-                  "DELETE FROM CustomTable"]
-  }
   def "generateDelete() appends WHERE if condition not null"() {
     expect:
     generator.generateDelete(c, where) == statement
@@ -115,16 +115,6 @@ class StatementGeneratorSpec extends Specification {
     c << [HasPrimitive]
     where << [new Condition("s", "==", "test")]
     statement << ["DELETE FROM HasPrimitive WHERE s == ?"]
-  }
-
-  class NonTagged {
-    String s
-  }
-  @Table("CustomTable") class Tagged {
-    @Column("CustomColumn") String s
-  }
-  @Table("") class EmptyTagged {
-    @Column("") String s
   }
 
   class HasPrimitive {
