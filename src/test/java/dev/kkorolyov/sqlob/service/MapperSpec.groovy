@@ -89,13 +89,14 @@ class MapperSpec extends Specification {
 		when:
 		Empty expected = new Empty()
 		ResultSet rs = Mock()
-		2 * rs.getObject(column) >> expected
+		1 * rs.getObject(column) >> expected
+		1 * rs.getObject(mapper.getName(f)) >> expected
 
 		mapper.put(c, stubSqlType, extractor)
 
 		then:
 		mapper.extract(c, rs, column) == expected
-		mapper.extract(f, rs, column) == expected
+		mapper.extract(f, rs) == expected
 
 		where:
 		f << [Multi.getDeclaredField("e1"),

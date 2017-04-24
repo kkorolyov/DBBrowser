@@ -75,7 +75,7 @@ public class Condition {
 	}
 	
 	/** @return all values in this condition in original insertion order */
-	Iterable<Object> values() {
+	public Iterable<Object> values() {
 		return values;
 	}
 	

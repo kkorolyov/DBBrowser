@@ -1,16 +1,16 @@
 package dev.kkorolyov.sqlob.service;
 
+import static dev.kkorolyov.sqlob.service.Constants.ID_NAME;
+
 import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.persistence.NonPersistableException;
+import dev.kkorolyov.sqlob.utility.Condition;
 
 /**
  * Executes statements on a {@link Connection}.
@@ -23,6 +23,7 @@ public class StatementExecutor implements AutoCloseable {
 	private Connection conn;
 
 	private final Map<Class<?>, PreparedStatement> inserts = new HashMap<>();
+	private final Map<Class<?>, PreparedStatement> updates = new HashMap<>();
 
 	/**
 	 * Constructs a new evaluator using the default {@code Mapper}.
@@ -63,6 +64,37 @@ public class StatementExecutor implements AutoCloseable {
 	}
 
 	/**
+	 * Executes a SELECT statement retrieving instances of {@code c} matching {@code where}.
+	 * @param c type to retrieve
+	 * @param where condition to match
+	 * @return matching {@code c} instances mapped to their respective IDs
+	 */
+	public <T> Map<UUID, T> select(Class<T> c, Condition where) {
+		try {
+			PreparedStatement statement = conn.prepareStatement(generator.generateSelect(c, where));
+			applyWhere(statement, where, 1);
+			ResultSet rs = statement.executeQuery();
+
+			Map<UUID, T> results = new HashMap<>();
+
+			while (rs.next()) {
+				UUID id = mapper.extract(UUID.class, rs, ID_NAME);
+
+				T o = c.newInstance();
+				for (Field f : mapper.getPersistableFields(c)) f.set(o, mapper.extract(f, rs));
+
+				results.put(id, o);
+				log.debug(() -> "Found instance: " + id + "->" + o);
+			}
+			return results;
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new NonPersistableException(c + " does not specify a public, no-arg constructor", e);
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
 	 * Executes an INSERT statement persisting {@code o}.
 	 * @param o object to persist
 	 * @return ID of relational representation of {@code o}
@@ -91,6 +123,52 @@ public class StatementExecutor implements AutoCloseable {
 			return id;
 		} catch (IllegalAccessException e) {
 			throw new NonPersistableException("Unable to get field value from " + o, e);
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * Executes an UPDATE statement updating the instance at {@code id} with {@code o}.
+	 * @param id ID of persisted instance to update
+	 * @param o updated instance
+	 */
+	public void update(UUID id, Object o) {
+		Condition where = new Condition(ID_NAME, "=", id);
+		try {
+			PreparedStatement statement = updates.computeIfAbsent(o.getClass(), k -> {
+				try {
+					return conn.prepareStatement(generator.generateUpdate(k, where));	// Update where ID matches
+				} catch (SQLException e) {
+					throw new RuntimeException(e);
+				}
+			});
+			int indexer = 1;
+			for (Field f : mapper.getPersistableFields(o.getClass())) {
+				Object value = mapper.convert(f.get(o));
+				if (mapper.isComplex(f)) {
+					log.debug(() -> f + " is complex, inserting before continuing with " + o + "...");
+					value = insert(value);
+				}
+				statement.setObject(indexer++, value);
+			}
+			applyWhere(statement, where, indexer);
+
+			statement.execute();
+		} catch (IllegalAccessException e) {
+			throw new NonPersistableException("Unable to get field value from " + o, e);
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void applyWhere(PreparedStatement statement, Condition where, int startI) {
+		int index = startI;
+		try {
+			for (Object value : where.values()) {
+				statement.setObject(index++, mapper.convert(value));
+				log.debug(() -> "Applied WHERE value: " + value);
+			}
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}

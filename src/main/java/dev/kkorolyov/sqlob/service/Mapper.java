@@ -112,9 +112,9 @@ public class Mapper {
 			throw new RuntimeException(e);
 		}
 	}
-	/** @return column {@code columnName} of result set {@code rs} as an instance of {@code f}'s type */
-	public Object extract(Field f, ResultSet rs, String columnName) {
-		return extract(f.getType(), rs, columnName);
+	/** @return column mapped to {@code f} of result set {@code rs} as an instance of {@code f}'s type */
+	public Object extract(Field f, ResultSet rs) {
+		return extract(f.getType(), rs, getName(f));
 	}
 
 	/** @return all persistable fields of a class with accessibility restrictions disabled */
