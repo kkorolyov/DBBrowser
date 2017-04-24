@@ -49,14 +49,12 @@ public class StatementExecutor implements AutoCloseable {
 	 * @param c class to create table for
 	 */
 	public void create(Class<?> c) {
-		try {
-			Statement s = conn.createStatement();
-
-			for (String statement : generator.generateCreate(c)) {
-				s.addBatch(statement);
-				log.debug(() -> "Added batch statement: " + statement);
+		try (Statement statement = conn.createStatement();) {
+			for (String create : generator.generateCreate(c)) {
+				statement.addBatch(create);
+				log.debug(() -> "Added batch statement: " + create);
 			}
-			s.executeBatch();
+			statement.executeBatch();
 			log.debug(() -> "Executed batch statements");
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -70,8 +68,7 @@ public class StatementExecutor implements AutoCloseable {
 	 * @return matching {@code c} instances mapped to their respective IDs
 	 */
 	public <T> Map<UUID, T> select(Class<T> c, Condition where) {
-		try {
-			PreparedStatement statement = conn.prepareStatement(generator.generateSelect(c, where));
+		try (PreparedStatement statement = conn.prepareStatement(generator.generateSelect(c, where))) {
 			applyWhere(statement, where, 1);
 			ResultSet rs = statement.executeQuery();
 
@@ -92,6 +89,38 @@ public class StatementExecutor implements AutoCloseable {
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	/**
+	 * Executes a SELECT statement retrieving the ID of an instance.
+	 * @param o instance to match
+	 * @return ID of {@code o}, or {@code null} if not available
+	 */
+	public UUID selectId(Object o) {
+		Condition where = whereInstance(o);
+		try (PreparedStatement statement = conn.prepareStatement(generator.generateSelectId(o.getClass(), where))) {
+			applyWhere(statement, where, 1);
+			ResultSet rs = statement.executeQuery();
+
+			return (rs.next()) ? mapper.extract(UUID.class, rs, ID_NAME) : null;
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	private Condition whereInstance(Object o) {
+		Condition where = new Condition();
+
+		try {
+			for (Field f : mapper.getPersistableFields(o.getClass())) {
+				Object value = mapper.convert(f.get(o));
+				String operator = (value == null) ? "IS" : "=";
+
+				where.and(mapper.getName(f), operator, value);
+			}
+		} catch (IllegalAccessException e) {
+			throw new NonPersistableException("Unable to get field value from " + o, e);
+		}
+		return where;
 	}
 
 	/**

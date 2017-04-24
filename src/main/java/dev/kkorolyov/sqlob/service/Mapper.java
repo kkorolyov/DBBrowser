@@ -99,7 +99,7 @@ public class Mapper {
 
 	/** @return converted representation of {@code o}, or {@code o} if no converter set */
 	public Object convert(Object o) {
-		Converter converter = converterMap.get(o.getClass());
+		Converter converter = (o == null) ? null : converterMap.get(o.getClass());
 
 		return (converter == null) ? o : converter.execute(o);
 	}
