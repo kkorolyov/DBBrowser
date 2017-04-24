@@ -7,6 +7,8 @@ import dev.kkorolyov.sqlob.utility.Condition
 import groovy.transform.PackageScope
 import spock.lang.Specification
 
+import java.lang.reflect.Field
+
 import static dev.kkorolyov.sqlob.service.Constants.ID_NAME
 
 class StatementGeneratorSpec extends Specification {
@@ -15,7 +17,30 @@ class StatementGeneratorSpec extends Specification {
   }
 
   Mapper mapper = Mock()
-  StatementGenerator generator = new StatementGenerator()
+
+  StatementGenerator generator = new StatementGenerator(mapper)
+
+  def "uses mapped names"() {
+		Class c = new Object() {
+			private Object field
+    }.class
+		Field f = c.getDeclaredField("field")
+		Condition where = new Condition()
+
+		when:
+		mapper.getAssociatedClasses(c) >> [c]
+		mapper.getPersistableFields(c) >> [f]
+
+		generator.generateCreate(c)
+		generator.generateSelect(c, where)
+		generator.generateInsert(c)
+		generator.generateUpdate(c, where)
+		generator.generateDelete(c, where)
+
+		then:
+		5 * mapper.getName(c) >> "FakeClass"
+		3 * mapper.getName(f) >> "FakeField"
+	}
 
   def "generateCreate() returns statement for class and per associated class"() {
     expect:
@@ -41,16 +66,6 @@ class StatementGeneratorSpec extends Specification {
     where:
     c << [HasComplexes]
     statement << ["INSERT INTO TABLE HasComplexes (" + ID_NAME + ", e1, e2, e3) VALUES (?, ?, ?, ?)"]
-  }
-
-  def "generateUpdate() uses getName()"() {
-    expect:
-    generator.generateUpdate(c, new Condition()) == statement
-
-    where:
-    c << [NonTagged, Tagged]
-    statement << ["UPDATE NonTagged SET s = ? WHERE ",
-                  "UPDATE CustomTable SET CustomColumn = ? WHERE "]
   }
 
   def "generateSelect() uses getName()"() {

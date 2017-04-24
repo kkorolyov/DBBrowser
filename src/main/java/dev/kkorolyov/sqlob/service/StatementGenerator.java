@@ -64,7 +64,7 @@ public class StatementGenerator {
 		String name = mapper.getName(f);
 		String primitive = mapper.sql(f);
 
-		return name + " " + (primitive != null ? primitive : ID_TYPE + ", FOREIGN KEY (" + name + ") REFERENCES " + mapper.getName(f.getClass()) + " (" + ID_NAME + ")");
+		return name + " " + (primitive != null ? primitive : ID_TYPE + ", FOREIGN KEY (" + name + ") REFERENCES " + mapper.getName(f.getType()) + " (" + ID_NAME + ")");
 	}
 
 	/**
