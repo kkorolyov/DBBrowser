@@ -1,15 +1,16 @@
 package dev.kkorolyov.sqlob;
 
-import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import javax.sql.DataSource;
 
 import dev.kkorolyov.sqlob.logging.Logger;
-import dev.kkorolyov.sqlob.utility.Extractor;
 import dev.kkorolyov.sqlob.persistence.NonPersistableException;
+import dev.kkorolyov.sqlob.service.Mapper;
 import dev.kkorolyov.sqlob.service.StatementExecutor;
 import dev.kkorolyov.sqlob.utility.Condition;
 
@@ -21,9 +22,13 @@ public class Session implements AutoCloseable {
 	private static final Logger log = Logger.getLogger(Session.class.getName());
 	
 	private final DataSource ds;
+	private final Mapper mapper;
 	private final StatementExecutor executor;
+
 	private final int bufferSize;
 	private int bufferCounter = 0;
+
+	private final Set<Class<?>> prepared = new HashSet<>();
 
 	/**
 	 * Constructs a new session with a default buffer size of {@code 100}.
@@ -41,9 +46,45 @@ public class Session implements AutoCloseable {
 		this.ds = ds;
 		this.bufferSize = bufferSize <= 1 ? 0 : bufferSize;
 
+		mapper = new Mapper();
+		executor = new StatementExecutor(mapper);
+
 		log.info(() -> "Constructed new " + this);
 	}
-	
+
+	/**
+	 * Retrieves the instance of a class matching an ID.
+	 * @param c type to retrieve
+	 * @param id instance ID
+	 * @return instance matching {@code id}, or {@code null} if no such instance
+	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 */
+	public <T> T get(Class<T> c, UUID id) {
+		assertNotNull(c, id);
+
+		prepareAction(c);
+		T result = executor.select(c, id);
+		finalizeAction();
+
+		return result;
+	}
+	/**
+	 * Retrieves all instances of a class matching a condition.
+	 * @param c type to retrieve
+	 * @param where condition to match
+	 * @return all matching instances mapped to their respective IDs
+	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 */
+	public <T> Map<UUID, T> get(Class<T> c, Condition where) {
+		assertNotNull(c);
+
+		prepareAction(c);
+		Map<UUID, T> result = executor.select(c, where);
+		finalizeAction();
+
+		return result;
+	}
+
 	/**
 	 * Retrieves the ID of an instance of a class.
 	 * @param o stored instance
@@ -53,111 +94,48 @@ public class Session implements AutoCloseable {
 	public UUID getId(Object o) {
 		assertNotNull(o);
 
-		Connection conn = getConn();
-		try {
-			return cache.get(o.getClass(), conn)
-									.getId(o, conn);
-		} catch (SQLException e) {
-			conn.rollback();
+		prepareAction(o.getClass());
+		UUID result = executor.selectId(o);
+		finalizeAction();
 
-			log.exception(e);
-			throw e;
-		}
+		return result;
 	}
-	
-	/**
-	 * Retrieves the instance of a class matching an ID.
-	 * @param c type to retrieve
-	 * @param id instance ID
-	 * @return instance matching {@code id}, or {@code null} if no such instance
-	 * @throws SQLException if a database error occurs
-	 * @throws NonPersistableException if the class does not follow persistence requirements
-	 */
-	public <T> T get(Class<T> c, UUID id) throws SQLException {
-		assertNotNull(c, id);
 
-		Connection conn = getConn();
-		try {
-			return cache.get(c, conn)
-									.get(id, conn);
-		} catch (SQLException e) {
-			conn.rollback();
-
-			log.exception(e);
-			throw e;
-		}
-	}
-	/**
-	 * Retrieves all instances of a class matching a condition.
-	 * @param c type to retrieve
-	 * @param condition condition to match
-	 * @return all matching instances
-	 * @throws SQLException if a database error occurs
-	 * @throws NonPersistableException if the class does not follow persistence requirements
-	 */
-	public <T> Set<T> get(Class<T> c, Condition condition) throws SQLException {
-		assertNotNull(c);
-
-		Connection conn = getConn();
-		try {
-			return cache.get(c, conn)
-									.get(condition, conn);
-		} catch (SQLException e) {
-			conn.rollback();
-
-			log.exception(e);
-			throw e;
-		}
-	}
-	
 	/**
 	 * Stores an instance of a class and returns its ID.
 	 * If an equivalent instance is already stored, no additional storage is performed and the ID of that instance is returned.
 	 * @param o instance to store
 	 * @return UUID of stored instance
-	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
-	public UUID put(Object o) throws SQLException {
+	public UUID put(Object o) {
 		assertNotNull(o);
 
-		Connection conn = getConn();
-		try {
-			UUID result = cache.get(o.getClass(), conn).put(o, conn);
-			
-			finalizeAction();
-			return result;
-		} catch (SQLException e) {
-			conn.rollback();
+		prepareAction(o.getClass());
 
-			log.exception(e);
-			throw e;
-		}
+		UUID result = getId(o);
+		if (result == null) result = executor.insert(o);
+
+		finalizeAction();
+
+		return result;
 	}
 	/**
 	 * Stores an instance of a class using a predetermined ID.
-	 * If the ID is reserved by another instance, that instance is replaced with {@code o}.
+	 * If {@code id} is already mapped to an instance, that instance is updated to match {@code o}.
 	 * @param id instance ID
 	 * @param o instance to store
 	 * @return {@code true} if a previous instance was overwritten by {@code o}
-	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
-	public boolean put(UUID id, Object o) throws SQLException {
+	public boolean put(UUID id, Object o) {
 		assertNotNull(id, o);
 
-		Connection conn = getConn();
-		try {
-			boolean result = cache.get(o.getClass(), conn).put(id, o, conn);
-			
-			finalizeAction();
-			return result;
-		} catch (SQLException e) {
-			conn.rollback();
+		prepareAction(o.getClass());
+		boolean result = executor.update(id, o);
+		finalizeAction();
 
-			log.exception(e);
-			throw e;
-		}
+		return result;
 	}
 	
 	/**
@@ -165,130 +143,77 @@ public class Session implements AutoCloseable {
 	 * @param c type to delete
 	 * @param id instance ID
 	 * @return {@code true} if instance deleted
-	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
-	public boolean drop(Class<?> c, UUID id) throws SQLException {
+	public boolean drop(Class<?> c, UUID id) {
 		assertNotNull(c, id);
 
-		Connection conn = getConn();
-		try {
-			boolean result = cache.get(c, conn).drop(id, conn);
-			
-			finalizeAction();
-			return result;
-		} catch (SQLException e) {
-			conn.rollback();
+		prepareAction(c);
+		boolean result = executor.delete(c, id);
+		finalizeAction();
 
-			log.exception(e);
-			throw e;
-		}
+		return result;
 	}
 	/**
 	 * Deletes all instances of a class matching a condition.
 	 * @param c type to delete
-	 * @param condition condition to match
+	 * @param where condition to match
 	 * @return number of deleted instances
 	 * @throws SQLException if a database error occurs
 	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
-	public int drop(Class<?> c, Condition condition) throws SQLException {
+	public int drop(Class<?> c, Condition where) throws SQLException {
 		assertNotNull(c);
 
-		Connection conn = getConn();
-		try {
-			int result = cache.get(c, conn).drop(condition, conn);
-			
-			finalizeAction();
-			return result;
-		} catch (SQLException e) {
-			conn.rollback();
+		prepareAction(c);
+		int result = executor.delete(c, where);
+		finalizeAction();
 
-			log.exception(e);
-			throw e;
-		}
+		return result;
 	}
 
-	/**
-	 * Commits all actions.
-	 * @throws SQLException if a database error occurs
-	 */
-	public void flush() throws SQLException {
-		if (conn != null) {
-			try {
-				conn.commit();
-
-				log.info(() -> "Flushed " + bufferCounter + " statements");
-
-				bufferCounter = 0;
-			} catch (SQLException e) {
-				conn.rollback();
-
-				log.exception(e);
-				throw e;
-			}
-		}
-	}
-	
-	private void finalizeAction() throws SQLException {
-		if (++bufferCounter >= bufferSize) flush();
-	}
-
-	/**
-	 * Commits all actions and closes the underlying {@link Connection}.
-	 * @throws SQLException if a database error occurs
-	 */
-	@Override
-	public void close() throws SQLException {
-		flush();
-
-		if (conn != null) {
-			conn.close();
-
-			log.info(() -> "Closed " + conn);
-
-			conn = null;
-		}
-	}
-	
-	/**
-	 * Maps a {@code Class} to a {@code SQL} type.
-	 * @param c Java class
-	 * @param sql mapped SQL type
-	 */
-	public void mapType(Class<?> c, String sql) {
-		cache.mapType(c, sql);
-	}
-	/**
-	 * Maps a {@code Class} to an extractor.
-	 * @param c Java class
-	 * @param extractor extractor invoked when this retrieving a field of type {@code c}
-	 */
-	public void mapExtractor(Class<?> c, Extractor extractor) {
-		cache.mapExtractor(c, extractor);
-	}
-
-	private Connection getConn() throws SQLException {
-		if (conn == null) {
-			conn = ds.getConnection();
-			conn.setAutoCommit(false);	// Disable to reduce overhead
-			
-			log.debug(() -> "Retrieved new Connection from " + ds);
-		}
-		return conn;
-	}
-	
 	private static void assertNotNull(Object... args) throws IllegalArgumentException {
 		for (Object arg : args) {
 			if (arg == null) throw new IllegalArgumentException();
 		}
 	}
 
+	private void finalizeAction() {
+		if (++bufferCounter >= bufferSize) flush();
+	}
+
+	private void prepareAction(Class<?> c) {
+		try {
+			if (executor.isClosed()) executor.setConnection(ds.getConnection());
+
+			if (!prepared.contains(c)) {
+				executor.create(c);
+				prepared.add(c);
+			}
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * Commits all active actions.
+	 */
+	public void flush() {
+		executor.flush();
+		log.info(() -> "Flushed " + bufferCounter + " statements");
+
+		bufferCounter = 0;
+	}
+	/**
+	 * Flushes and closes the underlying {@link StatementExecutor}.
+	 */
 	@Override
-	public String toString() {
-		return "Session{" +
-					 "ds=" + ds +
-					 ", bufferSize=" + bufferSize +
-					 '}';
+	public void close() throws Exception {
+		executor.close();
+	}
+
+	/** @return mapper used by this session */
+	public Mapper getMapper() {
+		return mapper;
 	}
 }

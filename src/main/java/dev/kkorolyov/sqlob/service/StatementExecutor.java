@@ -27,18 +27,15 @@ public class StatementExecutor implements AutoCloseable {
 
 	/**
 	 * Constructs a new evaluator using the default {@code Mapper}.
-	 * @param conn connection on which to execute statements
 	 */
-	public StatementExecutor(Connection conn) {
-		this(conn, new Mapper());
+	public StatementExecutor() {
+		this(new Mapper());
 	}
 	/**
 	 * Constructs a new statement executor.
-	 * @param conn connection on which to execute statements
 	 * @param mapper Java-SQL mapper
 	 */
-	public StatementExecutor(Connection conn, Mapper mapper) {
-		this.conn = conn;
+	public StatementExecutor(Mapper mapper) {
 		this.mapper = mapper;
 
 		generator = new StatementGenerator(mapper);
@@ -61,6 +58,17 @@ public class StatementExecutor implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Executes a SELECT statement retrieving an instance of {@code c} mapped to {@code id}.
+	 * @param c type to retrieve
+	 * @param id ID to match
+	 * @return instance mapped to {@code id}, or {@code null} if no such instance
+	 */
+	public <T> T select(Class<T> c, UUID id) {
+		Map<UUID, T> results = select(c, new Condition(ID_NAME, "=", mapper.convert(id)));
+
+		return (results.isEmpty()) ? null : results.values().iterator().next();
+	}
 	/**
 	 * Executes a SELECT statement retrieving instances of {@code c} matching {@code where}.
 	 * @param c type to retrieve
@@ -155,7 +163,7 @@ public class StatementExecutor implements AutoCloseable {
 	 * @return {@code true} if instance at {@code id} updated successfully
 	 */
 	public boolean update(UUID id, Object o) {
-		Condition where = new Condition(ID_NAME, "=", id);
+		Condition where = new Condition(ID_NAME, "=", mapper.convert(id));
 		try {
 			PreparedStatement statement = updates.computeIfAbsent(o.getClass(), k -> {
 				try {
@@ -173,6 +181,21 @@ public class StatementExecutor implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Executes a DELETE statement deleting the instance of {@code c} mapped to {code id}.
+	 * @param c type to delete
+	 * @param id ID of instance to delete
+	 * @return {@code true} if instance at {@code id} deleted successfully
+	 */
+	public boolean delete(Class<?> c, UUID id) {
+		return delete(c, new Condition(ID_NAME, "=", mapper.convert(id))) == 1;
+	}
+	/**
+	 * Executes a DELETE statement deleting instances of {@code c} matching {@code where}.
+	 * @param c type to delete
+	 * @param where condition to match, {@code null} implies no condition
+	 * @return number of deleted instances
+	 */
 	public int delete(Class<?> c, Condition where) {
 		try (PreparedStatement statement = conn.prepareStatement(generator.generateDelete(c, where))) {
 			applyWhere(statement, where, 1);
@@ -221,16 +244,27 @@ public class StatementExecutor implements AutoCloseable {
 	 * @param conn new connection
 	 * @see #close()
 	 */
-	void setConnection(Connection conn) {
+	public void setConnection(Connection conn) {
 		flush();
+		inserts.clear();
+		updates.clear();
 
-		this.conn = conn;
+		this.conn = ready(conn);
+	}
+	private Connection ready(Connection conn) {
+		try {
+			conn.setAutoCommit(false);
+
+			return conn;
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
 	 * Commits all active transactions.
 	 */
-	void flush() {
+	public void flush() {
 		if (conn != null) {
 			try {
 				conn.commit();
@@ -247,6 +281,11 @@ public class StatementExecutor implements AutoCloseable {
 			}
 		}
 	}
+
+	/** @return {@code true} if this executor does not have an active {@link Connection} */
+	public boolean isClosed() {
+		return conn == null;
+	}
 	/**
 	 * Flushes and closes the underlying {@link Connection}.
 	 */
@@ -258,6 +297,8 @@ public class StatementExecutor implements AutoCloseable {
 			inserts.clear();	// All cached statements closed anyway
 			conn.close();
 			conn = null;
+
+			log.info(() -> "Closed " + this);
 		}
 	}
 }
