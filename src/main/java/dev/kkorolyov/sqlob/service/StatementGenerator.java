@@ -88,9 +88,12 @@ public class StatementGenerator {
 	}
 
 	private String generateSelect(Class<?> c, Condition where, boolean idOnly) {
-		return "SELECT " + (idOnly ? ID_NAME : "*") +
-					 " FROM " + mapper.getName(c) +
-					 (where == null ? "" : " WHERE " + where.toString());
+		String statement = "SELECT " + (idOnly ? ID_NAME : "*") +
+											 " FROM " + mapper.getName(c) +
+											 (where == null ? "" : " WHERE " + where.toString());
+
+		log.debug(() -> "Generated SELECT: " + statement);
+		return statement;
 	}
 
 	/**
@@ -99,9 +102,12 @@ public class StatementGenerator {
 	 * @return parametrized SQL statement inserting an instance
 	 */
 	public String generateInsert(Class<?> c) {
-		return "INSERT INTO TABLE " + mapper.getName(c) +
-					 " " + generateColumns(c) +
-					 " VALUES " + generatePlaceholders(c);
+		String statement = "INSERT INTO " + mapper.getName(c) +
+											 " " + generateColumns(c) +
+											 " VALUES " + generatePlaceholders(c);
+
+		log.debug(() -> "Generated INSERT: " + statement);
+		return statement;
 	}
 	private String generateColumns(Class<?> c) {
 		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
@@ -121,9 +127,12 @@ public class StatementGenerator {
 	 * @return parametrized SQL statement updating an instance of {@code c}
 	 */
 	public String generateUpdate(Class<?> c, Condition where) {
-		return "UPDATE " + mapper.getName(c) +
-					 " SET " + generateSet(c) +
-					 " WHERE " + where.toString();
+		String statement = "UPDATE " + mapper.getName(c) +
+											 " SET " + generateSet(c) +
+											 " WHERE " + where.toString();
+
+		log.debug(() -> "Generated UPDATE: " + statement);
+		return statement;
 	}
 	private String generateSet(Class<?> c) {
 		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
@@ -138,7 +147,10 @@ public class StatementGenerator {
 	 * @return parametrized SQL statement deleting an instance of {@code c}
 	 */
 	public String generateDelete(Class<?> c, Condition where) {
-		return "DELETE FROM " + mapper.getName(c) +
-					 (where == null ? "" : " WHERE " + where.toString());
+		String statement = "DELETE FROM " + mapper.getName(c) +
+											 (where == null ? "" : " WHERE " + where.toString());
+
+		log.debug(() -> "Generated DELETE: " + statement);
+		return statement;
 	}
 }

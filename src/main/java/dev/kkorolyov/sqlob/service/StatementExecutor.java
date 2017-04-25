@@ -47,10 +47,8 @@ public class StatementExecutor implements AutoCloseable {
 	 */
 	public void create(Class<?> c) {
 		try (Statement statement = conn.createStatement();) {
-			for (String create : generator.generateCreate(c)) {
-				statement.addBatch(create);
-				log.debug(() -> "Added batch statement: " + create);
-			}
+			for (String create : generator.generateCreate(c))	statement.addBatch(create);
+
 			statement.executeBatch();
 			log.debug(() -> "Executed batch statements");
 		} catch (SQLException e) {

@@ -36,6 +36,20 @@ public class Mapper {
 	 * Constructs a new mapper with default mappings.
 	 */
 	public Mapper() {
+		put(Byte.TYPE, "TINYINT", ResultSet::getByte);
+		put(Short.TYPE, "SMALLINT", ResultSet::getShort);
+		put(Integer.TYPE, "INTEGER", ResultSet::getInt);
+		put(Long.TYPE, "BIGINT", ResultSet::getLong);
+		put(Float.TYPE, "REAL", ResultSet::getFloat);
+		put(Double.TYPE, "DOUBLE", ResultSet::getDouble);
+
+		put(Boolean.TYPE, "BOOLEAN", ResultSet::getBoolean);
+
+		put(Character.TYPE, "CHAR(1)", (rs, column) -> {
+			String string = rs.getString(column);
+			return string == null ? null : string.charAt(0);
+		});
+
 		put(Byte.class, "TINYINT", ResultSet::getByte);
 		put(Short.class, "SMALLINT", ResultSet::getShort);
 		put(Integer.class, "INTEGER", ResultSet::getInt);
