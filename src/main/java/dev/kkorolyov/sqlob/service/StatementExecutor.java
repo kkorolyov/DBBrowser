@@ -164,7 +164,7 @@ public class StatementExecutor implements AutoCloseable {
 			statement.setObject(1, mapper.convert(id));	// Apply ID to 1st param
 			applyInstance(statement, o, 2);
 
-			assert statement.executeUpdate() == 1;
+			statement.executeUpdate();
 			return id;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
