@@ -18,7 +18,7 @@ import dev.kkorolyov.sqlob.annotation.Transient;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.utility.Converter;
 import dev.kkorolyov.sqlob.utility.Extractor;
-import dev.kkorolyov.sqlob.persistence.NonPersistableException;
+import dev.kkorolyov.sqlob.NonPersistableException;
 
 /**
  * Manages data mapping between Java and relational domains.

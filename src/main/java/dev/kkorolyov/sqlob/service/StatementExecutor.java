@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import dev.kkorolyov.sqlob.logging.Logger;
-import dev.kkorolyov.sqlob.persistence.NonPersistableException;
+import dev.kkorolyov.sqlob.NonPersistableException;
 import dev.kkorolyov.sqlob.utility.Condition;
 
 /**

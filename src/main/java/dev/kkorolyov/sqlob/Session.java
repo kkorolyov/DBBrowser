@@ -9,7 +9,6 @@ import java.util.UUID;
 import javax.sql.DataSource;
 
 import dev.kkorolyov.sqlob.logging.Logger;
-import dev.kkorolyov.sqlob.persistence.NonPersistableException;
 import dev.kkorolyov.sqlob.service.Mapper;
 import dev.kkorolyov.sqlob.service.StatementExecutor;
 import dev.kkorolyov.sqlob.utility.Condition;

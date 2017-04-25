@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.persistence;
+package dev.kkorolyov.sqlob;
 
 /**
  * Exception thrown when a class that does not match persistence requirements is used in a persistence function.

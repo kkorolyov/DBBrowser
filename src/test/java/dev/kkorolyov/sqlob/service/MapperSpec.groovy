@@ -4,7 +4,7 @@ import dev.kkorolyov.simplelogs.Logger
 import dev.kkorolyov.sqlob.annotation.Column
 import dev.kkorolyov.sqlob.annotation.Table
 import dev.kkorolyov.sqlob.annotation.Transient
-import dev.kkorolyov.sqlob.persistence.NonPersistableException
+import dev.kkorolyov.sqlob.NonPersistableException
 import dev.kkorolyov.sqlob.utility.Converter
 import dev.kkorolyov.sqlob.utility.Extractor
 import groovy.transform.PackageScope
