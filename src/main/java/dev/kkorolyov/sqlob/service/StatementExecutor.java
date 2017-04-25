@@ -2,7 +2,9 @@ package dev.kkorolyov.sqlob.service;
 
 import static dev.kkorolyov.sqlob.service.Constants.ID_NAME;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +26,7 @@ public class StatementExecutor implements AutoCloseable {
 
 	private final Map<Class<?>, PreparedStatement> inserts = new HashMap<>();
 	private final Map<Class<?>, PreparedStatement> updates = new HashMap<>();
+	private final Map<Class<?>, Constructor<?>> constructors = new HashMap<>();
 
 	/**
 	 * Constructs a new evaluator using the default {@code Mapper}.
@@ -83,15 +86,28 @@ public class StatementExecutor implements AutoCloseable {
 			while (rs.next()) {
 				UUID id = mapper.extract(UUID.class, rs, ID_NAME);
 
-				T o = c.newInstance();
-				for (Field f : mapper.getPersistableFields(c)) f.set(o, mapper.extract(f, rs));
+				@SuppressWarnings("unchecked")
+				T o = (T) constructors.computeIfAbsent(c, k -> {
+					try {
+						Constructor<?> constructor = k.getDeclaredConstructor();
+						constructor.setAccessible(true);
 
+						return constructor;
+					} catch (NoSuchMethodException e) {
+						throw new NonPersistableException(k + " does not specify a no-arg constructor", e);
+					}
+				}).newInstance();
+
+				for (Field f : mapper.getPersistableFields(c)) {
+					Object value = extract(f, rs);
+					f.set(o, value);
+				}
 				results.put(id, o);
 				log.debug(() -> "Found instance: " + id + "->" + o);
 			}
 			return results;
-		} catch (InstantiationException | IllegalAccessException e) {
-			throw new NonPersistableException(c + " does not specify a public, no-arg constructor", e);
+		} catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
+			throw new NonPersistableException("");
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -148,6 +164,7 @@ public class StatementExecutor implements AutoCloseable {
 			statement.setObject(1, mapper.convert(id));	// Apply ID to 1st param
 			applyInstance(statement, o, 2);
 
+			assert statement.executeUpdate() == 1;
 			return id;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -209,12 +226,7 @@ public class StatementExecutor implements AutoCloseable {
 		int i = startI;
 		try {
 			for (Field f : mapper.getPersistableFields(o.getClass())) {
-				Object value = mapper.convert(f.get(o));
-				if (mapper.isComplex(f)) {
-					log.debug(() -> f + " is complex, inserting before continuing with " + o + "...");
-					value = insert(value);  // Insert, store ID ref if complex
-				}
-				statement.setObject(i++, value);
+				statement.setObject(i++, resolve(f.get(o)));
 			}
 			return i;
 		} catch (IllegalAccessException e) {
@@ -228,13 +240,44 @@ public class StatementExecutor implements AutoCloseable {
 		int i = startI;
 		try {
 			for (Object value : where.values()) {
-				statement.setObject(i++, mapper.convert(value));
-				log.debug(() -> "Applied WHERE value: " + value);
+				statement.setObject(i++, resolve(value));
 			}
 			return i;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private Object extract(Field f, ResultSet rs) {
+		Object resolved;
+
+		if (mapper.isPrimitive(f)) {
+			resolved = mapper.extract(f, rs);
+			log.debug(() -> f + " is primitive, extracted trivially");
+		} else {
+			resolved = select(f.getType(), mapper.extract(UUID.class, rs, mapper.getName(f)));
+			log.debug(() -> f + " is complex, extracted ID and deserialized");
+		}
+		return resolved;
+	}
+	/** Resolves primitive types to themselves, and complex types to their persistable representations */
+	private Object resolve(Object o) {
+		Object resolved;
+
+		if (mapper.isPrimitive(o.getClass())) {
+			resolved = o;
+			log.debug(() -> o + " is primitive, resolved trivially");
+		} else {
+			resolved = selectId(o);
+
+			if (resolved == null) {
+				resolved = insert(o);
+				log.debug(() -> o + " is complex, persisted and resolved");
+			} else {
+				log.debug(() -> o + " is complex, found existing persisted instance");
+			}
+		}
+		return mapper.convert(resolved);
 	}
 
 	/**
@@ -293,6 +336,8 @@ public class StatementExecutor implements AutoCloseable {
 			flush();
 
 			inserts.clear();	// All cached statements closed anyway
+			updates.clear();
+
 			conn.close();
 			conn = null;
 

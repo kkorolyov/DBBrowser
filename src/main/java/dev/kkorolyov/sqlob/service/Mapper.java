@@ -224,6 +224,7 @@ public class Mapper {
 	public String toString() {
 		return "Mapper{" +
 					 "typeMap=" + typeMap +
+					 ", converterMap=" + converterMap +
 					 ", extractorMap=" + extractorMap +
 					 ", persistableFields=" + persistableFields +
 					 '}';

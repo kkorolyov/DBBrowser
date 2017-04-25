@@ -13,9 +13,12 @@ import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.Statement
 
-import static dev.kkorolyov.sqlob.Stub.*
+import static dev.kkorolyov.sqlob.Stub.BasicStub
+import static dev.kkorolyov.sqlob.Stub.SmartStub
 
 class SessionPerfSpec extends Specification {
+	private static boolean CLEANUP = true
+
 	@Shared int tests = 100
 
 	@Shared DataSource sqliteDS = buildSQLiteDS()
@@ -27,20 +30,22 @@ class SessionPerfSpec extends Specification {
 	}
 
 	def cleanup() {
-		[myDS].each {
-			Connection conn = it.getConnection()
-			conn.setAutoCommit(false)
+		if (CLEANUP) {
+			[sqliteDS, myDS].each {
+				Connection conn = it.getConnection()
+				conn.setAutoCommit(false)
 
-			Statement s = conn.createStatement()
-			for (String table : ['SmartStub', 'BasicStub', 'A', 'Test']) {
-				String statement = "DROP TABLE IF EXISTS " + table
-				s.addBatch(statement)
-				s.addBatch(statement.toLowerCase())
+				Statement s = conn.createStatement()
+				for (String table : ['SmartStub', 'BasicStub', 'A', 'Test']) {
+					String statement = "DROP TABLE IF EXISTS " + table
+					s.addBatch(statement)
+					s.addBatch(statement.toLowerCase())
+				}
+				s.executeBatch()
+
+				conn.commit()
+				conn.close()
 			}
-			s.executeBatch()
-
-			conn.commit()
-			conn.close()
 		}
 	}
 
@@ -67,7 +72,7 @@ class SessionPerfSpec extends Specification {
 		println(ms + "ms to PUT " + tests + " things using " + ds)
 
 		where:
-		ds << [myDS]
+		ds << [sqliteDS, myDS]
 	}
 
 	def "test BasicStub"() {
@@ -95,7 +100,7 @@ class SessionPerfSpec extends Specification {
 		println(ms + "ms to GET " + tests + " BasicStubs using " + ds)
 
 		where:
-		ds << [myDS]
+		ds << [sqliteDS, myDS]
 	}
 	def "test SmartStub"() {
 		long start = System.nanoTime()
@@ -122,7 +127,7 @@ class SessionPerfSpec extends Specification {
 		println(ms + "ms to GET " + tests + " SmartStubs using " + ds)
 
 		where:
-		ds << [myDS]
+		ds << [sqliteDS, myDS]
 	}
 
 	private static DataSource buildSQLiteDS() {
@@ -130,7 +135,7 @@ class SessionPerfSpec extends Specification {
 		config.enforceForeignKeys(true)
 
 		SQLiteDataSource ds = new SQLiteDataSource(config)
-		ds.setUrl("jdbc:sqlite:sqlite.db")
+		ds.setUrl("jdbc:sqlite:M:\\test\\sqlite.db")
 
 		return ds
 	}
