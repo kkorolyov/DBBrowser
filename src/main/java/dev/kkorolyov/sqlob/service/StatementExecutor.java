@@ -226,7 +226,7 @@ public class StatementExecutor implements AutoCloseable {
 		int i = startI;
 		try {
 			for (Field f : mapper.getPersistableFields(o.getClass())) {
-				statement.setObject(i++, resolve(f.get(o)));
+				statement.setObject(i++, resolve(f.get(o), true));
 			}
 			return i;
 		} catch (IllegalAccessException e) {
@@ -240,7 +240,7 @@ public class StatementExecutor implements AutoCloseable {
 		int i = startI;
 		try {
 			for (Object value : where.values()) {
-				statement.setObject(i++, resolve(value));
+				statement.setObject(i++, resolve(value, false));
 			}
 			return i;
 		} catch (SQLException e) {
@@ -261,7 +261,7 @@ public class StatementExecutor implements AutoCloseable {
 		return resolved;
 	}
 	/** Resolves primitive types to themselves, and complex types to their persistable representations */
-	private Object resolve(Object o) {
+	private Object resolve(Object o, boolean createIfNotExists) {	// TODO Look over, make better
 		Object resolved;
 
 		if (mapper.isPrimitive(o)) {
@@ -270,7 +270,7 @@ public class StatementExecutor implements AutoCloseable {
 		} else {
 			resolved = selectId(o);
 
-			if (resolved == null) {	// Not already persisted
+			if (resolved == null && createIfNotExists) {
 				resolved = insert(o);
 				log.debug(() -> o + " is complex, persisted and resolved");
 			} else {
