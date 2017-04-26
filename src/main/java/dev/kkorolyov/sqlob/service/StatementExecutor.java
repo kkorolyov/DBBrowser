@@ -78,7 +78,7 @@ public class StatementExecutor implements AutoCloseable {
 	 */
 	public <T> Map<UUID, T> select(Class<T> c, Condition where) {
 		try (PreparedStatement statement = conn.prepareStatement(generator.generateSelect(c, where))) {
-			applyWhere(statement, where, 1);
+			if (where != null) applyWhere(statement, where, 1);
 			ResultSet rs = statement.executeQuery();
 
 			Map<UUID, T> results = new HashMap<>();
