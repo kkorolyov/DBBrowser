@@ -180,6 +180,10 @@ public class Mapper {
 	boolean isPrimitive(Field f) {
 		return isPrimitive(f.getType());
 	}
+	/** @return {@code true} if a primitive SQL type is associated with {@code o}'s type */
+	boolean isPrimitive(Object o) {
+		return o == null || isPrimitive(o.getClass());
+	}
 
 	/** @return {@code true} if no primitive SQL type is associated with {@code c} */
 	boolean isComplex(Class<?> c) {

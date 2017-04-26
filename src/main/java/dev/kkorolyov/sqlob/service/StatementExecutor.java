@@ -264,13 +264,13 @@ public class StatementExecutor implements AutoCloseable {
 	private Object resolve(Object o) {
 		Object resolved;
 
-		if (mapper.isPrimitive(o.getClass())) {
+		if (mapper.isPrimitive(o)) {
 			resolved = o;
 			log.debug(() -> o + " is primitive, resolved trivially");
 		} else {
 			resolved = selectId(o);
 
-			if (resolved == null) {
+			if (resolved == null) {	// Not already persisted
 				resolved = insert(o);
 				log.debug(() -> o + " is complex, persisted and resolved");
 			} else {
