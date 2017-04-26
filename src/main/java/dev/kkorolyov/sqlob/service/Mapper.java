@@ -72,7 +72,10 @@ public class Mapper {
 		put(Time.class, "TIME(6)", ResultSet::getTime);
 		put(Timestamp.class, "TIMESTAMP(6)", ResultSet::getTimestamp);
 
-		put(UUID.class, ID_TYPE, UUID::toString, (rs, column) -> UUID.fromString(rs.getString(column)));	// Store as string
+		put(UUID.class, ID_TYPE, UUID::toString, (rs, column) -> {	// Store as string
+			String string = rs.getString(column);
+			return string == null ? null : UUID.fromString(string);
+		});
 	}
 
 	/**
