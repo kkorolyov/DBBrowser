@@ -1,10 +1,9 @@
 package dev.kkorolyov.sqlob.service
 
-import dev.kkorolyov.simplelogs.Logger
+import dev.kkorolyov.sqlob.NonPersistableException
 import dev.kkorolyov.sqlob.annotation.Column
 import dev.kkorolyov.sqlob.annotation.Table
 import dev.kkorolyov.sqlob.annotation.Transient
-import dev.kkorolyov.sqlob.NonPersistableException
 import dev.kkorolyov.sqlob.utility.Converter
 import dev.kkorolyov.sqlob.utility.Extractor
 import groovy.transform.PackageScope
@@ -15,10 +14,6 @@ import java.lang.reflect.Field
 import java.sql.ResultSet
 
 class MapperSpec extends Specification {
-	static {
-		Logger.getLogger("dev.kkorolyov.sqlob", Logger.Level.DEBUG, new PrintWriter(System.err));	// Enable logging
-	}
-
   @Shared String stubSqlType = Constants.sanitize("SomeSQL")
 	@Shared Converter stubConverter = { o -> o }
 	@Shared Extractor stubExtractor = { rs, column -> rs.getString(column) }
@@ -125,11 +120,15 @@ class MapperSpec extends Specification {
 	}
   def "Transient-tagged fields are not persistable"() {
     expect:
-    mapper.getPersistableFields(c).size() == size
+		Iterable<Field> fields = mapper.getPersistableFields(c)
+
+		fields.size() == persistable.size()
+		for (Field f : persistable) fields.contains(f)
 
     where:
     c << [TransientTag, TransientTagPlusOne]
-    size << [0, 1]
+		persistable << [[],
+										[TransientTagPlusOne.getDeclaredField("e2")]]
   }
 
 	static class TransientModifier {
@@ -141,11 +140,15 @@ class MapperSpec extends Specification {
 	}
   def "transient fields are not persistable"() {
     expect:
-    mapper.getPersistableFields(c).size() == size
+    Iterable<Field> fields = mapper.getPersistableFields(c)
+
+		fields.size() == persistable.size()
+		for (Field f : persistable) fields.contains(f)
 
     where:
     c << [TransientModifier, TransientModifierPlusOne]
-    size << [0, 1]
+    persistable << [[],
+										[TransientModifierPlusOne.getDeclaredField("e2")]]
   }
 
 	static class StaticModifier {
@@ -157,11 +160,15 @@ class MapperSpec extends Specification {
 	}
   def  "static fields are not persistable"() {
     expect:
-    mapper.getPersistableFields(c).size() == size
+    Iterable<Field> fields = mapper.getPersistableFields(c)
+
+		fields.size() == persistable.size()
+		for (Field f : persistable) fields.contains(f)
 
     where:
     c << [StaticModifier, StaticModifierPlusOne]
-    size << [0, 1]
+		persistable << [[],
+										[StaticModifierPlusOne.getDeclaredField("e2")]]
   }
 
 	class SelfRef {
@@ -180,16 +187,22 @@ class MapperSpec extends Specification {
     Iterable<Class<?>> results = mapper.getAssociatedClasses(c)
 
     results.containsAll(classes)
-    results.size() == size
+    results.size() == classes.size()
 
     where:
     c << [Multi, SelfRef, RefLoop1, RefLoop2]
     classes << [[Multi, Empty],
-                SelfRef,
+                [SelfRef],
                 [RefLoop1, RefLoop2],
                 [RefLoop1, RefLoop2]]
-    size << [2, 1, 2, 2]
   }
+	def "given class is last associated class"() {
+		expect:
+		mapper.getAssociatedClasses(c).last() == c
+
+		where:
+		c << [Multi, SelfRef, RefLoop1, RefLoop2]
+	}
 
 	def "typemapped classes are primitive"() {
 		Class<?> c = Empty
@@ -237,11 +250,10 @@ class MapperSpec extends Specification {
 
 	def "getName(Class) returns simple name of non-Table-tagged class"() {
 		expect:
-		mapper.getName(c) == name
+		mapper.getName(c) == c.getSimpleName()
 
 		where:
 		c << [NonTagged]
-		name << ["NonTagged"]
 	}
 	def "getName(Class) returns custom name of Table-tagged class"() {
 		expect:
@@ -261,11 +273,10 @@ class MapperSpec extends Specification {
 
 	def "getName(Field) returns name of non-Column-tagged field"() {
 		expect:
-		mapper.getName(f) == name
+		mapper.getName(f) == f.getName()
 
 		where:
 		f << [NonTagged.getDeclaredField("s")]
-		name << ["s"]
 	}
 	def "getName(Field) returns custom name of Column-tagged field"() {
 		expect:

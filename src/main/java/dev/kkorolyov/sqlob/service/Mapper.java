@@ -6,26 +6,23 @@ import static dev.kkorolyov.sqlob.service.Constants.sanitize;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
-import java.sql.*;
 import java.sql.Date;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import dev.kkorolyov.sqlob.NonPersistableException;
 import dev.kkorolyov.sqlob.annotation.Column;
 import dev.kkorolyov.sqlob.annotation.Table;
 import dev.kkorolyov.sqlob.annotation.Transient;
-import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.utility.Converter;
 import dev.kkorolyov.sqlob.utility.Extractor;
-import dev.kkorolyov.sqlob.NonPersistableException;
 
 /**
  * Manages data mapping between Java and relational domains.
  */
 public class Mapper {
-	private static final Logger log = Logger.getLogger(Mapper.class.getName());
-
 	private final Map<Class<?>, String> typeMap = new HashMap<>();
 	private final Map<Class<?>, Converter> converterMap = new HashMap<>();
 	private final Map<Class<?>, Extractor> extractorMap = new HashMap<>();
@@ -101,8 +98,6 @@ public class Mapper {
 		typeMap.put(c, sanitizedSqlType);
 		converterMap.put(c, converter);
 		extractorMap.put(c, extractor);
-
-		log.debug(() -> "Put mapping: " + c + "->" + sanitizedSqlType);
 	}
 
 	/** @return SQL type associated with {@code c}, or {@code null} if no associated SQL type */
@@ -115,6 +110,7 @@ public class Mapper {
 	}
 
 	/** @return converted representation of {@code o}, or {@code o} if no converter set */
+	@SuppressWarnings("unchecked")
 	public Object convert(Object o) {
 		Converter converter = (o == null) ? null : converterMap.get(o.getClass());
 
@@ -122,6 +118,7 @@ public class Mapper {
 	}
 
 	/** @return column {@code columnName} of result set {@code rs} as an instance of {@code c} */
+	@SuppressWarnings("unchecked")
 	public <T> T extract(Class<T> c, ResultSet rs, String columnName) {
 		try {
 			return (T) extractorMap.get(c).execute(rs, columnName);
