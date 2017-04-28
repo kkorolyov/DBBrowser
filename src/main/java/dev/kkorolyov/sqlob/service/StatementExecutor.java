@@ -50,7 +50,7 @@ public class StatementExecutor implements AutoCloseable {
 	 */
 	public void create(Class<?> c) {
 		try (Statement statement = conn.createStatement();) {
-			for (String create : generator.generateCreate(c))	statement.addBatch(create);
+			for (String create : generator.create(c))	statement.addBatch(create);
 
 			statement.executeBatch();
 			log.debug(() -> "Executed batch statements");
@@ -77,7 +77,7 @@ public class StatementExecutor implements AutoCloseable {
 	 * @return matching {@code c} instances mapped to their respective IDs
 	 */
 	public <T> Map<UUID, T> select(Class<T> c, Condition where) {
-		try (PreparedStatement statement = conn.prepareStatement(generator.generateSelect(c, where))) {
+		try (PreparedStatement statement = conn.prepareStatement(generator.select(c, where))) {
 			if (where != null) applyWhere(statement, where, 1);
 			ResultSet rs = statement.executeQuery();
 
@@ -120,7 +120,7 @@ public class StatementExecutor implements AutoCloseable {
 	 */
 	public UUID selectId(Object o) {
 		Condition where = whereInstance(o);
-		try (PreparedStatement statement = conn.prepareStatement(generator.generateSelectId(o.getClass(), where))) {
+		try (PreparedStatement statement = conn.prepareStatement(generator.selectId(o.getClass(), where))) {
 			applyWhere(statement, where, 1);
 			ResultSet rs = statement.executeQuery();
 
@@ -154,7 +154,7 @@ public class StatementExecutor implements AutoCloseable {
 		try {
 			PreparedStatement statement = inserts.computeIfAbsent(o.getClass(), k -> {
 				try {
-					return conn.prepareStatement(generator.generateInsert(k));
+					return conn.prepareStatement(generator.insert(k));
 				} catch (SQLException e) {
 					throw new RuntimeException(e);
 				}
@@ -182,7 +182,7 @@ public class StatementExecutor implements AutoCloseable {
 		try {
 			PreparedStatement statement = updates.computeIfAbsent(o.getClass(), k -> {
 				try {
-					return conn.prepareStatement(generator.generateUpdate(k, where));	// Update where ID matches
+					return conn.prepareStatement(generator.update(k, where));	// Update where ID matches
 				} catch (SQLException e) {
 					throw new RuntimeException(e);
 				}
@@ -212,7 +212,7 @@ public class StatementExecutor implements AutoCloseable {
 	 * @return number of deleted instances
 	 */
 	public int delete(Class<?> c, Condition where) {
-		try (PreparedStatement statement = conn.prepareStatement(generator.generateDelete(c, where))) {
+		try (PreparedStatement statement = conn.prepareStatement(generator.delete(c, where))) {
 			applyWhere(statement, where, 1);
 
 			return statement.executeUpdate();

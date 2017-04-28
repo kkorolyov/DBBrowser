@@ -29,11 +29,11 @@ class StatementGeneratorSpec extends Specification {
 		mapper.getAssociatedClasses(c) >> [c]
 		mapper.getPersistableFields(c) >> [f]
 
-		generator.generateCreate(c)
-		generator.generateSelect(c, where)
-		generator.generateInsert(c)
-		generator.generateUpdate(c, where)
-		generator.generateDelete(c, where)
+		generator.create(c)
+		generator.select(c, where)
+		generator.insert(c)
+		generator.update(c, where)
+		generator.delete(c, where)
 
 		then:
 		5 * mapper.getName(c) >> "FakeClass"
@@ -60,7 +60,7 @@ class StatementGeneratorSpec extends Specification {
 																					 cInner2.class,
 																					 c]
 
-		Iterable statements = generator.generateCreate(c)
+		Iterable statements = generator.create(c)
 
 		then:
 		statements.size() == 3
@@ -71,7 +71,7 @@ class StatementGeneratorSpec extends Specification {
 
 	def "generateInsert() returns statement for class and per complex field"() {
     expect:
-    generator.generateInsert(c).size() == size
+    generator.insert(c).size() == size
 
     where:
     c << [HasPrimitive, HasComplexes]
@@ -79,7 +79,7 @@ class StatementGeneratorSpec extends Specification {
   }
   def "generateInsert() returns statement for class last"() {
     expect:
-    generator.generateInsert(c).last() == statement
+    generator.insert(c).last() == statement
 
     where:
     c << [HasComplexes]
@@ -88,7 +88,7 @@ class StatementGeneratorSpec extends Specification {
 
   def "generateSelect() appends WHERE if condition not null"() {
     expect:
-    generator.generateSelect(c, where) == statement
+    generator.select(c, where) == statement
 
     where:
     c << [HasPrimitive, HasPrimitive]
@@ -98,7 +98,7 @@ class StatementGeneratorSpec extends Specification {
   }
   def "generateSelectId() selects only id field"() {
     expect:
-    generator.generateSelectId(c, where) == statement
+    generator.selectId(c, where) == statement
 
     where:
     c << [HasPrimitive, HasPrimitive]
@@ -109,7 +109,7 @@ class StatementGeneratorSpec extends Specification {
 
   def "generateDelete() appends WHERE if condition not null"() {
     expect:
-    generator.generateDelete(c, where) == statement
+    generator.delete(c, where) == statement
 
     where:
     c << [HasPrimitive]

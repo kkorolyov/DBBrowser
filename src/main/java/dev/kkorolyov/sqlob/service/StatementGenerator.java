@@ -6,7 +6,6 @@ import static dev.kkorolyov.sqlob.service.Constants.ID_TYPE;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -40,25 +39,19 @@ public class StatementGenerator {
 	 * @param c class to generate statement for
 	 * @return SQL statement creating a table matching a class
 	 */
-	public Iterable<String> generateCreate(Class<?> c) {
+	public Iterable<String> create(Class<?> c) {
 		List<String> statements = new ArrayList<>();
 
 		for (Class<?> associated : mapper.getAssociatedClasses(c)) {
-			String statement = "CREATE TABLE IF NOT EXISTS " + mapper.getName(associated) + " " + generateFieldDeclarations(associated);
-			statements.add(statement);
-			log.debug(() -> "Added to CREATE statements for " + c + ": " + statement);
+			statements.add("CREATE TABLE IF NOT EXISTS " + mapper.getName(associated) + " " + generateFieldDeclarations(associated));
 		}
+		log.debug(() -> "Generated CREATE for " + c + ": " + statements.parallelStream().collect(Collectors.joining("; ", "(", ")")));
 		return statements;
 	}
 	private String generateFieldDeclarations(Class<?> c) {
-		StringJoiner declarations = new StringJoiner(", ", "(", ")");
-
-		declarations.add(ID_NAME + " " + ID_TYPE + " PRIMARY KEY");
-		declarations.add(StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
-																	.map(this::generateFieldDeclaration)
-																	.collect(Collectors.joining(", ")));
-
-		return declarations.toString();
+		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
+												.map(this::generateFieldDeclaration)
+												.collect(Collectors.joining(", ", "(" + ID_NAME + " " + ID_TYPE + " PRIMARY KEY, ", ")"));	// Sneak in ID declaration
 	}
 	private String generateFieldDeclaration(Field f) {
 		String name = mapper.getName(f);
@@ -73,8 +66,8 @@ public class StatementGenerator {
 	 * @param where condition to match, {@code null} implies no condition
 	 * @return parametrized SQL statement selecting instances of {@code c} matching {@code where}
 	 */
-	public String generateSelect(Class<?> c, Condition where) {
-		return generateSelect(c, where, false);
+	public String select(Class<?> c, Condition where) {
+		return select(c, where, "*");
 	}
 
 	/**
@@ -83,16 +76,16 @@ public class StatementGenerator {
 	 * @param where condition to match
 	 * @return parametrized SQL statement selecting ID
 	 */
-	public String generateSelectId(Class<?> c, Condition where) {
-		return generateSelect(c, where, true);
+	public String selectId(Class<?> c, Condition where) {
+		return select(c, where, ID_NAME);
 	}
 
-	private String generateSelect(Class<?> c, Condition where, boolean idOnly) {
-		String statement = "SELECT " + (idOnly ? ID_NAME : "*") +
+	private String select(Class<?> c, Condition where, String selection) {
+		String statement = "SELECT " + selection +
 											 " FROM " + mapper.getName(c) +
 											 (where == null ? "" : " WHERE " + where.toString());
 
-		log.debug(() -> "Generated SELECT: " + statement);
+		log.debug(() -> "Generated SELECT for " + c + ": " + statement);
 		return statement;
 	}
 
@@ -101,12 +94,12 @@ public class StatementGenerator {
 	 * @param c class to generate statement for
 	 * @return parametrized SQL statement inserting an instance
 	 */
-	public String generateInsert(Class<?> c) {
+	public String insert(Class<?> c) {
 		String statement = "INSERT INTO " + mapper.getName(c) +
 											 " " + generateColumns(c) +
 											 " VALUES " + generatePlaceholders(c);
 
-		log.debug(() -> "Generated INSERT: " + statement);
+		log.debug(() -> "Generated INSERT for " + c + ": " + statement);
 		return statement;
 	}
 	private String generateColumns(Class<?> c) {
@@ -126,12 +119,12 @@ public class StatementGenerator {
 	 * @param where update criteria, may not be {@code null}
 	 * @return parametrized SQL statement updating an instance of {@code c}
 	 */
-	public String generateUpdate(Class<?> c, Condition where) {
+	public String update(Class<?> c, Condition where) {
 		String statement = "UPDATE " + mapper.getName(c) +
 											 " SET " + generateSet(c) +
 											 " WHERE " + where.toString();
 
-		log.debug(() -> "Generated UPDATE: " + statement);
+		log.debug(() -> "Generated UPDATE for " + c + ": " + statement);
 		return statement;
 	}
 	private String generateSet(Class<?> c) {
@@ -146,11 +139,11 @@ public class StatementGenerator {
 	 * @param where deletion criteria
 	 * @return parametrized SQL statement deleting an instance of {@code c}
 	 */
-	public String generateDelete(Class<?> c, Condition where) {
+	public String delete(Class<?> c, Condition where) {
 		String statement = "DELETE FROM " + mapper.getName(c) +
 											 (where == null ? "" : " WHERE " + where.toString());
 
-		log.debug(() -> "Generated DELETE: " + statement);
+		log.debug(() -> "Generated DELETE for " + c + ": " + statement);
 		return statement;
 	}
 }
