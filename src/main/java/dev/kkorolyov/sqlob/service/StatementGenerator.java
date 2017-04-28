@@ -45,7 +45,7 @@ public class StatementGenerator {
 		for (Class<?> associated : mapper.getAssociatedClasses(c)) {
 			statements.add("CREATE TABLE IF NOT EXISTS " + mapper.getName(associated) + " " + generateFieldDeclarations(associated));
 		}
-		log.debug(() -> "Generated CREATE for " + c + ": " + statements.parallelStream().collect(Collectors.joining("; ", "(", ")")));
+		log.debug(() -> "Generated CREATE for " + c + ": " + statements.parallelStream().collect(Collectors.joining("; ")));
 		return statements;
 	}
 	private String generateFieldDeclarations(Class<?> c) {
@@ -95,20 +95,22 @@ public class StatementGenerator {
 	 * @return parametrized SQL statement inserting an instance
 	 */
 	public String insert(Class<?> c) {
+		Iterable<Field> fields = mapper.getPersistableFields(c);
+
 		String statement = "INSERT INTO " + mapper.getName(c) +
-											 " " + generateColumns(c) +
-											 " VALUES " + generatePlaceholders(c);
+											 " " + generateColumns(fields) +
+											 " VALUES " + generatePlaceholders(fields);
 
 		log.debug(() -> "Generated INSERT for " + c + ": " + statement);
 		return statement;
 	}
-	private String generateColumns(Class<?> c) {
-		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
+	private String generateColumns(Iterable<Field> fields) {
+		return StreamSupport.stream(fields.spliterator(), true)
 												.map(mapper::getName)
 												.collect(Collectors.joining(", ", "(" + ID_NAME + ", ", ")"));	// Sneak in ID column
 	}
-	private String generatePlaceholders(Class<?> c) {
-		return StreamSupport.stream(mapper.getPersistableFields(c).spliterator(), true)
+	private String generatePlaceholders(Iterable<Field> fields) {
+		return StreamSupport.stream(fields.spliterator(), true)
 												.map(field -> "?")
 												.collect(Collectors.joining(", ", "(?, ", ")"));	// Sneak in ID column placeholder
 	}
@@ -122,7 +124,7 @@ public class StatementGenerator {
 	public String update(Class<?> c, Condition where) {
 		String statement = "UPDATE " + mapper.getName(c) +
 											 " SET " + generateSet(c) +
-											 " WHERE " + where.toString();
+											 " WHERE " + where;
 
 		log.debug(() -> "Generated UPDATE for " + c + ": " + statement);
 		return statement;

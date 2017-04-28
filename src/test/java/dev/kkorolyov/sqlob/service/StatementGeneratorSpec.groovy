@@ -40,6 +40,28 @@ class StatementGeneratorSpec extends Specification {
 		3 * mapper.getName(f) >> "FakeField"
 	}
 
+	def "appends WHERE clause if condition specified"() {
+		Class c = new Object() {}.class
+		Condition where = new Condition("FakeColumn", "=", null)
+
+		2 * mapper.getPersistableFields(c) >> []
+
+		String whereClause = "WHERE " + where.toString()
+
+		expect:
+		!generator.select(c, null).contains(whereClause)
+		generator.select(c, where).contains(whereClause)
+
+		!generator.selectId(c, null).contains(whereClause)
+		generator.selectId(c, where).contains(whereClause)
+
+		!generator.update(c, null).contains(whereClause)
+		generator.update(c, where).contains(whereClause)
+
+		!generator.delete(c, null).contains(whereClause)
+		generator.delete(c, where).contains(whereClause)
+	}
+
 	def "create() creates each associated class"() {
 		Object cInner1 = new Object() {}
 		Object cInner2 = new Object() {}
@@ -81,17 +103,6 @@ class StatementGeneratorSpec extends Specification {
 		generator.selectId(c, null).contains(ID_NAME)
 	}
 
-	def "select() adds WHERE clause if condition specified"() {
-		Class c = new Object() {}.class
-		Condition where = new Condition("FakeColumn", "=", null)
-
-		String whereClause = "WHERE " + where.toString()
-
-		expect:
-		!generator.select(c, null).contains(whereClause)
-		generator.select(c, where).contains(whereClause)
-	}
-
 	def "insert() inserts ID and persistable fields"() {
 		Class c = new Object() {
 			private String s
@@ -100,77 +111,46 @@ class StatementGeneratorSpec extends Specification {
 			UUID u
 		}.class
 
+		String fieldName = "FakeField"
+
 		1 * mapper.getPersistableFields(c) >> [c.getDeclaredField("s"),
 																					 c.getDeclaredField("i"),
 																					 c.getDeclaredField("b"),
 																					 c.getDeclaredField("u")]
-		4 * mapper.getName(_ as Field) >> _.getName()
+		1 * mapper.getName(_ as Class) >> "FakeClass"
+		4 * mapper.getName(_ as Field) >> fieldName
 
 		expect:
 		String statement = generator.insert(c)
 
-		statement.count("=") == 5
 		statement.contains(ID_NAME)
-		statement.contains("s")
-		statement.contains("i")
-		statement.contains("b")
-		statement.contains("u")
+		statement.count(fieldName) == 4
+		statement.count("?") == 5
 	}
 
-	def "insert() returns statement for class and per complex field"() {
-    expect:
-    generator.insert(c).size() == size
+	def "update() updates only persistable fields"() {
+		Class c = new Object() {
+			private String s
+			@PackageScope int i
+			boolean b
+			char c
+		}.class
 
-    where:
-    c << [HasPrimitive, HasComplexes]
-    size << [1, 4]
-  }
-  def "generateInsert() returns statement for class last"() {
-    expect:
-    generator.insert(c).last() == statement
+		String fieldName = "FakeField"
 
-    where:
-    c << [HasComplexes]
-    statement << ["INSERT INTO TABLE HasComplexes (" + ID_NAME + ", e1, e2, e3) VALUES (?, ?, ?, ?)"]
-  }
+		1 * mapper.getPersistableFields(c) >> [c.getDeclaredField("s"),
+																					 c.getDeclaredField("i"),
+																					 c.getDeclaredField("b"),
+																					 c.getDeclaredField("c")]
+		1 * mapper.getName(_ as Class) >> "FakeClass"
+		4 * mapper.getName(_ as Field) >> fieldName
 
-  def "generateSelect() appends WHERE if condition not null"() {
-    expect:
-    generator.select(c, where) == statement
+		expect:
+		String statement = generator.update(c, null)
 
-    where:
-    c << [HasPrimitive, HasPrimitive]
-    where << [new Condition("s", "==", "test"), null]
-    statement << ["SELECT * FROM HasPrimitive WHERE s == ?",
-                  "SELECT * FROM HasPrimitive"]
-  }
-  def "generateSelectId() selects only id field"() {
-    expect:
-    generator.selectId(c, where) == statement
-
-    where:
-    c << [HasPrimitive, HasPrimitive]
-    where << [new Condition("s", "==", "s"), null]
-    statement << ["SELECT " + ID_NAME + " FROM HasPrimitive WHERE s == ?",
-                  "SELECT " + ID_NAME + " FROM HasPrimitive"]
-  }
-
-  def "generateDelete() appends WHERE if condition not null"() {
-    expect:
-    generator.delete(c, where) == statement
-
-    where:
-    c << [HasPrimitive]
-    where << [new Condition("s", "==", "test")]
-    statement << ["DELETE FROM HasPrimitive WHERE s == ?"]
-  }
-
-  class HasPrimitive {
-    private String s
-  }
-  class HasComplexes {
-    HasPrimitive e1
-    @PackageScope HasPrimitive e2
-    private HasPrimitive e3
-  }
+		!statement.contains(ID_NAME)
+		statement.count(fieldName) == 4
+		statement.count("=")
+		statement.count("?")
+	}
 }
