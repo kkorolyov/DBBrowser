@@ -9,6 +9,9 @@ description = """Java library providing for persistence of Java objects in a SQL
 javadoc {
 	destinationDir = new File("docs")
 }
+jar {
+	baseName = baseName.toLowerCase()
+}
 
 repositories {
 	jcenter()
