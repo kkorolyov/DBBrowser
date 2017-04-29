@@ -6,6 +6,10 @@ group = 'dev.kkorolyov'
 version = '3.0-SNAPSHOT'
 description = """Java library providing for persistence of Java objects in a SQL database"""
 
+javadoc {
+	destinationDir = new File("docs")
+}
+
 repositories {
 	jcenter()
 	flatDir { dirs "lib" }
