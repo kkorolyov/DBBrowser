@@ -148,4 +148,11 @@ public class StatementGenerator {
 		log.debug(() -> "Generated DELETE for " + c + ": " + statement);
 		return statement;
 	}
+
+	@Override
+	public String toString() {
+		return "StatementGenerator{" +
+					 "mapper=" + mapper +
+					 '}';
+	}
 }

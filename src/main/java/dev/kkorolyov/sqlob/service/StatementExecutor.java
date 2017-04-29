@@ -10,8 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.NonPersistableException;
+import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.utility.Condition;
 
 /**
@@ -49,11 +49,10 @@ public class StatementExecutor implements AutoCloseable {
 	 * @param c class to create table for
 	 */
 	public void create(Class<?> c) {
-		try (Statement statement = conn.createStatement();) {
+		try (Statement statement = conn.createStatement()) {
 			for (String create : generator.create(c))	statement.addBatch(create);
 
 			statement.executeBatch();
-			log.debug(() -> "Executed batch statements");
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -103,8 +102,8 @@ public class StatementExecutor implements AutoCloseable {
 					f.set(o, value);
 				}
 				results.put(id, o);
-				log.debug(() -> "Found instance: " + id + "->" + o);
 			}
+			log.debug(() -> "SELECTed " + results.size() + " instances of " + c);
 			return results;
 		} catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
 			throw new NonPersistableException("");
@@ -124,7 +123,10 @@ public class StatementExecutor implements AutoCloseable {
 			applyWhere(statement, where, 1);
 			ResultSet rs = statement.executeQuery();
 
-			return (rs.next()) ? mapper.extract(UUID.class, rs, ID_NAME) : null;
+			UUID result = (rs.next()) ? mapper.extract(UUID.class, rs, ID_NAME) : null;
+
+			log.debug(() -> "SELECTed id for " + o + ": " + result);
+			return result;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -165,6 +167,8 @@ public class StatementExecutor implements AutoCloseable {
 			applyInstance(statement, o, 2);
 
 			statement.executeUpdate();
+
+			log.debug(() -> "INSERTed " + o + " at id=" + id);
 			return id;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -190,7 +194,10 @@ public class StatementExecutor implements AutoCloseable {
 			int nextI = applyInstance(statement, o, 1);
 			applyWhere(statement, where, nextI);
 
-			return statement.executeUpdate() > 0;
+			boolean result = statement.executeUpdate() > 0;
+
+			log.debug(() -> (result ? "UPDATEd " : "Nothing to UPDATE at ") + "id=" + id + " with " + o);
+			return result;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -215,7 +222,10 @@ public class StatementExecutor implements AutoCloseable {
 		try (PreparedStatement statement = conn.prepareStatement(generator.delete(c, where))) {
 			applyWhere(statement, where, 1);
 
-			return statement.executeUpdate();
+			int result = statement.executeUpdate();
+
+			log.debug(() -> "DELETEd " + result + " instances of " + c);
+			return result;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -253,20 +263,20 @@ public class StatementExecutor implements AutoCloseable {
 
 		if (mapper.isPrimitive(f)) {
 			resolved = mapper.extract(f, rs);
-			log.debug(() -> f + " is primitive, extracted trivially");
+			log.info(() -> f + " is primitive, extracted trivially to " + resolved);
 		} else {
 			resolved = select(f.getType(), mapper.extract(UUID.class, rs, mapper.getName(f)));
-			log.debug(() -> f + " is complex, extracted ID and deserialized");
+			log.info(() -> f + " is complex, extracted ID and deserialized to " + resolved);
 		}
 		return resolved;
 	}
-	/** Resolves primitive types to themselves, and complex types to their persistable representations */
+	/** Resolves primitive types to themselves, and complex types to their corresponding IDs */
 	private Object resolve(Object o, boolean createIfNotExists) {	// TODO Look over, make better
 		Object resolved;
 
 		if (mapper.isPrimitive(o)) {
 			resolved = o;
-			log.debug(() -> o + " is primitive, resolved trivially");
+			log.debug(() -> o + " is primitive, resolved trivially to itself");
 		} else {
 			resolved = selectId(o);
 
@@ -343,5 +353,17 @@ public class StatementExecutor implements AutoCloseable {
 
 			log.info(() -> "Closed " + this);
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "StatementExecutor{" +
+					 "mapper=" + mapper +
+					 ", generator=" + generator +
+					 ", conn=" + conn +
+					 ", inserts=" + inserts +
+					 ", updates=" + updates +
+					 ", constructors=" + constructors +
+					 '}';
 	}
 }

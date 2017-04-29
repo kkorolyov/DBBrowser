@@ -11,7 +11,11 @@ class StatementExecutorSpec extends Specification {
 	Statement statement = Mock()
 	Connection conn = Mock()
 
-	StatementExecutor executor = new StatementExecutor(conn, mapper)
+	StatementExecutor executor = new StatementExecutor(mapper)
+
+	def setup() {
+		executor.setConnection(conn)
+	}
 
 	def "create() batch executes all statements in order"() {
 		1 * conn.createStatement() >> statement

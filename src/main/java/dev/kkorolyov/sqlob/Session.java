@@ -209,10 +209,23 @@ public class Session implements AutoCloseable {
 	@Override
 	public void close() throws Exception {
 		executor.close();
+		log.info(() -> "Closed " + this);
 	}
 
 	/** @return mapper used by this session */
 	public Mapper getMapper() {
 		return mapper;
+	}
+
+	@Override
+	public String toString() {
+		return "Session{" +
+					 "ds=" + ds +
+					 ", mapper=" + mapper +
+					 ", executor=" + executor +
+					 ", bufferSize=" + bufferSize +
+					 ", bufferCounter=" + bufferCounter +
+					 ", prepared=" + prepared +
+					 '}';
 	}
 }

@@ -25,19 +25,21 @@ class SessionPerfSpec extends Specification {
 	@Shared DataSource pgDS = buildPostgresDS()
 	@Shared DataSource myDS = buildMySQLDS()
 
+	@Shared DataSource[] dataSources = [sqliteDS]
+
 	def setupSpec() {
 		Logger.getLogger("dev.kkorolyov.sqlob", Logger.Level.DEBUG, new PrintWriter(System.err));	// Enable logging
 	}
 
 	def cleanup() {
 		if (CLEANUP) {
-			[sqliteDS, myDS].each {
+			dataSources.each {
 				Connection conn = it.getConnection()
 				conn.setAutoCommit(false)
 
 				Statement s = conn.createStatement()
 				for (String table : ['SmartStub', 'BasicStub', 'A', 'Test']) {
-					String statement = "DROP TABLE IF EXISTS " + table
+					String statement = "DROP TABLE IF EXISTS ${table}"
 					s.addBatch(statement)
 					s.addBatch(statement.toLowerCase())
 				}
@@ -69,10 +71,10 @@ class SessionPerfSpec extends Specification {
 		conn.commit()
 
 		long ms = (System.nanoTime() - start) / 1000000
-		println(ms + "ms to PUT " + tests + " things using " + ds)
+		println(ms + "ms to PUT ${tests} things using " + ds)
 
 		where:
-		ds << [sqliteDS, myDS]
+		ds << dataSources
 	}
 
 	def "test BasicStub"() {
@@ -87,7 +89,7 @@ class SessionPerfSpec extends Specification {
 		s.close()
 
 		long ms = (System.nanoTime() - start) / 1000000
-		println(ms + "ms to PUT " + tests + " BasicStubs using " + ds)
+		println(ms + "ms to PUT ${tests} BasicStubs using " + ds)
 
 		start = System.nanoTime()
 		s = new Session(ds, tests)
@@ -97,10 +99,10 @@ class SessionPerfSpec extends Specification {
 		s.close()
 
 		ms = (System.nanoTime() - start) / 1000000
-		println(ms + "ms to GET " + tests + " BasicStubs using " + ds)
+		println(ms + "ms to GET ${tests} BasicStubs using " + ds)
 
 		where:
-		ds << [sqliteDS, myDS]
+		ds << dataSources
 	}
 	def "test SmartStub"() {
 		long start = System.nanoTime()
@@ -114,7 +116,7 @@ class SessionPerfSpec extends Specification {
 		s.close()
 
 		long ms = (System.nanoTime() - start) / 1000000
-		println(ms + "ms to PUT " + tests + " SmartStubs using " + ds)
+		println(ms + "ms to PUT ${tests} SmartStubs using " + ds)
 
 		start = System.nanoTime()
 		s = new Session(ds, tests)
@@ -124,18 +126,21 @@ class SessionPerfSpec extends Specification {
 		s.close()
 
 		ms = (System.nanoTime() - start) / 1000000
-		println(ms + "ms to GET " + tests + " SmartStubs using " + ds)
+		println(ms + "ms to GET ${tests} SmartStubs using " + ds)
 
 		where:
-		ds << [sqliteDS, myDS]
+		ds << dataSources
 	}
 
 	private static DataSource buildSQLiteDS() {
+		String sqliteFile = "M:\\test\\sqlite.db"
+		new File(sqliteFile).delete()
+
 		SQLiteConfig config = new SQLiteConfig()
 		config.enforceForeignKeys(true)
 
 		SQLiteDataSource ds = new SQLiteDataSource(config)
-		ds.setUrl("jdbc:sqlite:M:\\test\\sqlite.db")
+		ds.setUrl("jdbc:sqlite:${sqliteFile}")
 
 		return ds
 	}
