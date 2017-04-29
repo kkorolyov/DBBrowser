@@ -16,6 +16,7 @@ import dev.kkorolyov.sqlob.utility.Condition;
 
 /**
  * Executes statements on a {@link Connection}.
+ * Service class to be used exclusively by the persistence engine.
  */
 public class StatementExecutor implements AutoCloseable {
 	private static final Logger log = Logger.getLogger(StatementExecutor.class.getName());
@@ -263,10 +264,10 @@ public class StatementExecutor implements AutoCloseable {
 
 		if (mapper.isPrimitive(f)) {
 			resolved = mapper.extract(f, rs);
-			log.info(() -> f + " is primitive, extracted trivially to " + resolved);
+			log.debug(() -> f + " is primitive, extracted trivially to " + resolved);
 		} else {
 			resolved = select(f.getType(), mapper.extract(UUID.class, rs, mapper.getName(f)));
-			log.info(() -> f + " is complex, extracted ID and deserialized to " + resolved);
+			log.debug(() -> f + " is complex, extracted ID and deserialized to " + resolved);
 		}
 		return resolved;
 	}
@@ -319,7 +320,7 @@ public class StatementExecutor implements AutoCloseable {
 		if (conn != null) {
 			try {
 				conn.commit();
-				log.info(() -> "Flushed " + this);
+				log.debug(() -> "Flushed " + this);
 			} catch (SQLException e) {
 				try {
 					log.warning(() -> "Exception during flush, attempting rollback...");
@@ -351,7 +352,7 @@ public class StatementExecutor implements AutoCloseable {
 			conn.close();
 			conn = null;
 
-			log.info(() -> "Closed " + this);
+			log.debug(() -> "Closed " + this);
 		}
 	}
 

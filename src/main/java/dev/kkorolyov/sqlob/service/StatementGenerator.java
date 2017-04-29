@@ -14,6 +14,7 @@ import dev.kkorolyov.sqlob.utility.Condition;
 
 /**
  * Generates SQL statements.
+ * Service class to be used exclusively by the persistence engine.
  */
 public class StatementGenerator {
 	private static final Logger log = Logger.getLogger(StatementGenerator.class.getName());
