@@ -107,7 +107,7 @@ public class StatementExecutor implements AutoCloseable {
 			log.debug(() -> "SELECTed " + results.size() + " instances of " + c);
 			return results;
 		} catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
-			throw new NonPersistableException("");
+			throw new NonPersistableException("", e);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -342,14 +342,18 @@ public class StatementExecutor implements AutoCloseable {
 	 * Flushes and closes the underlying {@link Connection}.
 	 */
 	@Override
-	public void close() throws Exception {
+	public void close() {
 		if (conn != null) {
 			flush();
 
 			inserts.clear();	// All cached statements closed anyway
 			updates.clear();
 
-			conn.close();
+			try {
+				conn.close();
+			} catch (SQLException e) {
+				throw new RuntimeException(e);
+			}
 			conn = null;
 
 			log.debug(() -> "Closed " + this);
