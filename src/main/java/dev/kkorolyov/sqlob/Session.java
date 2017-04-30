@@ -207,7 +207,7 @@ public class Session implements AutoCloseable {
 	 * Flushes and closes the underlying {@link StatementExecutor}.
 	 */
 	@Override
-	public void close() {
+	public void close() throws Exception {
 		executor.close();
 		log.info(() -> "Closed " + this);
 	}
