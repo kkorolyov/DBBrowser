@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'dev.kkorolyov'
-version = gitVersion(projectDir)
+version = gitVersion()
 description = """Java library providing for persistence of Java objects in a SQL database"""
 
 javadoc {
@@ -15,24 +15,25 @@ jar {
 
 repositories {
 	jcenter()
-	flatDir { dirs "lib" }
+	maven {
+		url 'https://jitpack.io'
+	}
 }
 
 dependencies {
-	compileOnly ':simple-logs:2.+'
+	compileOnly 'com.github.kkorolyov:SimpleLogs:master-SNAPSHOT'
 	testCompile 'org.spockframework:spock-core:1.1-groovy-2.4-rc-4',
 			'net.bytebuddy:byte-buddy:1.6.13',
 			'org.xerial:sqlite-jdbc:3.16.1',
 			'org.postgresql:postgresql:42.0.0',
 			'mysql:mysql-connector-java:6.0.6',
-			':simple-logs:2.+',
-			':simple-props:4.+'
+			'com.github.kkorolyov:SimpleLogs:master-SNAPSHOT',
+			'com.github.kkorolyov:SimpleProps:master-SNAPSHOT'
 }
 
-def gitVersion(dir) {
+def gitVersion() {
 	def stdout = new ByteArrayOutputStream()
 	exec {
-		workingDir = dir
 		commandLine 'git', 'describe'
 		standardOutput = stdout
 	}
