@@ -104,7 +104,7 @@ public class StatementExecutor implements AutoCloseable {
 				}
 				results.put(id, o);
 			}
-			log.debug(() -> "SELECTed " + results.size() + " instances of " + c);
+			log.debug("SELECTed {} instances of {}", results.size(), c);
 			return results;
 		} catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
 			throw new NonPersistableException("");
@@ -126,7 +126,7 @@ public class StatementExecutor implements AutoCloseable {
 
 			UUID result = (rs.next()) ? mapper.extract(UUID.class, rs, ID_NAME) : null;
 
-			log.debug(() -> "SELECTed id for " + o + ": " + result);
+			log.debug("SELECTed id for {}: {}", o, result);
 			return result;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -169,7 +169,7 @@ public class StatementExecutor implements AutoCloseable {
 
 			statement.executeUpdate();
 
-			log.debug(() -> "INSERTed " + o + " at id=" + id);
+			log.debug("INSERTed {} at id={}", o, id);
 			return id;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -197,7 +197,7 @@ public class StatementExecutor implements AutoCloseable {
 
 			boolean result = statement.executeUpdate() > 0;
 
-			log.debug(() -> (result ? "UPDATEd " : "Nothing to UPDATE at ") + "id=" + id + " with " + o);
+			log.debug((result ? "UPDATEd " : "Nothing to UPDATE at ") + "id={} with {}", id, o);
 			return result;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -225,7 +225,7 @@ public class StatementExecutor implements AutoCloseable {
 
 			int result = statement.executeUpdate();
 
-			log.debug(() -> "DELETEd " + result + " instances of " + c);
+			log.debug("DELETEd {} instances of {}", result, c);
 			return result;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -264,10 +264,10 @@ public class StatementExecutor implements AutoCloseable {
 
 		if (mapper.isPrimitive(f)) {
 			resolved = mapper.extract(f, rs);
-			log.debug(() -> f + " is primitive, extracted trivially to " + resolved);
+			log.debug("{} is primitive, extracted trivially to {}", f, resolved);
 		} else {
 			resolved = select(f.getType(), mapper.extract(UUID.class, rs, mapper.getName(f)));
-			log.debug(() -> f + " is complex, extracted ID and deserialized to " + resolved);
+			log.debug("{} is complex, extracted ID and deserialized to {}", f, resolved);
 		}
 		return resolved;
 	}
@@ -277,15 +277,19 @@ public class StatementExecutor implements AutoCloseable {
 
 		if (mapper.isPrimitive(o)) {
 			resolved = o;
-			log.debug(() -> o + " is primitive, resolved trivially to itself");
+			log.debug("{} is primitive, resolved trivially to itself", o);
 		} else {
 			resolved = selectId(o);
 
-			if (resolved == null && createIfNotExists) {
-				resolved = insert(o);
-				log.debug(() -> o + " is complex, persisted and resolved");
+			if (resolved == null) {
+				if (createIfNotExists) {
+					resolved = insert(o);
+					log.debug("{} is complex, persisted and resolved: {}", o, resolved);
+				} else {
+					log.debug("{} is complex and not found");
+				}
 			} else {
-				log.debug(() -> o + " is complex, found existing persisted instance");
+				log.debug("{} is complex, found existing persisted instance: {}", o, resolved);
 			}
 		}
 		return mapper.convert(resolved);
@@ -320,13 +324,13 @@ public class StatementExecutor implements AutoCloseable {
 		if (conn != null) {
 			try {
 				conn.commit();
-				log.debug(() -> "Flushed " + this);
+				log.debug("Flushed");
 			} catch (SQLException e) {
 				try {
-					log.warning(() -> "Exception during flush, attempting rollback...");
+					log.warning("Exception during flush, attempting rollback...");
 					conn.rollback();
 				} catch (SQLException e1) {
-					log.severe(() -> "Exception during rollback, crashing spectacularly...");
+					log.severe("Exception during rollback, crashing spectacularly...");
 					throw new RuntimeException(e1);
 				}
 				throw new RuntimeException(e);
@@ -352,7 +356,7 @@ public class StatementExecutor implements AutoCloseable {
 			conn.close();
 			conn = null;
 
-			log.debug(() -> "Closed " + this);
+			log.debug("Closed");
 		}
 	}
 

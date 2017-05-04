@@ -6,6 +6,7 @@ import static dev.kkorolyov.sqlob.service.Constants.ID_TYPE;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -46,7 +47,7 @@ public class StatementGenerator {
 		for (Class<?> associated : mapper.getAssociatedClasses(c)) {
 			statements.add("CREATE TABLE IF NOT EXISTS " + mapper.getName(associated) + " " + generateFieldDeclarations(associated));
 		}
-		log.debug(() -> "Generated CREATE for " + c + ": " + statements.parallelStream().collect(Collectors.joining("; ")));
+		log.debug("Generated CREATE for {}: {}", c, (Supplier) () -> statements.parallelStream().collect(Collectors.joining("; ")));
 		return statements;
 	}
 	private String generateFieldDeclarations(Class<?> c) {
@@ -86,7 +87,7 @@ public class StatementGenerator {
 											 " FROM " + mapper.getName(c) +
 											 (where == null ? "" : " WHERE " + where.toString());
 
-		log.debug(() -> "Generated SELECT for " + c + ": " + statement);
+		log.debug("Generated SELECT for {}: {}", c, statement);
 		return statement;
 	}
 
@@ -102,7 +103,7 @@ public class StatementGenerator {
 											 " " + generateColumns(fields) +
 											 " VALUES " + generatePlaceholders(fields);
 
-		log.debug(() -> "Generated INSERT for " + c + ": " + statement);
+		log.debug("Generated INSERT for {}: {}", c, statement);
 		return statement;
 	}
 	private String generateColumns(Iterable<Field> fields) {
@@ -127,7 +128,7 @@ public class StatementGenerator {
 											 " SET " + generateSet(c) +
 											 " WHERE " + where;
 
-		log.debug(() -> "Generated UPDATE for " + c + ": " + statement);
+		log.debug("Generated UPDATE for {}: {}", c, statement);
 		return statement;
 	}
 	private String generateSet(Class<?> c) {
@@ -146,7 +147,7 @@ public class StatementGenerator {
 		String statement = "DELETE FROM " + mapper.getName(c) +
 											 (where == null ? "" : " WHERE " + where.toString());
 
-		log.debug(() -> "Generated DELETE for " + c + ": " + statement);
+		log.debug("Generated DELETE for {}: {}", c, statement);
 		return statement;
 	}
 

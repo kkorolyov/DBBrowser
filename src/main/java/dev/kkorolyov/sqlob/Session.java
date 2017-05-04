@@ -47,8 +47,6 @@ public class Session implements AutoCloseable {
 
 		mapper = new Mapper();
 		executor = new StatementExecutor(mapper);
-
-		log.info(() -> "Constructed new " + this);
 	}
 
 	/**
@@ -199,7 +197,7 @@ public class Session implements AutoCloseable {
 	 */
 	public void flush() {
 		executor.flush();
-		log.info(() -> "Flushed " + bufferCounter + " statements");
+		log.info("Flushed {} statements", bufferCounter);
 
 		bufferCounter = 0;
 	}
@@ -209,7 +207,7 @@ public class Session implements AutoCloseable {
 	@Override
 	public void close() throws Exception {
 		executor.close();
-		log.info(() -> "Closed " + this);
+		log.info("Closed");
 	}
 
 	/** @return mapper used by this session */

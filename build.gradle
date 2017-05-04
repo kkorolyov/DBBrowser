@@ -27,8 +27,8 @@ dependencies {
 			'org.xerial:sqlite-jdbc:3.16.1',
 			'org.postgresql:postgresql:42.0.0',
 			'mysql:mysql-connector-java:6.0.6',
-			'com.github.kkorolyov:SimpleLogs:master-SNAPSHOT',
-			'com.github.kkorolyov:SimpleProps:master-SNAPSHOT'
+			'com.github.kkorolyov:SimpleLogs:-SNAPSHOT',
+			'com.github.kkorolyov:SimpleProps:-SNAPSHOT'
 }
 
 def gitVersion() {

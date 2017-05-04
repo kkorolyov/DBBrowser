@@ -28,26 +28,36 @@ public class Logger {
 	 * Logs an exception.
 	 * @param e exception to log
 	 */
-	public void exception(Exception e) {/*Default no-op*/}
+	public void exception(Throwable e) {/*Default no-op*/}
+	/**
+	 * Logs an exception.
+	 * @param level message level
+	 * @param e exception to log
+	 */
+	public void exception(int level, Throwable e) { /*Default no-op*/}
 
 	/**
 	 * Logs a {@code SEVERE}-level message.
 	 * @param message message to log
+	 * @param args optional arguments to resolve and inject into message
 	 */
-	public void severe(LazyMessage message) {/*Default no-op*/}
+	public void severe(String message, Object... args) {/*Default no-op*/}
 	/**
 	 * Logs a {@code WARNING}-level message.
 	 * @param message message to log
+	 * @param args optional arguments to resolve and inject into message
 	 */
-	public void warning(LazyMessage message) {/*Default no-op*/}
+	public void warning(String message, Object... args) {/*Default no-op*/}
 	/**
 	 * Logs an {@code INFO}-level message.
 	 * @param message message to log
+	 * @param args optional arguments to resolve and inject into message
 	 */
-	public void info(LazyMessage message) {/*Default no-op*/}
+	public void info(String message, Object... args) {/*Default no-op*/}
 	/**
 	 * Logs a {@code DEBUG}-level message.
 	 * @param message message to log
+	 * @param args optional arguments to resolve and inject into message
 	 */
-	public void debug(LazyMessage message) {/*Default no-op*/}
+	public void debug(String message, Object... args) {/*Default no-op*/}
 }

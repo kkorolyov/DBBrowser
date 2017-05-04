@@ -1,6 +1,5 @@
 package dev.kkorolyov.sqlob.service
 
-import dev.kkorolyov.sqlob.utility.Condition
 import spock.lang.Specification
 
 import java.lang.reflect.Field
@@ -58,34 +57,6 @@ class StatementExecutorSpec extends Specification {
 	static class Two {
 		public Object f1 = new Object()
 		public Object f2 = new Object()
-	}
-	def "select(Condition) selects per class and complex field"() {
-		mapper.isPrimitive({
-			[One.getDeclaredField("f"), Two.getDeclaredField("f1"), Two.getDeclaredField("f2")].contains(it)
-		}) >> false
-		mapper.isPrimitive({
-			![One.getDeclaredField("f"), Two.getDeclaredField("f1"), Two.getDeclaredField("f2")].contains(it)
-		}) >> true
-		when:
-		executor.select(c, where as Condition)
-
-		then:
-		(1 + fields.size()) * conn.prepareStatement(_) >> ps
-		(1 + fields.size()) * ps.executeQuery() >> rs
-		1 * rs.next() >> true
-		1 * mapper.getPersistableFields(c) >> fields
-
-		then:
-		1 * rs.next() >> false
-
-		where:
-		c << [Zero, One, Two]
-		fields << [[],
-							 [One.getDeclaredField("f")],
-							 [Two.getDeclaredField("f1"), Two.getDeclaredField("f2")]]
-		where << [new Condition(),
-							new Condition("Fake", "!=", "Fake"),
-							null]
 	}
 	def "select(Condition) selects per complex condition"() {
 
