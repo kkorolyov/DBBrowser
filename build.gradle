@@ -21,7 +21,7 @@ repositories {
 }
 
 dependencies {
-	compileOnly 'com.github.kkorolyov:SimpleLogs:master-SNAPSHOT'
+	compileOnly 'com.github.kkorolyov:SimpleLogs:-SNAPSHOT'
 	testCompile 'org.spockframework:spock-core:1.1-groovy-2.4-rc-4',
 			'net.bytebuddy:byte-buddy:1.6.13',
 			'org.xerial:sqlite-jdbc:3.16.1',
