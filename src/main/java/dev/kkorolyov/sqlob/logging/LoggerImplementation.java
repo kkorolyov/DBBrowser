@@ -1,7 +1,5 @@
 package dev.kkorolyov.sqlob.logging;
 
-import java.util.Arrays;
-
 import dev.kkorolyov.simplelogs.Level;
 import dev.kkorolyov.simplelogs.format.Formatters;
 
@@ -38,7 +36,6 @@ class LoggerImplementation extends Logger {
 	}
 	@Override
 	public void debug(String message, Object... args) {
-		System.out.println(Arrays.toString(args));
 		log.debug(message, args);
 	}
 }

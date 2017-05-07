@@ -1,7 +1,10 @@
 package dev.kkorolyov.sqlob
 
 import com.mysql.cj.jdbc.MysqlDataSource
+import dev.kkorolyov.simplelogs.Level
 import dev.kkorolyov.simplelogs.Logger
+import dev.kkorolyov.simplelogs.append.Appenders
+import dev.kkorolyov.simplelogs.format.Formatters
 import org.postgresql.ds.PGSimpleDataSource
 import org.sqlite.SQLiteConfig
 import org.sqlite.SQLiteDataSource
@@ -28,7 +31,7 @@ class SessionPerfSpec extends Specification {
 	@Shared DataSource[] dataSources = [sqliteDS]
 
 	def setupSpec() {
-		Logger.getLogger("dev.kkorolyov.sqlob", Logger.Level.DEBUG, new PrintWriter(System.err));	// Enable logging
+		Logger.getLogger("dev.kkorolyov.sqlob", Level.DEBUG, Formatters.simple(), Appenders.err(Level.DEBUG));	// Enable logging
 	}
 
 	def cleanup() {

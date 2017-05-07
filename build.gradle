@@ -1,42 +1,77 @@
 plugins {
 	id 'java'
+	id 'maven-publish'
+	id 'com.jfrog.bintray' version '1.7.3'
 }
 
 group = 'dev.kkorolyov'
-version = gitVersion()
-description = """Java library providing for persistence of Java objects in a SQL database"""
-
-javadoc {
-	destinationDir = new File("docs")
-}
-jar {
-	baseName = baseName.replaceAll('(?<=[a-z])([A-Z])(?=[a-z])', '-$1').toLowerCase()
-}
-
-repositories {
-	jcenter()
-	maven {
-		url 'https://jitpack.io'
-	}
-}
-
-dependencies {
-	compileOnly 'com.github.kkorolyov:SimpleLogs:-SNAPSHOT'
-	testCompile 'org.spockframework:spock-core:1.1-groovy-2.4-rc-4',
-			'net.bytebuddy:byte-buddy:1.6.13',
-			'org.xerial:sqlite-jdbc:3.16.1',
-			'org.postgresql:postgresql:42.0.0',
-			'mysql:mysql-connector-java:6.0.6',
-			'com.github.kkorolyov:SimpleLogs:-SNAPSHOT',
-			'com.github.kkorolyov:SimpleProps:-SNAPSHOT'
-}
-
-def gitVersion() {
+def artifactName = name.replaceAll(/(?<=[a-z])([A-Z])(?=[a-z])/, '-$1').toLowerCase()
+version = {
 	def stdout = new ByteArrayOutputStream()
 	exec {
 		commandLine 'git', 'describe'
 		standardOutput = stdout
 	}
 	stdout = stdout.toString().trim()
-	return stdout.replaceAll('-.*', "+${stdout.find('(?<=-)[0-9]+')}")
+	return stdout.replaceAll(/-.*/, "+${stdout.find('(?<=-)[0-9]+')}")
+}()
+description = """Java library providing for persistence of Java objects in a SQL database"""
+
+repositories {
+	jcenter()
+	maven {
+		url 'https://dl.bintray.com/kkorolyov/java'
+	}
 }
+
+dependencies {
+	compileOnly 'dev.kkorolyov:simple-logs:3.+'
+	testCompile 'org.spockframework:spock-core:1.1-groovy-2.4-rc-4',
+			'net.bytebuddy:byte-buddy:1.6.13',
+			'org.xerial:sqlite-jdbc:3.16.1',
+			'org.postgresql:postgresql:42.0.0',
+			'mysql:mysql-connector-java:6.0.6',
+			'dev.kkorolyov:simple-logs:3.+',
+			'dev.kkorolyov:simple-props:v4.+'
+}
+
+javadoc {
+	destinationDir = file('docs')
+}
+jar {
+	baseName = artifactName
+}
+
+task sourcesJar(type: Jar) {
+	classifier = 'sources'
+	from sourceSets.main.allJava
+}
+task javadocJar(type: Jar) {
+	classifier = 'javadoc'
+	from javadoc.destinationDir
+}
+publishing {
+	publications {
+		Pub(MavenPublication) {
+			from components.java
+			artifact sourcesJar
+			artifact javadocJar
+			artifactId artifactName
+		}
+	}
+}
+bintray {
+	user = System.getenv('BINTRAY_USER')
+	key = System.getenv('BINTRAY_KEY')
+	publications = ['Pub']
+	pkg {
+		repo = 'java'
+		name = artifactName
+		licenses = ['BSD 3-Clause']
+		vcsUrl = 'https://github.com/kkorolyov/SQLOb.git'
+		version {
+			name = project.version
+		}
+	}
+}
+
