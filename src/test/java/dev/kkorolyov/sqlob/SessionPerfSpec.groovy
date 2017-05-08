@@ -1,10 +1,6 @@
 package dev.kkorolyov.sqlob
 
 import com.mysql.cj.jdbc.MysqlDataSource
-import dev.kkorolyov.simplelogs.Level
-import dev.kkorolyov.simplelogs.Logger
-import dev.kkorolyov.simplelogs.append.Appenders
-import dev.kkorolyov.simplelogs.format.Formatters
 import org.postgresql.ds.PGSimpleDataSource
 import org.sqlite.SQLiteConfig
 import org.sqlite.SQLiteDataSource
@@ -31,7 +27,7 @@ class SessionPerfSpec extends Specification {
 	@Shared DataSource[] dataSources = [sqliteDS]
 
 	def setupSpec() {
-		Logger.getLogger("dev.kkorolyov.sqlob", Level.DEBUG, Formatters.simple(), Appenders.err(Level.DEBUG))	// Enable logging
+//		Logger.getLogger("dev.kkorolyov.sqlob", Level.DEBUG, Formatters.simple(), Appenders.err(Level.DEBUG))	// Enable logging
 	}
 
 	def cleanup() {
@@ -55,19 +51,17 @@ class SessionPerfSpec extends Specification {
 	}
 
 	def "test raw"() {
-		long start = System.nanoTime()
-
 		Connection conn = ds.getConnection()
 		conn.setAutoCommit(false)
 
 		Statement s = conn.createStatement()
-		s.executeUpdate("DROP TABLE IF EXISTS Test")
 		s.executeUpdate("CREATE TABLE IF NOT EXISTS Test (id CHAR(3) PRIMARY KEY, num INT)")
 		conn.commit()
 
+		long start = System.nanoTime()
 		PreparedStatement ps = conn.prepareStatement("INSERT INTO Test (id,num) VALUES (?,?)")
 		(0..<tests).each {
-			ps.setString(1, String.valueOf(it))
+			ps.setString(1, it as String)
 			ps.setInt(2, it as int)
 			ps.executeUpdate()
 		}
@@ -75,6 +69,18 @@ class SessionPerfSpec extends Specification {
 
 		long ms = (System.nanoTime() - start) / 1000000
 		println(ms + "ms to PUT ${tests} things using " + ds)
+
+		start = System.nanoTime()
+		ps = conn.prepareStatement("SELECT * FROM Test WHERE id = ?")
+		(0..<tests).each {
+			ps.setString(1, it as String)
+			ps.executeQuery()
+		}
+
+		ms = (System.nanoTime() - start) / 1000000
+		println(ms + "ms to GET ${tests} things using " + ds)
+
+		conn.close()
 
 		where:
 		ds << dataSources

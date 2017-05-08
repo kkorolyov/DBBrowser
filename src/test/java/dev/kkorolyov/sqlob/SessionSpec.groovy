@@ -25,6 +25,9 @@ class SessionSpec extends Specification {
 		conn.prepareStatement(_) >> ps
 		ds.getConnection() >> conn
 	}
+	def cleanup() {
+		session.close()
+	}
 
 	def "query actions do not commit underlying Connection"() {
 		session = new Session(ds, 0)
