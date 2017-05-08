@@ -15,7 +15,7 @@ import dev.kkorolyov.sqlob.annotation.Table;
  * All stub classes used for unit tests.
  */
 public class Stub {
-	static Random rand = new Random();
+	static final Random rand = new Random();
 	
 	/**
 	 * Contains all default simple types.

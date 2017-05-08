@@ -172,7 +172,7 @@ class MapperSpec extends Specification {
   }
 
 	class SelfRef {
-		SelfRef selfRef1;
+		SelfRef selfRef1
 		@PackageScope SelfRef selfRef2
 		private SelfRef selfRef2
 	}

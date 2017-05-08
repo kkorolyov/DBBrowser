@@ -7,8 +7,8 @@ import java.util.List;
  * A condition for object retrieval.
  */
 public class Condition {
-	private StringBuilder sql = new StringBuilder();
-	private List<Object> values = new LinkedList<>();
+	private final StringBuilder sql = new StringBuilder();
+	private final List<Object> values = new LinkedList<>();
 
 	/**
 	 * Constructs a new, empty condition.

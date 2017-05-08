@@ -7,7 +7,7 @@ import dev.kkorolyov.simplelogs.format.Formatters;
  * Logger implementation to be loaded when {@code SimpleLogs} found.
  */
 class LoggerImplementation extends Logger {
-	private dev.kkorolyov.simplelogs.Logger log;
+	private final dev.kkorolyov.simplelogs.Logger log;
 	
 	LoggerImplementation(String name) {
 		log = dev.kkorolyov.simplelogs.Logger.getLogger(name, Level.DEBUG, Formatters.simple());

@@ -31,7 +31,7 @@ class SessionPerfSpec extends Specification {
 	@Shared DataSource[] dataSources = [sqliteDS]
 
 	def setupSpec() {
-		Logger.getLogger("dev.kkorolyov.sqlob", Level.DEBUG, Formatters.simple(), Appenders.err(Level.DEBUG));	// Enable logging
+		Logger.getLogger("dev.kkorolyov.sqlob", Level.DEBUG, Formatters.simple(), Appenders.err(Level.DEBUG))	// Enable logging
 	}
 
 	def cleanup() {

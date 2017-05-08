@@ -50,18 +50,6 @@ class StatementExecutorSpec extends Specification {
 		1 * s.executeBatch()
 	}
 
-	static class Zero {}
-	static class One {
-		public Object f = new Object()
-	}
-	static class Two {
-		public Object f1 = new Object()
-		public Object f2 = new Object()
-	}
-	def "select(Condition) selects per complex condition"() {
-
-	}
-
 	def "setting new Connection commits current Connection"() {
 		when:
 		executor.setConnection(Mock(Connection))

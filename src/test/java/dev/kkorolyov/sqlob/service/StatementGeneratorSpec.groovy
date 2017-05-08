@@ -18,7 +18,7 @@ class StatementGeneratorSpec extends Specification {
   StatementGenerator generator = new StatementGenerator(mapper)
 
 	def setupSpec() {
-		Logger.getLogger("dev.kkorolyov.sqlob", Level.DEBUG, Formatters.simple(), Appenders.err(Level.ALL));	// Enable logging
+		Logger.getLogger("dev.kkorolyov.sqlob", Level.DEBUG, Formatters.simple(), Appenders.err(Level.ALL))	// Enable logging
 	}
 
   def "uses mapped names"() {
