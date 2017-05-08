@@ -20,7 +20,6 @@ class StatementExecutorSpec extends Specification {
 	StatementExecutor executor = new StatementExecutor(mapper)
 
 	def setup() {
-		rs.getObject(_ as String) >> null
 		s.executeQuery(_) >> rs
 		ps.executeQuery() >> rs
 		conn.createStatement() >> s

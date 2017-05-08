@@ -39,7 +39,7 @@ public class Session implements AutoCloseable {
 	/**
 	 * Constructs a new session.
 	 * @param ds datasource to SQL database
-	 * @param bufferSize maximum number of actions done before committing to database
+	 * @param bufferSize maximum number of update actions done before committing to database
 	 */
 	public Session(DataSource ds, int bufferSize) {
 		this.ds = ds;
@@ -61,7 +61,6 @@ public class Session implements AutoCloseable {
 
 		prepareAction(c);
 		T result = executor.select(c, id);
-		finalizeAction();
 
 		return result;
 	}
@@ -77,7 +76,6 @@ public class Session implements AutoCloseable {
 
 		prepareAction(c);
 		Map<UUID, T> result = executor.select(c, where);
-		finalizeAction();
 
 		return result;
 	}
@@ -93,7 +91,6 @@ public class Session implements AutoCloseable {
 
 		prepareAction(o.getClass());
 		UUID result = executor.selectId(o);
-		finalizeAction();
 
 		return result;
 	}
@@ -175,10 +172,6 @@ public class Session implements AutoCloseable {
 		}
 	}
 
-	private void finalizeAction() {
-		if (++bufferCounter >= bufferSize) flush();
-	}
-
 	private void prepareAction(Class<?> c) {
 		try {
 			if (executor.isClosed()) executor.setConnection(ds.getConnection());
@@ -190,6 +183,9 @@ public class Session implements AutoCloseable {
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
+	}
+	private void finalizeAction() {
+		if (++bufferCounter >= bufferSize) flush();
 	}
 
 	/**
