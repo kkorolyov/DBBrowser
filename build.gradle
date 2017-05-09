@@ -37,9 +37,6 @@ dependencies {
 
 test {
 	filter.includeTestsMatching '*Spec'
-
-	reports.junitXml.enabled = false
-	reports.html.enabled = true
 }
 
 javadoc {
