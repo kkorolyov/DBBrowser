@@ -1,9 +1,5 @@
 package dev.kkorolyov.sqlob.service
 
-import dev.kkorolyov.simplelogs.Level
-import dev.kkorolyov.simplelogs.Logger
-import dev.kkorolyov.simplelogs.append.Appenders
-import dev.kkorolyov.simplelogs.format.Formatters
 import dev.kkorolyov.sqlob.utility.Condition
 import groovy.transform.PackageScope
 import spock.lang.Specification
@@ -16,10 +12,6 @@ class StatementGeneratorSpec extends Specification {
   Mapper mapper = Mock()
 
   StatementGenerator generator = new StatementGenerator(mapper)
-
-	def setupSpec() {
-		Logger.getLogger("dev.kkorolyov.sqlob", Level.DEBUG, Formatters.simple(), Appenders.err(Level.ALL))	// Enable logging
-	}
 
   def "uses mapped names"() {
 		Class c = new Object() {

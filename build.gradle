@@ -1,5 +1,5 @@
 plugins {
-	id 'java'
+	id 'groovy'
 	id 'maven-publish'
 	id 'com.jfrog.bintray' version '1.7.3'
 }
@@ -33,6 +33,13 @@ dependencies {
 			'mysql:mysql-connector-java:6.0.6',
 			'dev.kkorolyov:simple-logs:3.+',
 			'dev.kkorolyov:simple-props:v4.+'
+}
+
+test {
+	filter.includeTestsMatching '*Spec'
+
+	reports.junitXml.enabled = false
+	reports.html.enabled = true
 }
 
 javadoc {
