@@ -1,3 +1,5 @@
+[![Download](https://api.bintray.com/packages/kkorolyov/java/sqlob/images/download.svg) ](https://bintray.com/kkorolyov/java/sqlob/_latestVersion)
+
 # SQLOb
 SQLOb [_Sklob_], is a Java library providing for persistence of Java objects in a SQL database.
 
