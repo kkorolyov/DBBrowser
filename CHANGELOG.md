@@ -1,8 +1,19 @@
 # Change Log
 
+## [3.0] - 2017-05-11
+### Changes
+* Overhauled + modularized architecture
+* Added `Mapper` for finer Java-SQL mapping customization
+* Added `Converter`
+
+### Fixes
+* Made the thing more **robust**
+
+
 ## [2.1.1] - 2017-03-05
 ### Fixes
 * Fixed regression of SqlobFields overwriting
+
 
 ## [2.1] - 2017-02-26
 ### Changes
@@ -22,6 +33,7 @@
 ## [1.0] - 2016-08-14
 * Initial release
 
+[3.0]: https://github.com/kkorolyov/SQLOb/releases/tag/3.0
 [2.1]: https://github.com/kkorolyov/SQLOb/releases/tag/v2.1
 [2.0]: https://github.com/kkorolyov/SQLOb/releases/tag/v2.0
 [1.0]: https://github.com/kkorolyov/SQLOb/releases/tag/1.0
