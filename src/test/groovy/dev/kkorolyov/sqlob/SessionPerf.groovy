@@ -2,6 +2,7 @@ package dev.kkorolyov.sqlob
 
 import com.mysql.cj.jdbc.MysqlDataSource
 import dev.kkorolyov.simplelogs.Level
+import dev.kkorolyov.simplelogs.Logger
 import dev.kkorolyov.simplelogs.append.Appenders
 import dev.kkorolyov.simplelogs.format.Formatters
 import org.postgresql.ds.PGSimpleDataSource
@@ -19,6 +20,7 @@ import static dev.kkorolyov.sqlob.Stub.BasicStub
 import static dev.kkorolyov.sqlob.Stub.SmartStub
 
 class SessionPerf extends Specification {
+	private static boolean LOG = false
 	private static boolean CLEANUP = true
 
 	@Shared int tests = 100
@@ -30,24 +32,22 @@ class SessionPerf extends Specification {
 	@Shared DataSource[] dataSources = [sqliteDS]
 
 	def setupSpec() {
-		Logger.getLogger("dev.kkorolyov.sqlob", Level.DEBUG, Formatters.simple(), Appenders.err(Level.DEBUG))	// Enable logging
+		if (LOG) Logger.getLogger("dev.kkorolyov.sqlob", Level.DEBUG, Formatters.simple(), Appenders.err(Level.DEBUG))	// Enable logging
 	}
 
 	def cleanup() {
 		if (CLEANUP) {
 			dataSources.each {
 				Connection conn = it.getConnection()
-				conn.setAutoCommit(false)
 
-				Statement s = conn.createStatement()
-				for (String table : ['SmartStub', 'BasicStub', 'A', 'Test']) {
-					String statement = "DROP TABLE IF EXISTS ${table}"
-					s.addBatch(statement)
-					s.addBatch(statement.toLowerCase())
+				Statement statement = conn.createStatement()
+				['Test', 'BasicStub', 'SmartStub'].each {
+					String sql = "DROP TABLE IF EXISTS $it"
+					statement.addBatch(sql)
+					statement.addBatch(sql.toLowerCase())
 				}
-				s.executeBatch()
+				statement.executeBatch()
 
-				conn.commit()
 				conn.close()
 			}
 		}

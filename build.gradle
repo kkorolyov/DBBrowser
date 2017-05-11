@@ -40,6 +40,20 @@ dependencies {
 test {
 	filter.includeTestsMatching '*Spec'
 }
+task integration(type: Test) {
+	group = 'verification'
+	description = """Runs integration tests."""
+
+	filter.includeTestsMatching '*Int'
+
+	build.dependsOn integration
+}
+task performance(type: Test) {
+	group = 'verification'
+	description = """Runs performance tests."""
+
+	filter.includeTestsMatching '*Perf'
+}
 
 javadoc {
 	destinationDir = file('docs')
