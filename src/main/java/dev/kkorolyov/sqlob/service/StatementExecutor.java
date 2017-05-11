@@ -221,7 +221,7 @@ public class StatementExecutor implements AutoCloseable {
 	 */
 	public int delete(Class<?> c, Condition where) {
 		try (PreparedStatement statement = conn.prepareStatement(generator.delete(c, where))) {
-			applyWhere(statement, where, 1);
+			if (where != null) applyWhere(statement, where, 1);
 
 			int result = statement.executeUpdate();
 
