@@ -1,7 +1,7 @@
-package dev.kkorolyov.sqlob.utility
+package dev.kkorolyov.sqlob
 
 import com.mysql.cj.jdbc.MysqlDataSource
-import dev.kkorolyov.sqlob.Session
+import dev.kkorolyov.sqlob.utility.Condition
 import groovy.transform.CompileStatic
 import org.postgresql.ds.PGSimpleDataSource
 import org.sqlite.SQLiteConfig
