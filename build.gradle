@@ -5,7 +5,7 @@ buildscript {
 		}
 	}
 	dependencies {
-		classpath 'dev.kkorolyov:git-version:1.+'
+		classpath 'dev.kkorolyov:auto-snapshot:1.0'
 	}
 }
 
@@ -14,9 +14,10 @@ plugins {
 	id 'maven-publish'
 	id 'com.jfrog.bintray' version '1.7.3'
 }
-apply plugin: 'dev.kkorolyov.git-version'
+apply plugin: 'dev.kkorolyov.auto-snapshot'
 
 group = 'dev.kkorolyov'
+version = '3.0'
 description = """Java library providing for persistence of Java objects in a SQL database"""
 
 repositories {
