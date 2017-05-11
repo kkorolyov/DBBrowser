@@ -1,9 +1,7 @@
 [![Download](https://api.bintray.com/packages/kkorolyov/java/sqlob/images/download.svg) ](https://bintray.com/kkorolyov/java/sqlob/_latestVersion)
 
 # SQLOb
-SQLOb [_Sklob_], is a Java library providing for persistence of Java objects in a SQL database.
-
-Version 2.0 completely overhauled the project, turning it away from an additional wrapper on top of JDBC and into a more focused persistence library.
+SQLOb [_Sklob_], is a lightweight Java ORM library for persisting Java objects in a SQL database.
 
 ## Examples
 ```java
@@ -17,19 +15,23 @@ public class MyPersistedClass {
 	public MyPersistedClass() {...}
 }
 ...
-MyPersistedClass toSave = new MyPersistedClass();
 DataSource ds = <get a DataSource>;
 
+MyPersistedClass toSave = new MyPersistedClass();
+UUID savedInstanceId;
+
 try (Session s = new Session(ds)) {
-	UUID savedInstanceId = s.put(toSave);	// Saves to database
-	s.flush();	// Commits requests and flushes buffer
-	MyPersistedClass retrieved = s.get(MyPersistedClass.class, savedInstanceId);	// Retrieves from database
+	savedInstanceId = s.put(toSave);
+}
+...
+try (Session s = new Session(ds)) {
+	MyPersistedClass retrieved = s.get(MyPersistedClass.class, savedInstanceId);
+	assert retrieved.equals(toSave)
 }
 ```
 
 ## Installation
-* Download the [latest release](https://github.com/kkorolyov/SQLOb/releases/latest).
-* Add either the source or bundled .jar file to your project's classpath.
+[Click](https://bintray.com/kkorolyov/java/sqlob/_latestVersion) the pretty button at the top.
 
 ## Usage
 ### Session
@@ -51,14 +53,67 @@ A basic `Session` requires only a `DataSource` to a database.
 
 ### Annotations
 Several optional annotations may be used to customize persisted data.
-* `@Transient` indicates that field will be ignored by the persistence engine
-* `@Table(String name)` overrides the name of the table mapped to a persisted class, which defaults to the simple name of the class
-* `@Column(String name)` overrides the name of the column mapped to a persisted field, which defaults to the name of the field
+* `@Transient` indicates that a field should be ignored by the persistence engine
+* `@Table(String name)` sets the name of the table mapped to a persisted class (**DEFAULT**: simple name of the class)
+* `@Column(String name)` sets the name of the column mapped to a persisted field (**DEFAULT**: name of the field)
+
+### Mapping
+Mapping between Java and SQL can be further customized by modifying the `Mapper` retrieved from a `Session` by `Session.getMapper()`.
+A single mapping is defined as a 4-element tuple:
+* Java class - `Class`
+* SQL type - `String`
+* Optional conversion function pre-processing/transforming an object before persisting it - `Converter`
+* Extraction function converting a SQL result back to an object - `Extractor`
+
+The default mappings can be used as an example:
+```java
+put(Byte.TYPE, "TINYINT", ResultSet::getByte);
+put(Short.TYPE, "SMALLINT", ResultSet::getShort);
+put(Integer.TYPE, "INTEGER", ResultSet::getInt);
+put(Long.TYPE, "BIGINT", ResultSet::getLong);
+put(Float.TYPE, "REAL", ResultSet::getFloat);
+put(Double.TYPE, "DOUBLE", ResultSet::getDouble);
+
+put(Boolean.TYPE, "BOOLEAN", ResultSet::getBoolean);
+
+put(Character.TYPE, "CHAR(1)", (rs, column) -> {
+	String string = rs.getString(column);
+	return string == null ? null : string.charAt(0);
+});
+
+put(Byte.class, "TINYINT", ResultSet::getByte);
+put(Short.class, "SMALLINT", ResultSet::getShort);
+put(Integer.class, "INTEGER", ResultSet::getInt);
+put(Long.class, "BIGINT", ResultSet::getLong);
+put(Float.class, "REAL", ResultSet::getFloat);
+put(Double.class, "DOUBLE", ResultSet::getDouble);
+put(BigDecimal.class, "NUMERIC", ResultSet::getBigDecimal);
+
+put(Boolean.class, "BOOLEAN", ResultSet::getBoolean);
+
+put(Character.class, "CHAR(1)", (rs, column) -> {
+	String string = rs.getString(column);
+	return string == null ? null : string.charAt(0);
+});
+put(String.class, "VARCHAR(1024)", ResultSet::getString);
+
+put(byte[].class, "VARBINARY(1024)", ResultSet::getBytes);
+
+put(Date.class, "DATE", ResultSet::getDate);
+put(Time.class, "TIME(6)", ResultSet::getTime);
+put(Timestamp.class, "TIMESTAMP(6)", ResultSet::getTimestamp);
+
+put(UUID.class, ID_TYPE, UUID::toString, (rs, column) -> {	// Store as string
+	String string = rs.getString(column);
+	return string == null ? null : UUID.fromString(string);
+});
+```
 
 ### Logging
 SQLOb has an optional dependency on the [SimpleLogs](https://github.com/kkorolyov/SimpleLogs) library.
 SQLOb logging can be activated by adding a `DEBUG`-level `Logger` to the `dev.kkorolyov.sqlob` logger hierarchy.
 
+Further documentation found in the [Javadoc](https://kkorolyov.github.io/SQLOb).
+
 ## License
-BSD-new license.  
-More detail found [here](LICENSE).
+[BSD-new license](LICENSE).  
