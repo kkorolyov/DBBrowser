@@ -18,6 +18,9 @@ repositories {
 
 dependencies {
 	compileOnly 'dev.kkorolyov:simple-logs:3.+'
+
+	implementation 'dev.kkorolyov:simple-funcs:1.+'
+
 	testImplementation(
 			'org.spockframework:spock-core:1.1-groovy-2.4',
 			'net.bytebuddy:byte-buddy:1.+',
