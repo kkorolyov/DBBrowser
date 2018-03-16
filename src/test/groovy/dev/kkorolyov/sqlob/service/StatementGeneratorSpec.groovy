@@ -1,6 +1,6 @@
 package dev.kkorolyov.sqlob.service
 
-import dev.kkorolyov.sqlob.utility.Condition
+import dev.kkorolyov.sqlob.util.Where
 import groovy.transform.PackageScope
 import spock.lang.Specification
 
@@ -18,7 +18,7 @@ class StatementGeneratorSpec extends Specification {
 			private Object field
     }.class
 		Field f = c.getDeclaredField("field")
-		Condition where = new Condition()
+		Where where = new Where()
 
 		mapper.getAssociatedClasses(c) >> [c]
 		mapper.getPersistableFields(c) >> [f]
@@ -37,7 +37,7 @@ class StatementGeneratorSpec extends Specification {
 
 	def "appends WHERE clause if condition specified"() {
 		Class c = new Object() {}.class
-		Condition where = new Condition("FakeColumn", "=", null)
+		Where where = new Where("FakeColumn", "=", null)
 
 		2 * mapper.getPersistableFields(c) >> []
 

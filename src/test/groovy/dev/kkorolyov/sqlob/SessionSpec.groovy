@@ -1,6 +1,7 @@
 package dev.kkorolyov.sqlob
 
-import dev.kkorolyov.sqlob.utility.Condition
+import dev.kkorolyov.sqlob.util.Where
+
 import spock.lang.Specification
 
 import javax.sql.DataSource
@@ -35,7 +36,7 @@ class SessionSpec extends Specification {
 		Class c = Object
 		Object o = new Object()
 		UUID id = UUID.randomUUID()
-		Condition condition = new Condition()
+		Where condition = new Where()
 
 		when:
 		session.get(c, id)
@@ -59,7 +60,7 @@ class SessionSpec extends Specification {
 		Class c = Object
 		Object o = new Object()
 		UUID id = UUID.randomUUID()
-		Condition condition = new Condition()
+		Where condition = new Where()
 
 		int cycles = 5
 

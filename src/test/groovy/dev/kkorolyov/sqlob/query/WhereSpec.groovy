@@ -1,22 +1,24 @@
-package dev.kkorolyov.sqlob.utility
+package dev.kkorolyov.sqlob.query
+
+import dev.kkorolyov.sqlob.util.Where
 
 import spock.lang.Shared
 import spock.lang.Specification
 
-class ConditionSpec extends Specification {
+class WhereSpec extends Specification {
 	@Shared String attribute = "FakeAttr"
 	@Shared String operator = "FakeOp"
 	@Shared def values = ["String", 54, 424.44, new Object()]
 
-	Condition condition
+	Where condition
 
-	Condition generateCondition(int num) {
-		return new Condition("$attribute $num", "$operator $num", "$values $num")
+	Where generateCondition(int num) {
+		return new Where("$attribute $num", "$operator $num", "$values $num")
 	}
 
 	def "no-arg condition is empty"() {
 		when:
-		condition = new Condition()
+		condition = new Where()
 
 		then:
 		condition.toString().length() == 0
@@ -25,7 +27,7 @@ class ConditionSpec extends Specification {
 
 	def "values added to values list"() {
 		when:
-		condition = new Condition(attribute, operator, value)
+		condition = new Where(attribute, operator, value)
 
 		then:
 		condition.values().size() == 1
@@ -36,7 +38,7 @@ class ConditionSpec extends Specification {
 	}
 	def "null value not added to values list"() {
 		when:
-		condition = new Condition(attribute, operator, null)
+		condition = new Where(attribute, operator, null)
 
 		then:
 		condition.values().size() == 0
@@ -44,7 +46,7 @@ class ConditionSpec extends Specification {
 
 	def "toString()s to 'attribute operator ?' format"() {
 		when:
-		condition = new Condition(attribute, operator, value)
+		condition = new Where(attribute, operator, value)
 
 		then:
 		condition.toString() == "$attribute $operator ?"
@@ -54,7 +56,7 @@ class ConditionSpec extends Specification {
 	}
 	def "null value toString()s to NULL instead of ?"() {
 		when:
-		condition = new Condition(attribute, operator, null)
+		condition = new Where(attribute, operator, null)
 
 		then:
 		condition.toString() == "$attribute $operator NULL"
@@ -80,7 +82,7 @@ class ConditionSpec extends Specification {
 	}
 
 	def "chains using () grouping"() {
-		Condition inner = generateCondition(1)
+		Where inner = generateCondition(1)
 
 		when:
 		condition = generateCondition(0)
@@ -98,10 +100,10 @@ class ConditionSpec extends Specification {
 	}
 
 	def "chaining to empty condition results in chained condition without AND/OR"() {
-		Condition chained = generateCondition(1)
+		Where chained = generateCondition(1)
 
 		when:
-		condition = new Condition()
+		condition = new Where()
 		condition.and(chained)
 
 		then:
@@ -109,7 +111,7 @@ class ConditionSpec extends Specification {
 		!condition.toString().contains('AND')
 
 		when:
-		condition = new Condition()
+		condition = new Where()
 		condition.or(chained)
 
 		then:

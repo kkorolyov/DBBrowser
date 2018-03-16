@@ -1,7 +1,7 @@
 package dev.kkorolyov.sqlob
 
 import com.mysql.cj.jdbc.MysqlDataSource
-import dev.kkorolyov.sqlob.utility.Condition
+import dev.kkorolyov.sqlob.util.Where
 import groovy.transform.CompileStatic
 import org.postgresql.ds.PGSimpleDataSource
 import org.sqlite.SQLiteConfig
@@ -23,7 +23,7 @@ class SessionInt extends Specification {
 
 	@Shared DataSource[] dataSources = [sqliteDS]
 
-	@Shared Condition allCondition = null
+	@Shared Where allCondition = null
 	@Shared BasicStub bs = BasicStub.random()
 	@Shared SmartStub ss = SmartStub.random()
 
@@ -69,8 +69,8 @@ class SessionInt extends Specification {
 		session.put(ss)
 
 		then:
-		session.get(BasicStub, new Condition('short0', '=', bs.getShort0())).values()[0] == bs
-		session.get(SmartStub, new Condition('stub', '=', ss.getStub())).values()[0] == ss
+		session.get(BasicStub, new Where('short0', '=', bs.getShort0())).values()[0] == bs
+		session.get(SmartStub, new Where('stub', '=', ss.getStub())).values()[0] == ss
 
 		where:
 		ds << dataSources

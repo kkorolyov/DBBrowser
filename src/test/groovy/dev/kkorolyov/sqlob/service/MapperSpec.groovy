@@ -4,8 +4,8 @@ import dev.kkorolyov.sqlob.NonPersistableException
 import dev.kkorolyov.sqlob.annotation.Column
 import dev.kkorolyov.sqlob.annotation.Table
 import dev.kkorolyov.sqlob.annotation.Transient
-import dev.kkorolyov.sqlob.utility.Converter
-import dev.kkorolyov.sqlob.utility.Extractor
+import dev.kkorolyov.sqlob.query.Converter
+import dev.kkorolyov.sqlob.query.Extractor
 import groovy.transform.PackageScope
 import spock.lang.Shared
 import spock.lang.Specification
