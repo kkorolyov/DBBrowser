@@ -1,28 +1,39 @@
 package dev.kkorolyov.sqlob;
 
+import dev.kkorolyov.simplefuncs.throwing.ThrowingSupplier;
+import dev.kkorolyov.sqlob.logging.Logger;
+import dev.kkorolyov.sqlob.request.CreateRequest;
+import dev.kkorolyov.sqlob.request.InsertRequest;
+import dev.kkorolyov.sqlob.request.Request;
+import dev.kkorolyov.sqlob.request.SelectRequest;
+import dev.kkorolyov.sqlob.result.Result;
+import dev.kkorolyov.sqlob.service.StatementExecutor;
+import dev.kkorolyov.sqlob.util.UncheckedSqlException;
+import dev.kkorolyov.sqlob.util.Where;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.sql.DataSource;
-
-import dev.kkorolyov.sqlob.logging.Logger;
-import dev.kkorolyov.sqlob.service.Mapper;
-import dev.kkorolyov.sqlob.service.StatementExecutor;
-import dev.kkorolyov.sqlob.utility.Condition;
+import static dev.kkorolyov.sqlob.util.UncheckedSqlException.wrapSqlException;
 
 /**
  * Persists objects using an external SQL database.
  * Allows for retrieval of objects by ID or by an arbitrary set of conditions.
+ * Throws {@link UncheckedSqlException} on any SQL-related errors.
  */
 public class Session implements AutoCloseable {
-	private static final Logger log = Logger.getLogger(Session.class.getName());
-	
-	private final DataSource ds;
-	private final Mapper mapper;
-	private final StatementExecutor executor;
+	public static final int DEFAULT_BUFFER_SIZE = 100;
+
+	private static final Logger LOG = Logger.getLogger(Session.class.getName());
+
+	private final DataSource dataSource;
+	private Connection connection;
 
 	private final int bufferSize;
 	private int bufferCounter = 0;
@@ -30,121 +41,102 @@ public class Session implements AutoCloseable {
 	private final Set<Class<?>> prepared = new HashSet<>();
 
 	/**
-	 * Constructs a new session with a default buffer size of {@code 100}.
+	 * Constructs a new session with a default transaction buffer size of {@value #DEFAULT_BUFFER_SIZE}.
 	 * @see #Session(DataSource, int)
 	 */
-	public Session (DataSource ds) {
-		this(ds, 100);
+	public Session(DataSource dataSource) {
+		this(dataSource, DEFAULT_BUFFER_SIZE);
 	}
 	/**
 	 * Constructs a new session.
-	 * @param ds datasource to SQL database
-	 * @param bufferSize maximum number of update actions done before committing to database
+	 * @param dataSource datasource to SQL database
+	 * @param bufferSize maximum number of transactions queued before committing to database, constrained {@code > 0}
 	 */
-	public Session(DataSource ds, int bufferSize) {
-		this.ds = ds;
-		this.bufferSize = bufferSize <= 1 ? 0 : bufferSize;
-
-		mapper = new Mapper();
-		executor = new StatementExecutor(mapper);
+	public Session(DataSource dataSource, int bufferSize) {
+		this.dataSource = dataSource;
+		this.bufferSize = Math.max(1, bufferSize);
 	}
 
 	/**
 	 * Retrieves the instance of a class matching an ID.
 	 * @param c type to retrieve
 	 * @param id instance ID
-	 * @return instance matching {@code id}, or {@code null} if no such instance
-	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 * @return result containing instance matching {@code id}, or empty result if no such instance
 	 */
-	public <T> T get(Class<T> c, UUID id) {
-		assertNotNull(c, id);
-
-		prepareAction(c);
-		T result = executor.select(c, id);
-
-		return result;
+	public <T> Result<T> get(Class<T> c, UUID id) {
+		return executeRequest(new SelectRequest<>(c, id));
 	}
 	/**
 	 * Retrieves all instances of a class matching a condition.
 	 * @param c type to retrieve
 	 * @param where condition to match
-	 * @return all matching instances mapped to their respective IDs
-	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 * @return result containing all matching instances
 	 */
-	public <T> Map<UUID, T> get(Class<T> c, Condition where) {
-		assertNotNull(c);
-
-		prepareAction(c);
-		Map<UUID, T> result = executor.select(c, where);
-
-		return result;
+	public <T> Result<T> get(Class<T> c, Where where) {
+		return executeRequest(new SelectRequest<>(c, where));
+	}
+	/**
+	 * Retrieves the result containing an instance.
+	 * @param instance instance to search for
+	 * @return result containing {@code instance}, or empty result if no such instance
+	 */
+	public <T> Result<T> get(T instance) {
+		return executeRequest(new SelectRequest<>(instance));
 	}
 
 	/**
-	 * Retrieves the ID of an instance of a class.
-	 * @param o stored instance
-	 * @return id of stored instance, or {@code null} if no such instance stored
-	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 * Stores an instance of a class.
+	 * If an equivalent instance is already stored, no additional storage is performed and the result containing that instance is returned.
+	 * @param instance instance to store
+	 * @return result containing stored instance
 	 */
-	public UUID getId(Object o) {
-		assertNotNull(o);
-
-		prepareAction(o.getClass());
-		UUID result = executor.selectId(o);
-
-		return result;
-	}
-
-	/**
-	 * Stores an instance of a class and returns its ID.
-	 * If an equivalent instance is already stored, no additional storage is performed and the ID of that instance is returned.
-	 * @param o instance to store
-	 * @return UUID of stored instance
-	 * @throws NonPersistableException if the class does not follow persistence requirements
-	 */
-	public UUID put(Object o) {
-		assertNotNull(o);
-
-		prepareAction(o.getClass());
-
-		UUID result = getId(o);
-		if (result == null) result = executor.insert(o);
-
-		finalizeAction();
-
-		return result;
+	public <T> Result<T> put(T instance) {
+		return get(instance).asOptional()
+				.orElseGet(() -> executeRequest(new InsertRequest<>(instance)));
 	}
 	/**
 	 * Stores an instance of a class using a predetermined ID.
-	 * If {@code id} is already mapped to an instance, that instance is updated to match {@code o}.
+	 * If {@code id} is already mapped to an instance, that instance is updated to match {@code instance}.
 	 * @param id instance ID
-	 * @param o instance to store
-	 * @return {@code true} if a previous instance was overwritten by {@code o}
-	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 * @param instance instance to store
+	 * @return result containing previous version of instance
 	 */
-	public boolean put(UUID id, Object o) {
-		assertNotNull(id, o);
+	public <T> Result<T> put(UUID id, T instance) {
+		Result<T> previous = get(instance);
 
-		prepareAction(o.getClass());
-		boolean result = executor.update(id, o);
-		finalizeAction();
+		executeRequest(new InsertRequest<>(id, instance));
 
-		return result;
+		return previous;
 	}
-	
+	/**
+	 * Stores instances of a class in bulk.
+	 * @param instances instances to store
+	 * @return result containing stored instances
+	 */
+	public <T> Result<T> put(Collection<T> instances) {
+		return executeRequest(new InsertRequest<T>(instances));
+	}
+	/**
+	 * Stores records in bulk.
+	 * @param records instances to store mapped by their IDs
+	 * @return result containing stored instances
+	 */
+	public <T> Result<T> put(Map<UUID, T> records) {
+		return executeRequest(new InsertRequest<T>(records));
+	}
+
 	/**
 	 * Deletes an instance of a class.
 	 * @param c type to delete
-	 * @param id instance ID
-	 * @return {@code true} if instance deleted
-	 * @throws NonPersistableException if the class does not follow persistence requirements
+	 * @param id ID of instance to delete
+	 * @return whether instance existed and was deleted
 	 */
 	public boolean drop(Class<?> c, UUID id) {
 		assertNotNull(c, id);
 
 		prepareAction(c);
 		boolean result = executor.delete(c, id);
-		finalizeAction();
+		endTransaction();
 
 		return result;
 	}
@@ -153,73 +145,67 @@ public class Session implements AutoCloseable {
 	 * @param c type to delete
 	 * @param where condition to match
 	 * @return number of deleted instances
-	 * @throws SQLException if a database error occurs
-	 * @throws NonPersistableException if the class does not follow persistence requirements
 	 */
-	public int drop(Class<?> c, Condition where) throws SQLException {
+	public int drop(Class<?> c, Where where) {
 		assertNotNull(c);
 
 		prepareAction(c);
 		int result = executor.delete(c, where);
-		finalizeAction();
+		endTransaction();
 
 		return result;
 	}
 
-	private static void assertNotNull(Object... args) throws IllegalArgumentException {
-		for (Object arg : args) {
-			if (arg == null) throw new IllegalArgumentException();
+	private <T> Result<T> executeRequest(Request<T> request) {
+		Connection connection = startTransaction();
+
+		if (!prepared.contains(request.getType())) {
+			new CreateRequest<>(request.getType()).execute(connection);
+			prepared.add(request.getType());
 		}
+		Result<T> result = request.execute(connection);
+
+		endTransaction();
+
+		return result;
 	}
 
-	private void prepareAction(Class<?> c) {
-		try {
-			if (executor.isClosed()) executor.setConnection(ds.getConnection());
-
-			if (!prepared.contains(c)) {
-				executor.create(c);
-				prepared.add(c);
-			}
-		} catch (SQLException e) {
-			throw new RuntimeException(e);
+	private Connection startTransaction() {
+		if (connection == null) {
+				connection = wrapSqlException((ThrowingSupplier<Connection, SQLException>) dataSource::getConnection);
 		}
+		return connection;
 	}
-	private void finalizeAction() {
-		if (++bufferCounter >= bufferSize) flush();
+	private void endTransaction() {
+		if (++bufferCounter >= bufferSize) close();
 	}
 
 	/**
-	 * Commits all active actions.
-	 */
-	public void flush() {
-		executor.flush();
-		log.info("Flushed {} statements", bufferCounter);
-
-		bufferCounter = 0;
-	}
-	/**
-	 * Flushes and closes the underlying {@link StatementExecutor}.
+	 * Flushes the underlying {@link StatementExecutor}.
 	 */
 	@Override
-	public void close() throws Exception {
-		executor.close();
-		log.info("Closed");
-	}
+	public void close() {
+		try {
+			connection.close();
+			connection = null;
 
-	/** @return mapper used by this session */
-	public Mapper getMapper() {
-		return mapper;
+			LOG.info("Committed {} transactions", bufferCounter);
+
+			bufferCounter = 0;
+		} catch (SQLException e) {
+			LOG.exception(e);
+			throw new UncheckedSqlException(e);
+		}
 	}
 
 	@Override
 	public String toString() {
 		return "Session{" +
-					 "ds=" + ds +
-					 ", mapper=" + mapper +
-					 ", executor=" + executor +
-					 ", bufferSize=" + bufferSize +
-					 ", bufferCounter=" + bufferCounter +
-					 ", prepared=" + prepared +
-					 '}';
+				"dataSource=" + dataSource +
+				", connection=" + connection +
+				", bufferSize=" + bufferSize +
+				", bufferCounter=" + bufferCounter +
+				", prepared=" + prepared +
+				'}';
 	}
 }
