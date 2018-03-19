@@ -1,6 +1,7 @@
 # Build
-build/
 .gradle/
+build/
+out/
 
 # IDE
 .idea/

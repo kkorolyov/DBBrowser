@@ -3,11 +3,11 @@ package dev.kkorolyov.sqlob;
 import dev.kkorolyov.simplefuncs.throwing.ThrowingSupplier;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.request.CreateRequest;
+import dev.kkorolyov.sqlob.request.DeleteRequest;
 import dev.kkorolyov.sqlob.request.InsertRequest;
 import dev.kkorolyov.sqlob.request.Request;
 import dev.kkorolyov.sqlob.request.SelectRequest;
 import dev.kkorolyov.sqlob.result.Result;
-import dev.kkorolyov.sqlob.service.StatementExecutor;
 import dev.kkorolyov.sqlob.util.UncheckedSqlException;
 import dev.kkorolyov.sqlob.util.Where;
 
@@ -96,7 +96,7 @@ public class Session implements AutoCloseable {
 	}
 	/**
 	 * Stores an instance of a class using a predetermined ID.
-	 * If {@code id} is already mapped to an instance, that instance is updated to match {@code instance}.
+	 * If {@code id} is already mapped to an instance, that instance is replaced with {@code instance}.
 	 * @param id instance ID
 	 * @param instance instance to store
 	 * @return result containing previous version of instance
@@ -126,37 +126,39 @@ public class Session implements AutoCloseable {
 	}
 
 	/**
+	 * Deletes an instance.
+	 * @param instance instance to delete
+	 * @return whether instance existed and was deleted
+	 */
+	public <T> boolean drop(T instance) {
+		return executeRequest(new DeleteRequest<>(instance)).size() > 0;
+	}
+	/**
 	 * Deletes an instance of a class.
 	 * @param c type to delete
 	 * @param id ID of instance to delete
 	 * @return whether instance existed and was deleted
 	 */
-	public boolean drop(Class<?> c, UUID id) {
-		assertNotNull(c, id);
-
-		prepareAction(c);
-		boolean result = executor.delete(c, id);
-		endTransaction();
-
-		return result;
+	public <T> boolean drop(Class<T> c, UUID id) {
+		return executeRequest(new DeleteRequest<>(c, id)).size() > 0;
 	}
 	/**
 	 * Deletes all instances of a class matching a condition.
 	 * @param c type to delete
 	 * @param where condition to match
-	 * @return number of deleted instances
+	 * @return result containing number of deleted instances
 	 */
-	public int drop(Class<?> c, Where where) {
-		assertNotNull(c);
-
-		prepareAction(c);
-		int result = executor.delete(c, where);
-		endTransaction();
-
-		return result;
+	public <T> Result<T> drop(Class<T> c, Where where) {
+		return executeRequest(new DeleteRequest<>(c, where));
 	}
 
-	private <T> Result<T> executeRequest(Request<T> request) {
+	/**
+	 * Executes a request and returns its result.
+	 * @param request database request to execute
+	 * @param <T> request target type
+	 * @return result containing all changed records
+	 */
+	public <T> Result<T> executeRequest(Request<T> request) {
 		Connection connection = startTransaction();
 
 		if (!prepared.contains(request.getType())) {
@@ -181,7 +183,7 @@ public class Session implements AutoCloseable {
 	}
 
 	/**
-	 * Flushes the underlying {@link StatementExecutor}.
+	 * Commits buffered transactions and resets the buffer counter.
 	 */
 	@Override
 	public void close() {

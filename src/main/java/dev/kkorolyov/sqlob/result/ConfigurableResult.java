@@ -12,6 +12,7 @@ import java.util.UUID;
  */
 public class ConfigurableResult<T> implements Result<T> {
 	private final Map<UUID, T> records = new HashMap<>();
+	private Integer customSize;
 
 	/**
 	 * @param record record to add
@@ -27,6 +28,15 @@ public class ConfigurableResult<T> implements Result<T> {
 	 */
 	public ConfigurableResult<T> add(UUID id, T instance) {
 		records.put(id, instance);
+		return this;
+	}
+
+	/**
+	 * @param size custom size to set, overrides the default of {@code records.size()}
+	 * @return {@code this}
+	 */
+	public ConfigurableResult<T> size(Integer size) {
+		customSize = size;
 		return this;
 	}
 
@@ -57,7 +67,9 @@ public class ConfigurableResult<T> implements Result<T> {
 
 	@Override
 	public int size() {
-		return records.size();
+		return customSize != null
+				? customSize
+				: records.size();
 	}
 
 	@Override

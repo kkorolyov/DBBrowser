@@ -28,7 +28,7 @@ public class InsertRequest<T> extends Request<T> {
 	 * @see #InsertRequest(UUID, Object)
 	 */
 	public InsertRequest(T instance) {
-		this(UUID.randomUUID(), instance);
+		this(Collections.singleton(instance));
 	}
 	/**
 	 * Constructs a single-instance insert request.

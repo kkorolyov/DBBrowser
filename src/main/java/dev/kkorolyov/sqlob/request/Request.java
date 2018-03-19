@@ -4,7 +4,7 @@ import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.column.factory.ColumnFactory;
 import dev.kkorolyov.sqlob.result.Result;
-import dev.kkorolyov.sqlob.service.PersistenceHelper;
+import dev.kkorolyov.sqlob.util.PersistenceHelper;
 import dev.kkorolyov.sqlob.util.UncheckedSqlException;
 
 import java.lang.reflect.Field;
@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static dev.kkorolyov.sqlob.service.PersistenceHelper.getPersistableFields;
+import static dev.kkorolyov.sqlob.util.PersistenceHelper.getPersistableFields;
 import static dev.kkorolyov.sqlob.util.UncheckedSqlException.wrapSqlException;
 
 /**

@@ -3,7 +3,7 @@ package dev.kkorolyov.sqlob.column;
 import dev.kkorolyov.sqlob.request.ExecutionContext;
 import dev.kkorolyov.sqlob.request.InsertRequest;
 import dev.kkorolyov.sqlob.request.SelectRequest;
-import dev.kkorolyov.sqlob.service.PersistenceHelper;
+import dev.kkorolyov.sqlob.util.PersistenceHelper;
 import dev.kkorolyov.sqlob.util.Where;
 
 import java.lang.reflect.Field;

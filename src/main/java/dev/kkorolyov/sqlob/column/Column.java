@@ -2,7 +2,7 @@ package dev.kkorolyov.sqlob.column;
 
 import dev.kkorolyov.simplefuncs.throwing.ThrowingBiFunction;
 import dev.kkorolyov.sqlob.request.ExecutionContext;
-import dev.kkorolyov.sqlob.service.PersistenceHelper;
+import dev.kkorolyov.sqlob.util.PersistenceHelper;
 import dev.kkorolyov.sqlob.util.UncheckedSqlException;
 import dev.kkorolyov.sqlob.util.Where;
 
@@ -41,7 +41,7 @@ public class Column<T> {
 	 * Constructs a new column not associated with an individual field.
 	 * @param name column name
 	 * @param sqlType associated SQL type
-	 * @param extractor function extracting this column's SQL value from a result set and converting it into a Java value
+	 * @param extractor function extracting this column's SQL value from a result set and converting it into a Java value; invoked with result set and column name
 	 */
 	public Column(String name, String sqlType, ThrowingBiFunction<ResultSet, String, T, SQLException> extractor) {
 		this(null, name, sqlType, extractor);
@@ -50,7 +50,7 @@ public class Column<T> {
 	 * Constructs a new column.
 	 * @param f associated field
 	 * @param sqlType associated SQL type
-	 * @param extractor function extracting this column's SQL value from a result set and converting it into a Java value
+	 * @param extractor function extracting this column's SQL value from a result set and converting it into a Java value; invoked with result set and column name
 	 */
 	public Column(Field f, String sqlType, ThrowingBiFunction<ResultSet, String, T, SQLException> extractor) {
 		this(f, PersistenceHelper.getName(f), sqlType, extractor);
@@ -70,6 +70,7 @@ public class Column<T> {
 	 * @param context context to work in
 	 * @return {@code statement}
 	 * @throws UncheckedSqlException if a SQL issue occurs
+	 * @throws IllegalArgumentException in an issue occurs extracting this column's field from {@code instance}
 	 */
 	public PreparedStatement contributeToStatement(PreparedStatement statement, Object instance, int index, ExecutionContext context) {
 		wrapSqlException(() -> statement.setObject(index, getValue(instance, context)));

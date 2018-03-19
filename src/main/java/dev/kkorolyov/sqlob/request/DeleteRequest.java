@@ -1,8 +1,11 @@
 package dev.kkorolyov.sqlob.request;
 
+import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
 import dev.kkorolyov.sqlob.util.Where;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.UUID;
 
 import static dev.kkorolyov.sqlob.util.Where.eqId;
@@ -10,6 +13,7 @@ import static dev.kkorolyov.sqlob.util.Where.eqObject;
 
 /**
  * Request to delete class instances from a table.
+ * Result contains number of deleted records.
  */
 public class DeleteRequest<T> extends Request<T> {
 	private final Where where;
@@ -43,8 +47,14 @@ public class DeleteRequest<T> extends Request<T> {
 	}
 
 	@Override
-	Result<T> executeInContext(ExecutionContext context) {
-		// TODO
-		return null;
+	Result<T> executeInContext(ExecutionContext context) throws SQLException {
+		PreparedStatement statement = context.getConnection().prepareStatement(
+				"DELETE FROM " + getName()
+				+ " WHERE " + where);
+
+		int updated = where.contributeToStatement(statement).executeUpdate();
+
+		return new ConfigurableResult<T>()
+				.size(updated);
 	}
 }

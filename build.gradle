@@ -11,9 +11,7 @@ description = "Java library providing for persistence of Java objects in a SQL d
 
 repositories {
 	jcenter()
-	maven {
-		url 'https://dl.bintray.com/kkorolyov/java'
-	}
+	maven { url 'https://dl.bintray.com/kkorolyov/java' }
 }
 
 dependencies {
@@ -23,7 +21,8 @@ dependencies {
 
 	testImplementation(
 			'org.spockframework:spock-core:1.1-groovy-2.4',
-			'net.bytebuddy:byte-buddy:1.+',
+			'cglib:cglib-nodep:3.+',
+			'org.objenesis:objenesis:1.+',
 
 			'org.xerial:sqlite-jdbc:3.+',
 			'org.postgresql:postgresql:42.+',

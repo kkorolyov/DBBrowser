@@ -12,8 +12,8 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import static dev.kkorolyov.sqlob.column.Column.ID_COLUMN;
-import static dev.kkorolyov.sqlob.service.PersistenceHelper.getName;
-import static dev.kkorolyov.sqlob.service.PersistenceHelper.getPersistableFields;
+import static dev.kkorolyov.sqlob.util.PersistenceHelper.getName;
+import static dev.kkorolyov.sqlob.util.PersistenceHelper.getPersistableFields;
 
 /**
  * A criterion usable in requests.
