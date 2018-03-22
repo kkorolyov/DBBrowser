@@ -1,8 +1,8 @@
 package dev.kkorolyov.sqlob.util;
 
-import dev.kkorolyov.simplefuncs.throwing.ThrowingFunction;
-import dev.kkorolyov.simplefuncs.throwing.ThrowingRunnable;
-import dev.kkorolyov.simplefuncs.throwing.ThrowingSupplier;
+import dev.kkorolyov.simplefuncs.function.ThrowingFunction;
+import dev.kkorolyov.simplefuncs.function.ThrowingRunnable;
+import dev.kkorolyov.simplefuncs.function.ThrowingSupplier;
 
 import java.sql.SQLException;
 import java.util.function.Supplier;

@@ -62,17 +62,16 @@ public class InsertRequest<T> extends Request<T> {
 
 	@Override
 	Result<T> executeInContext(ExecutionContext context) throws SQLException {
-		PreparedStatement statement = context.getConnection().prepareStatement(
-				"INSERT INTO " + getName() + " "
-						+ generateColumns(Column::getName)
-						+ " VALUES " + generateColumns(column -> "?"));
+		String sql = "INSERT INTO " + getName() + " "
+				+ generateColumns(Column::getName)
+				+ " VALUES " + generateColumns(column -> "?");
+		logStatements(sql);
 
-		logStatements(statement.toString());
-
+		PreparedStatement statement = context.getConnection().prepareStatement(sql);
 		ConfigurableResult<T> result = new ConfigurableResult<>();
 
 		for (Entry<UUID, T> record : records.entrySet()) {
-			int index = 0;
+			int index = 1;
 
 			// TODO Abstract this UUID conversion
 			statement.setObject(index++, record.getKey().toString());
@@ -83,7 +82,7 @@ public class InsertRequest<T> extends Request<T> {
 
 			result.add(record);
 		}
-		statement.executeUpdate();
+		statement.executeBatch();
 
 		return result;
 	}

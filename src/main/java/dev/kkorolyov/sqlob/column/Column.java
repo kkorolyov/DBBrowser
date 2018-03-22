@@ -1,6 +1,6 @@
 package dev.kkorolyov.sqlob.column;
 
-import dev.kkorolyov.simplefuncs.throwing.ThrowingBiFunction;
+import dev.kkorolyov.simplefuncs.function.ThrowingBiFunction;
 import dev.kkorolyov.sqlob.request.ExecutionContext;
 import dev.kkorolyov.sqlob.util.PersistenceHelper;
 import dev.kkorolyov.sqlob.util.UncheckedSqlException;

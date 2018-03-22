@@ -1,8 +1,8 @@
 package dev.kkorolyov.sqlob.request;
 
-import dev.kkorolyov.simplelogs.Logger;
 import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.column.factory.ColumnFactory;
+import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.result.Result;
 import dev.kkorolyov.sqlob.util.PersistenceHelper;
 import dev.kkorolyov.sqlob.util.UncheckedSqlException;

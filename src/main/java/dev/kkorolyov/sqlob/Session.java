@@ -1,6 +1,6 @@
 package dev.kkorolyov.sqlob;
 
-import dev.kkorolyov.simplefuncs.throwing.ThrowingSupplier;
+import dev.kkorolyov.simplefuncs.function.ThrowingSupplier;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.request.CreateRequest;
 import dev.kkorolyov.sqlob.request.DeleteRequest;

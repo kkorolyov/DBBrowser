@@ -1,5 +1,6 @@
 package dev.kkorolyov.sqlob.request;
 
+import dev.kkorolyov.simplefuncs.stream.Iterables;
 import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
@@ -54,16 +55,17 @@ public class SelectRequest<T> extends Request<T> {
 
 	@Override
 	Result<T> executeInContext(ExecutionContext context) throws SQLException {
-		for (Column<?> column : getColumns()) {
+		for (Column<?> column : Iterables.append(getColumns(), ID_COLUMN)) {
 			column.contributeToWhere(where, context);
 		}
-		PreparedStatement statement = context.getConnection().prepareStatement(getColumns().stream()
+		String sql = getColumns().stream()
 				.map(Column::getName)
 				.collect(Collectors.joining(", ",
-						"SELECT " + ID_COLUMN + ", ",
-						" FROM " + getName() + " WHERE " + where)));
+						"SELECT " + ID_COLUMN.getName() + ", ",
+						" FROM " + getName() + " WHERE " + where));
+		logStatements(sql);
 
-		logStatements(statement.toString());
+		PreparedStatement statement = context.getConnection().prepareStatement(sql);
 		ResultSet rs = where.contributeToStatement(statement).executeQuery();
 
 		ConfigurableResult<T> result = new ConfigurableResult<>();
@@ -75,7 +77,7 @@ public class SelectRequest<T> extends Request<T> {
 	}
 	private T toInstance(ResultSet rs, ExecutionContext context) {
 		try {
-			Constructor<T> noArgConstructor = getType().getConstructor();
+			Constructor<T> noArgConstructor = getType().getDeclaredConstructor();
 			noArgConstructor.setAccessible(true);
 
 			T instance = noArgConstructor.newInstance();

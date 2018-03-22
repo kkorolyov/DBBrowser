@@ -1,6 +1,6 @@
 package dev.kkorolyov.sqlob.util;
 
-import dev.kkorolyov.simplefuncs.throwing.ThrowingBiConsumer;
+import dev.kkorolyov.simplefuncs.function.ThrowingBiConsumer;
 import dev.kkorolyov.sqlob.logging.Logger;
 
 import java.lang.reflect.Field;
@@ -163,7 +163,7 @@ public class Where {
 	public PreparedStatement contributeToStatement(PreparedStatement statement) {
 		for (int i = 0; i < nodes.size(); i++) {
 			try {
-				statement.setObject(i, nodes.get(i).resolvedValue);
+				statement.setObject(i + 1, nodes.get(i).resolvedValue);
 			} catch (SQLException e) {
 				LOG.exception(e);
 				throw new UncheckedSqlException(e);
@@ -198,7 +198,7 @@ public class Where {
 
 		@Override
 		public String toString() {
-			return attribute + " " + operator + " " + value;
+			return attribute + " " + operator + " ?";
 		}
 	}
 }
