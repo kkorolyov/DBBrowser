@@ -7,17 +7,26 @@ import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import static dev.kkorolyov.sqlob.column.Column.ID_COLUMN;
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getName;
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getPersistableFields;
 
 /**
- * A criterion usable in requests.
- * Multiple criteria may be chained together using {@link #and(Where)} and {@link #or(Where)}.
+ * Criteria usable in requests as a SQL WHERE clause.
+ * The standard lifecycle of a Where is
+ * <pre>
+ * - Build a Where using whichever combination of constructors, factory methods, concatenation methods
+ * - Resolve criteria values by providing a resolver function to all attributes in the Where
+ * - Append the string representation of the Where to some SQL statement
+ * - Create a {@link PreparedStatement} from the string statement
+ * - Contribute the Where to the prepared statement
+ * </pre>
  */
 public class Where {
 	private static final Logger LOG = Logger.getLogger(Where.class.getName());
@@ -144,15 +153,28 @@ public class Where {
 		nodes.add(node);
 	}
 
+	/** @return whether all criteria in this where clause have been resolved */
+	public boolean isResolved() {
+		return nodes.stream()
+				.allMatch(WhereNode::isResolved);
+	}
+	/** @return all attributes in this where clause which have not been resolved */
+	public Collection<String> getUnresolvedAttributes() {
+		return nodes.stream()
+				.filter(node -> !node.isResolved())
+				.map(node -> node.attribute)
+				.collect(Collectors.toSet());
+	}
+
 	/**
-	 * Sets the resolved value for all criteria for an attribute in this where clause.
+	 * Resolves values for all criteria for an attribute in this where clause.
 	 * @param attribute attribute name
 	 * @param resolver function resolving a criterion's value
 	 */
-	public void setResolvedValue(String attribute, Function<Object, Object> resolver) {
+	public void resolve(String attribute, UnaryOperator<Object> resolver) {
 		nodes.stream()
 				.filter(node -> node.attribute.equals(attribute))
-				.forEach(node -> node.setResolvedValue(resolver.apply(node.value)));
+				.forEach(node -> node.resolve(resolver));
 	}
 
 	/**
@@ -161,6 +183,8 @@ public class Where {
 	 * @return {@code statement}
 	 */
 	public PreparedStatement contributeToStatement(PreparedStatement statement) {
+		if (!isResolved()) throw new IllegalStateException("Contains unresolved attributes: " + getUnresolvedAttributes());
+
 		for (int i = 0; i < nodes.size(); i++) {
 			try {
 				statement.setObject(i + 1, nodes.get(i).resolvedValue);
@@ -192,8 +216,11 @@ public class Where {
 			this.value = value;
 		}
 
-		void setResolvedValue(Object resolvedValue) {
-			this.resolvedValue = resolvedValue;
+		boolean isResolved() {
+			return value == null || resolvedValue != null;
+		}
+		void resolve(UnaryOperator<Object> resolver) {
+			resolvedValue = resolver.apply(value);
 		}
 
 		@Override
