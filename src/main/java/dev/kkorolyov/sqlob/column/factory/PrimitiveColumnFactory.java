@@ -1,9 +1,10 @@
 package dev.kkorolyov.sqlob.column.factory;
 
-import dev.kkorolyov.simplefuncs.throwing.ThrowingBiFunction;
+import dev.kkorolyov.simplefuncs.function.ThrowingBiFunction;
 import dev.kkorolyov.sqlob.column.Column;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -38,6 +39,8 @@ public class PrimitiveColumnFactory extends BaseColumnFactory {
 				Float.TYPE, Float.class);
 		put("DOUBLE", ResultSet::getDouble,
 				Double.TYPE, Double.class);
+		put("NUMERIC", ResultSet::getBigDecimal,
+				BigDecimal.class);
 
 		put("BOOLEAN", ResultSet::getBoolean,
 				Boolean.TYPE, Boolean.class);
