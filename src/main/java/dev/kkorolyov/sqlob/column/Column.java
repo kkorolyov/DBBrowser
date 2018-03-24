@@ -102,7 +102,7 @@ public class Column<T> {
 	 * @return {@code where}
 	 */
 	public Where contributeToWhere(Where where, ExecutionContext context) {
-		where.setResolvedValue(name, value -> value);
+		where.resolve(name, value -> value);
 		return where;
 	}
 

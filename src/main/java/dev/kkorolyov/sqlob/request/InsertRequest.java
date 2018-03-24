@@ -3,6 +3,7 @@ package dev.kkorolyov.sqlob.request;
 import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
+import dev.kkorolyov.sqlob.util.Where;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -14,6 +15,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static dev.kkorolyov.sqlob.column.Column.ID_COLUMN;
 
@@ -41,8 +43,8 @@ public class InsertRequest<T> extends Request<T> {
 	 * Constructs an insert request with random IDs.
 	 * @see #InsertRequest(Map)
 	 */
-	public InsertRequest(Collection<T> instances) {
-		this(instances.stream()
+	public InsertRequest(Iterable<T> instances) {
+		this(StreamSupport.stream(instances.spliterator(), false)
 				.collect(Collectors.toMap(instance -> UUID.randomUUID(), Function.identity())));
 	}
 	/**
@@ -62,6 +64,18 @@ public class InsertRequest<T> extends Request<T> {
 
 	@Override
 	Result<T> executeInContext(ExecutionContext context) throws SQLException {
+		// Avoid re-inserting existing instances
+		Collection<UUID> existing = new SelectRequest<>(getType(), records.values().stream()
+				.map(Where::eqObject)
+				.reduce(Where::or)
+				.orElseThrow(() -> new IllegalStateException("This should never happen"))
+		).executeInContext(context)
+				.getIds();
+
+		Map<UUID, T> remainingRecords = records.entrySet().stream()
+				.filter(entry -> !existing.contains(entry.getKey()))
+				.collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
 		String sql = "INSERT INTO " + getName() + " "
 				+ generateColumns(Column::getName)
 				+ " VALUES " + generateColumns(column -> "?");
@@ -70,7 +84,7 @@ public class InsertRequest<T> extends Request<T> {
 		PreparedStatement statement = context.getConnection().prepareStatement(sql);
 		ConfigurableResult<T> result = new ConfigurableResult<>();
 
-		for (Entry<UUID, T> record : records.entrySet()) {
+		for (Entry<UUID, T> record : remainingRecords.entrySet()) {
 			int index = 1;
 
 			// TODO Abstract this UUID conversion

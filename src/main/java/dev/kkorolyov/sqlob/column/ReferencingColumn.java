@@ -28,7 +28,7 @@ public class ReferencingColumn extends Column<Object> {
 
 	@Override
 	public Where contributeToWhere(Where where, ExecutionContext context) {
-		where.setResolvedValue(getName(), value ->
+		where.resolve(getName(), value ->
 				value != null
 						? new SelectRequest<>(value)
 						.execute(context.getConnection())
@@ -42,10 +42,8 @@ public class ReferencingColumn extends Column<Object> {
 	public Object getValue(Object instance, ExecutionContext context) {
 		Object value = super.getValue(instance, context);
 
-		return new SelectRequest<>(value)
+		return new InsertRequest<>(value)
 				.execute(context)
-				.asOptional()
-				.orElseGet(() -> new InsertRequest<>(value).execute(context))
 				.getId();
 	}
 	@Override

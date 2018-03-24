@@ -1,6 +1,6 @@
 package dev.kkorolyov.sqlob.util;
 
-import dev.kkorolyov.simplefuncs.function.ThrowingBiConsumer;
+import dev.kkorolyov.simplefuncs.function.ThrowingFunction;
 import dev.kkorolyov.sqlob.logging.Logger;
 
 import java.lang.reflect.Field;
@@ -81,10 +81,9 @@ public class Where {
 	/** @return where matching {@code o}'s individual attributes */
 	public static Where eqObject(Object o) {
 		return getPersistableFields(o.getClass())
-				.collect(Where::new,
-						((ThrowingBiConsumer<Where, Field, IllegalAccessException>) (where, f) -> where.and(eq(getName(f), f.get(o)))),
-						// Wheres not easily compose-able
-						(where1, where2) -> {});
+				.map((ThrowingFunction<Field, Where, IllegalAccessException>) f -> eq(getName(f), f.get(o)))
+				.reduce(Where::and)
+				.orElseThrow(() -> new IllegalArgumentException("Object 'o' has no persistable fields"));
 	}
 
 	/**

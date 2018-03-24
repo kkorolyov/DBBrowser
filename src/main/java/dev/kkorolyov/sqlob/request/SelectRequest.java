@@ -19,7 +19,7 @@ import static dev.kkorolyov.sqlob.util.Where.eqId;
 import static dev.kkorolyov.sqlob.util.Where.eqObject;
 
 /**
- * Request to select data from a class's table.
+ * Request to select records from a class's table.
  */
 public class SelectRequest<T> extends Request<T> {
 	private final Where where;

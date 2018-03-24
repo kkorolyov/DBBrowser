@@ -6,35 +6,53 @@ import dev.kkorolyov.sqlob.util.Where;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.UUID;
-
-import static dev.kkorolyov.sqlob.util.Where.eqId;
-import static dev.kkorolyov.sqlob.util.Where.eqObject;
+import java.util.stream.StreamSupport;
 
 /**
- * Request to delete class instances from a table.
+ * Request to delete records from a class's table.
  * Result contains number of deleted records.
  */
 public class DeleteRequest<T> extends Request<T> {
 	private final Where where;
 
-	/**
-	 * Constructs a delete request deleting an instance.
-	 * @param instance instance to delete
-	 */
-	public DeleteRequest(T instance) {
-		this((Class<T>) instance.getClass(),
-				eqObject(instance));
+	/** @see #DeleteRequest(Iterable) */
+	@SafeVarargs
+	public DeleteRequest(T... instances) {
+		this(Arrays.asList(instances));
 	}
 	/**
-	 * Constructs a delete request deleting by ID.
-	 * @param id ID to delete
-	 * @see #DeleteRequest(Class, Where)
+	 * Constructs a delete request deleting instances.
+	 * @param instances instances to delete
+	 * @throws NoSuchElementException if {@code instances} is empty
 	 */
-	public DeleteRequest(Class<T> type, UUID id) {
+	public DeleteRequest(Iterable<T> instances) {
+		this((Class<T>) instances.iterator().next().getClass(),
+				StreamSupport.stream(instances.spliterator(), false)
+						.map(Where::eqObject)
+						.reduce(Where::or)
+						.orElseThrow(() -> new NoSuchElementException("No instances specified")));
+	}
+
+	/** @see #DeleteRequest(Class, Iterable) */
+	public DeleteRequest(Class<T> type, UUID... ids) {
+		this(type, Arrays.asList(ids));
+	}
+	/**
+	 * Constructs a delete request deleting by IDs.
+	 * @param ids IDs to delete
+	 * @throws java.util.NoSuchElementException if {@code ids} is empty
+	 */
+	public DeleteRequest(Class<T> type, Iterable<UUID> ids) {
 		this(type,
-				eqId(id));
+				StreamSupport.stream(ids.spliterator(), false)
+						.map(Where::eqId)
+						.reduce(Where::or)
+						.orElseThrow(() -> new NoSuchElementException("No IDs specified")));
 	}
+
 	/**
 	 * Constructs a new delete request.
 	 * @param where deletion constraint
@@ -48,9 +66,10 @@ public class DeleteRequest<T> extends Request<T> {
 
 	@Override
 	Result<T> executeInContext(ExecutionContext context) throws SQLException {
-		PreparedStatement statement = context.getConnection().prepareStatement(
-				"DELETE FROM " + getName()
-				+ " WHERE " + where);
+		String sql = "DELETE FROM " + getName() + " WHERE " + where;
+		logStatements(sql);
+
+		PreparedStatement statement = context.getConnection().prepareStatement(sql);
 
 		int updated = where.contributeToStatement(statement).executeUpdate();
 
