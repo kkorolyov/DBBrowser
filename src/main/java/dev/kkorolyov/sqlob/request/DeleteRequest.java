@@ -66,7 +66,7 @@ public class DeleteRequest<T> extends Request<T> {
 
 	@Override
 	Result<T> executeInContext(ExecutionContext context) throws SQLException {
-		String sql = "DELETE FROM " + getName() + " WHERE " + where;
+		String sql = "DELETE FROM " + getName() + " WHERE " + where.getSql();
 		logStatements(sql);
 
 		PreparedStatement statement = context.getConnection().prepareStatement(sql);

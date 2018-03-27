@@ -1,1 +1,2 @@
 dev.kkorolyov.sqlob.column.factory.PrimitiveColumnFactory
+dev.kkorolyov.sqlob.column.factory.ReferencingColumnFactory

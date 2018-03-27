@@ -1,54 +1,45 @@
 package dev.kkorolyov.sqlob.request;
 
-import dev.kkorolyov.simplefuncs.stream.Predicates;
+import dev.kkorolyov.simplegraphs.Graph;
+import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.column.ReferencingColumn;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
 
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static dev.kkorolyov.simplefuncs.stream.Collectors.joiningDefaultEmpty;
 import static dev.kkorolyov.sqlob.column.Column.ID_COLUMN;
 
 /**
  * Request to create a table for a specific class.
  */
 public class CreateRequest<T> extends Request<T> {
-	private final Set<Class<?>> knownTypes;
-
 	/**
 	 * Constructs a new create request.
 	 * @see Request#Request(Class)
 	 */
 	public CreateRequest(Class<T> type) {
-		this(type, null);
-	}
-	// Used only to create prerequisites
-	private CreateRequest(Class<T> type, CreateRequest parent) {
 		super(type);
-
-		// Ensure only distinct prerequisites created across entire hierarchy
-		knownTypes = parent != null
-				? parent.knownTypes
-				: new HashSet<>();
-		knownTypes.add(type);
 	}
 
 	@Override
 	Result<T> executeInContext(ExecutionContext context) throws SQLException {
-		Collection<CreateRequest<?>> allRequests = getAllRequests()
-				.collect(Collectors.toSet());
+		Graph<Class<?>> typeDependencies = new Graph<>();
+		typeDependencies.add(getType());
+		Map<Class<?>, CreateRequest<?>> prereqRequests = new HashMap<>();
+		prereqRequests.put(getType(), this);
 
-		Collection<String> sql = Stream.of(
-				getCreateStatements(allRequests),
-				getConstraintStatements(allRequests)
-		).flatMap(s -> s)
+		// Add all prereq types to graph, add request for each distinct type
+		loadPrereqs(typeDependencies, prereqRequests);
+
+		List<String> sql = typeDependencies.getTopologicalSorting().stream()
+				.map(prereqRequests::get)
+				.map(CreateRequest::getCreateStatement)
 				.collect(Collectors.toList());
 
 		logStatements(sql);
@@ -60,36 +51,24 @@ public class CreateRequest<T> extends Request<T> {
 		return new ConfigurableResult<>();
 	}
 
-	private Stream<CreateRequest<?>> getAllRequests() {
-		return Stream.concat(
-				Stream.of(this),
-				getColumns(ReferencingColumn.class).stream()
-						.map(ReferencingColumn::getReferencedType)
-						.filter(type -> !knownTypes.contains(type))
-						.map(type -> new CreateRequest<>(type, this))
-						.flatMap(CreateRequest::getAllRequests)
-		);
+	private void loadPrereqs(Graph<Class<?>> typeDependencies, Map<Class<?>, CreateRequest<?>> prereqRequests) {
+		getColumns(ReferencingColumn.class).stream()
+				.map(ReferencingColumn::getReferencedType)
+				.peek(referencedType -> typeDependencies.add(referencedType, getType()))
+				.filter(referencedType -> !prereqRequests.containsKey(referencedType))
+				.map(CreateRequest::new)
+				.forEach(prereqRequest -> {
+					prereqRequests.put(prereqRequest.getType(), prereqRequest);
+					prereqRequest.loadPrereqs(typeDependencies, prereqRequests);
+				});
 	}
 
-	private static Stream<String> getCreateStatements(Collection<CreateRequest<?>> requests) {
-		return requests.stream()
-				.map(request -> request.getColumns().stream()
-						.map(column -> column.getName() + " " + column.getSqlType())
-						.collect(Collectors.joining(", ",
-								"CREATE TABLE IF NOT EXISTS " + request.getName()
-										+ " (" + ID_COLUMN.getName() + " " + ID_COLUMN.getSqlType() + " PRIMARY KEY, ",
-								")")));
-	}
-	private static Stream<String> getConstraintStatements(Collection<CreateRequest<?>> requests) {
-		return requests.stream()
-				.map(request -> request.getColumns(ReferencingColumn.class).stream()
-						.map(column -> "CONSTRAINT IF NOT EXISTS FK_" + column.getName() + "_" + column.getReferencedName()
-								+ " FOREIGN KEY (" + column.getName() + ")"
-								+ " REFERENCES " + column.getReferencedName() + " (" + ID_COLUMN.getName() + ")"
-								+ " ON DELETE SET NULL")
-						.collect(joiningDefaultEmpty(", ",
-								"ALTER TABLE " + request.getName() + " ADD ",
-								"")))
-				.filter(Predicates::nonEmpty);
+	private String getCreateStatement() {
+		return getColumns().stream()
+				.map(Column::getSql)
+				.collect(Collectors.joining(", ",
+						"CREATE TABLE IF NOT EXISTS " + getName()
+								+ " (" + ID_COLUMN.getSql() + " PRIMARY KEY, ",
+						")"));
 	}
 }

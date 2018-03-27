@@ -62,7 +62,7 @@ public class SelectRequest<T> extends Request<T> {
 				.map(Column::getName)
 				.collect(Collectors.joining(", ",
 						"SELECT " + ID_COLUMN.getName() + ", ",
-						" FROM " + getName() + " WHERE " + where));
+						" FROM " + getName() + " WHERE " + where.getSql()));
 		logStatements(sql);
 
 		PreparedStatement statement = context.getConnection().prepareStatement(sql);

@@ -3,29 +3,20 @@ package dev.kkorolyov.sqlob;
 import dev.kkorolyov.simplefuncs.function.ThrowingSupplier;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.request.CreateRequest;
-import dev.kkorolyov.sqlob.request.DeleteRequest;
-import dev.kkorolyov.sqlob.request.InsertRequest;
 import dev.kkorolyov.sqlob.request.Request;
-import dev.kkorolyov.sqlob.request.SelectRequest;
 import dev.kkorolyov.sqlob.result.Result;
 import dev.kkorolyov.sqlob.util.UncheckedSqlException;
-import dev.kkorolyov.sqlob.util.Where;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import static dev.kkorolyov.sqlob.util.UncheckedSqlException.wrapSqlException;
 
 /**
- * Persists objects using an external SQL database.
- * Allows for retrieval of objects by ID or by an arbitrary set of conditions.
- * Throws {@link UncheckedSqlException} on any SQL-related errors.
+ * Executes {@link Request}s using the current {@link Connection} of the associated {@link DataSource}.
  */
 public class Session implements AutoCloseable {
 	public static final int DEFAULT_BUFFER_SIZE = 100;
@@ -55,101 +46,6 @@ public class Session implements AutoCloseable {
 	public Session(DataSource dataSource, int bufferSize) {
 		this.dataSource = dataSource;
 		this.bufferSize = Math.max(1, bufferSize);
-	}
-
-	/**
-	 * Retrieves the instance of a class matching an ID.
-	 * @param c type to retrieve
-	 * @param id instance ID
-	 * @return result containing instance matching {@code id}, or empty result if no such instance
-	 */
-	public <T> Result<T> get(Class<T> c, UUID id) {
-		return executeRequest(new SelectRequest<>(c, id));
-	}
-	/**
-	 * Retrieves all instances of a class matching a condition.
-	 * @param c type to retrieve
-	 * @param where condition to match
-	 * @return result containing all matching instances
-	 */
-	public <T> Result<T> get(Class<T> c, Where where) {
-		return executeRequest(new SelectRequest<>(c, where));
-	}
-	/**
-	 * Retrieves the result containing an instance.
-	 * @param instance instance to search for
-	 * @return result containing {@code instance}, or empty result if no such instance
-	 */
-	public <T> Result<T> get(T instance) {
-		return executeRequest(new SelectRequest<>(instance));
-	}
-
-	/**
-	 * Stores an instance of a class.
-	 * If an equivalent instance is already stored, no additional storage is performed and the result containing that instance is returned.
-	 * @param instance instance to store
-	 * @return result containing stored instance
-	 */
-	public <T> Result<T> put(T instance) {
-		return get(instance).asOptional()
-				.orElseGet(() -> executeRequest(new InsertRequest<>(instance)));
-	}
-	/**
-	 * Stores an instance of a class using a predetermined ID.
-	 * If {@code id} is already mapped to an instance, that instance is replaced with {@code instance}.
-	 * @param id instance ID
-	 * @param instance instance to store
-	 * @return result containing previous version of instance
-	 */
-	public <T> Result<T> put(UUID id, T instance) {
-		Result<T> previous = get(instance);
-
-		executeRequest(new InsertRequest<>(id, instance));
-
-		return previous;
-	}
-	/**
-	 * Stores instances of a class in bulk.
-	 * @param instances instances to store
-	 * @return result containing stored instances
-	 */
-	public <T> Result<T> put(Collection<T> instances) {
-		return executeRequest(new InsertRequest<T>(instances));
-	}
-	/**
-	 * Stores records in bulk.
-	 * @param records instances to store mapped by their IDs
-	 * @return result containing stored instances
-	 */
-	public <T> Result<T> put(Map<UUID, T> records) {
-		return executeRequest(new InsertRequest<T>(records));
-	}
-
-	/**
-	 * Deletes an instance.
-	 * @param instance instance to delete
-	 * @return whether instance existed and was deleted
-	 */
-	public <T> boolean drop(T instance) {
-		return executeRequest(new DeleteRequest<>(instance)).size() > 0;
-	}
-	/**
-	 * Deletes an instance of a class.
-	 * @param c type to delete
-	 * @param id ID of instance to delete
-	 * @return whether instance existed and was deleted
-	 */
-	public <T> boolean drop(Class<T> c, UUID id) {
-		return executeRequest(new DeleteRequest<>(c, id)).size() > 0;
-	}
-	/**
-	 * Deletes all instances of a class matching a condition.
-	 * @param c type to delete
-	 * @param where condition to match
-	 * @return result containing number of deleted instances
-	 */
-	public <T> Result<T> drop(Class<T> c, Where where) {
-		return executeRequest(new DeleteRequest<>(c, where));
 	}
 
 	/**

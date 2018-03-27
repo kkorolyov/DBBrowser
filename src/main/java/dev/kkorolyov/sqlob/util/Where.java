@@ -141,14 +141,14 @@ public class Where {
 
 	private Where append(Where where, String joiner) {
 		if (sql.length() > 0) sql.append(" ").append(joiner).append(" ");
-		sql.append("(").append(where).append(")");
+		sql.append("(").append(where.getSql()).append(")");
 
 		nodes.addAll(where.nodes);
 
 		return this;
 	}
 	private void append(WhereNode node) {
-		sql.append(node);
+		sql.append(node.getSql());
 		nodes.add(node);
 	}
 
@@ -197,10 +197,17 @@ public class Where {
 		return statement;
 	}
 
-	/** @return SQL WHERE clause represented by this where */
+	/** @return SQL representation of this where clause */
+	public String getSql() {
+		return sql.toString();
+	}
+
 	@Override
 	public String toString() {
-		return sql.toString();
+		return nodes.stream()
+				.reduce(sql.toString(),
+						(sql, node) -> sql.replaceFirst("\\?", String.valueOf(node.resolvedValue)),
+						(sql1, sql2) -> sql1);
 	}
 
 	private static class WhereNode {
@@ -222,9 +229,13 @@ public class Where {
 			resolvedValue = resolver.apply(value);
 		}
 
+		String getSql() {
+			return attribute + " " + operator + " ?";
+		}
+
 		@Override
 		public String toString() {
-			return attribute + " " + operator + " ?";
+			return attribute + " " + operator + " " + resolvedValue;
 		}
 	}
 }

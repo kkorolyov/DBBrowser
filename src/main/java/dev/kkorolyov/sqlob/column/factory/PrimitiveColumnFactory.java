@@ -24,7 +24,7 @@ public class PrimitiveColumnFactory extends BaseColumnFactory {
 	private final Map<Class<?>, ThrowingBiFunction<ResultSet, String, ?, SQLException>> extractors = new HashMap<>();
 
 	/**
-	 * Constructs a new primitive-type field handler.
+	 * Constructs a new primitive column factory.
 	 */
 	public PrimitiveColumnFactory() {
 		put("TINYINT", ResultSet::getByte,

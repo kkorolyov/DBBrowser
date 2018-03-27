@@ -129,6 +129,11 @@ public class Column<T> {
 		return extractor.apply(rs, name);
 	}
 
+	/** @return SQL representation of this column */
+	public String getSql() {
+		return getName() + " " + getSqlType();
+	}
+
 	/** @return associated field */
 	public Field getField() {
 		return f;
