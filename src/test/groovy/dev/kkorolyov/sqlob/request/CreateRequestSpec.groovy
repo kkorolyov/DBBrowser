@@ -1,7 +1,7 @@
 package dev.kkorolyov.sqlob.request
 
-import dev.kkorolyov.sqlob.column.Column
-import dev.kkorolyov.sqlob.column.ReferencingColumn
+import dev.kkorolyov.sqlob.column.FieldBackedColumn
+import dev.kkorolyov.sqlob.column.factory.ReferencingColumnFactory
 
 import spock.lang.Specification
 
@@ -12,16 +12,16 @@ class CreateRequestSpec extends Specification {
 	Class<?> colType = String
 	Class<?> refColType = Integer
 
-	Column<String> col = Mock() {
+	FieldBackedColumn<String> col = Mock() {
 		getType() >> colType
 		getName() >> colType.getSimpleName()
 	}
-	ReferencingColumn refCol = Mock() {
-		getReferencedType() >> refColType
+	ReferencingColumnFactory.ReferencingColumn refCol = Mock() {
+		getType() >> refColType
 		getReferencedName() >> refColType.getSimpleName()
 	}
-	ReferencingColumn refCol1 = Mock() {
-		getReferencedType() >> refColType
+	ReferencingColumnFactory.ReferencingColumn refCol1 = Mock() {
+		getType() >> refColType
 		getReferencedName() >> refColType.getSimpleName()
 	}
 

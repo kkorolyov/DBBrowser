@@ -30,11 +30,11 @@ public class ReferencingColumnFactory extends BaseColumnFactory {
 		return new ReferencingColumn(f);
 	}
 
-	private static class ReferencingColumn extends FieldBackedColumn<Object> {
+	public static class ReferencingColumn extends FieldBackedColumn<Object> {
 		private final String referencedName;
 		private final KeyColumn keyDelegate;
 
-		ReferencingColumn(Field f) {
+		private ReferencingColumn(Field f) {
 			this(f, new KeyColumn(PersistenceHelper.getName(f)));
 		}
 		private ReferencingColumn(Field f, KeyColumn keyDelegate) {

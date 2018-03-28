@@ -88,10 +88,10 @@ public class PrimitiveColumnFactory extends BaseColumnFactory {
 		return new PrimitiveColumn<>(f, types.get(f.getType()), extractors.get(f.getType()));
 	}
 
-	private static class PrimitiveColumn<T> extends FieldBackedColumn<T> {
+	public static class PrimitiveColumn<T> extends FieldBackedColumn<T> {
 		private final BiFunction<ResultSet, String, T> extractor;
 
-		PrimitiveColumn(Field f, String sqlType, BiFunction<ResultSet, String, T> extractor) {
+		private PrimitiveColumn(Field f, String sqlType, BiFunction<ResultSet, String, T> extractor) {
 			super(f, sqlType);
 			this.extractor = extractor;
 		}

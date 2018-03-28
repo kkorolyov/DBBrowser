@@ -67,8 +67,8 @@ public abstract class FieldBackedColumn<T> extends Column<T> {
 	 */
 	public Object getValue(Object instance, ExecutionContext context) {
 		try {
-			getField().setAccessible(true);
-			return getField().get(instance);
+			f.setAccessible(true);
+			return f.get(instance);
 		} catch (IllegalAccessException e) {
 			throw new IllegalArgumentException("Unable to extract " + getField() + " value from " + instance, e);
 		}
