@@ -3,7 +3,7 @@ package dev.kkorolyov.sqlob.request;
 import dev.kkorolyov.simplegraphs.Graph;
 import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.column.KeyColumn;
-import dev.kkorolyov.sqlob.column.ReferencingColumn;
+import dev.kkorolyov.sqlob.column.factory.ReferencingColumnFactory.ReferencingColumn;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
 

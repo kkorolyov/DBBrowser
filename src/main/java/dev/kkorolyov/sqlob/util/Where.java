@@ -168,11 +168,14 @@ public class Where {
 	 * Resolves values for all criteria for an attribute in this where clause.
 	 * @param attribute attribute name
 	 * @param resolver function resolving a criterion's value
+	 * @return {@code this}
 	 */
-	public void resolve(String attribute, UnaryOperator<Object> resolver) {
+	public Where resolve(String attribute, UnaryOperator<Object> resolver) {
 		nodes.stream()
 				.filter(node -> node.attribute.equals(attribute))
 				.forEach(node -> node.resolve(resolver));
+
+		return this;
 	}
 
 	/**

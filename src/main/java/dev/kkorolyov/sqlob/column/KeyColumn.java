@@ -24,10 +24,8 @@ public class KeyColumn extends Column<UUID> {
 
 	@Override
 	public Where contributeToWhere(Where where, ExecutionContext context) {
-		where.resolve(getName(), value ->
+		return where.resolve(getName(), value ->
 				value instanceof UUID ? value.toString() : value);
-
-		return where;
 	}
 
 	@Override

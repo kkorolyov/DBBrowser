@@ -2,7 +2,8 @@ package dev.kkorolyov.sqlob.column.factory;
 
 import dev.kkorolyov.simplefuncs.function.ThrowingBiFunction;
 import dev.kkorolyov.sqlob.column.FieldBackedColumn;
-import dev.kkorolyov.sqlob.column.PrimitiveColumn;
+import dev.kkorolyov.sqlob.request.ExecutionContext;
+import dev.kkorolyov.sqlob.util.Where;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /**
  * Handles fields mappable directly to SQL types.
@@ -84,5 +86,33 @@ public class PrimitiveColumnFactory extends BaseColumnFactory {
 	@Override
 	public FieldBackedColumn<?> get(Field f) {
 		return new PrimitiveColumn<>(f, types.get(f.getType()), extractors.get(f.getType()));
+	}
+
+	private static class PrimitiveColumn<T> extends FieldBackedColumn<T> {
+		private final BiFunction<ResultSet, String, T> extractor;
+
+		PrimitiveColumn(Field f, String sqlType, BiFunction<ResultSet, String, T> extractor) {
+			super(f, sqlType);
+			this.extractor = extractor;
+		}
+
+		@Override
+		public Where contributeToWhere(Where where, ExecutionContext context) {
+			return where.resolve(getName(), UnaryOperator.identity());
+		}
+
+		@Override
+		public T getValue(Object instance, ExecutionContext context) {
+			return (T) super.getValue(instance, context);
+		}
+		@Override
+		public T getValue(ResultSet rs, ExecutionContext context) throws SQLException {
+			try {
+				return extractor.apply(rs, getName());
+			} catch (RuntimeException e) {
+				if (e.getCause() instanceof SQLException) throw (SQLException) e.getCause();
+				else throw e;
+			}
+		}
 	}
 }
