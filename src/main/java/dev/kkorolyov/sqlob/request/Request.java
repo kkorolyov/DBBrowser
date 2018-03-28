@@ -1,6 +1,7 @@
 package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.sqlob.column.Column;
+import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.factory.ColumnFactory;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.result.Result;
@@ -29,7 +30,7 @@ public abstract class Request<T> {
 
 	private final Class<T> type;
 	private final String name;
-	private final Set<Column<?>> columns = new LinkedHashSet<>();
+	private final Set<FieldBackedColumn<?>> columns = new LinkedHashSet<>();
 
 	/**
 	 * Constructs a new request.
@@ -43,7 +44,7 @@ public abstract class Request<T> {
 				.map(this::asColumn)
 				.forEach(this::addColumn);
 	}
-	private Column<?> asColumn(Field f) {
+	private FieldBackedColumn<?> asColumn(Field f) {
 		return StreamSupport.stream(COLUMN_FACTORIES.spliterator(), false)
 				.filter(fieldHandler -> fieldHandler.accepts(f))
 				.findFirst()
@@ -55,12 +56,12 @@ public abstract class Request<T> {
 	 * Adds a column to this request.
 	 * @param column column to add
 	 */
-	public void addColumn(Column column) {
+	public void addColumn(FieldBackedColumn<?> column) {
 		columns.add(column);
 	}
 
 	/** @return all request columns */
-	final Set<Column<?>> getColumns() {
+	final Set<FieldBackedColumn<?>> getColumns() {
 		return columns;
 	}
 	/** @return all request columns of type {@code c} */

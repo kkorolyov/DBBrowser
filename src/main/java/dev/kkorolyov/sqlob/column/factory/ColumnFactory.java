@@ -1,6 +1,6 @@
 package dev.kkorolyov.sqlob.column.factory;
 
-import dev.kkorolyov.sqlob.column.Column;
+import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 
 import java.lang.reflect.Field;
 
@@ -12,7 +12,7 @@ public interface ColumnFactory {
 	 * @param f field to wrap
 	 * @return column associated with {@code f}
 	 */
-	Column<?> get(Field f);
+	FieldBackedColumn<?> get(Field f);
 
 	/**
 	 * @param f field to test

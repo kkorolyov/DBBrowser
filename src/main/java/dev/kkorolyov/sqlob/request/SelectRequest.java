@@ -2,6 +2,8 @@ package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.simplefuncs.stream.Iterables;
 import dev.kkorolyov.sqlob.column.Column;
+import dev.kkorolyov.sqlob.column.FieldBackedColumn;
+import dev.kkorolyov.sqlob.column.KeyColumn;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
 import dev.kkorolyov.sqlob.util.Where;
@@ -14,7 +16,6 @@ import java.sql.SQLException;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static dev.kkorolyov.sqlob.column.Column.ID_COLUMN;
 import static dev.kkorolyov.sqlob.util.Where.eqId;
 import static dev.kkorolyov.sqlob.util.Where.eqObject;
 
@@ -55,13 +56,13 @@ public class SelectRequest<T> extends Request<T> {
 
 	@Override
 	Result<T> executeInContext(ExecutionContext context) throws SQLException {
-		for (Column<?> column : Iterables.append(getColumns(), ID_COLUMN)) {
+		for (Column<?> column : Iterables.append(getColumns(), KeyColumn.PRIMARY)) {
 			column.contributeToWhere(where, context);
 		}
 		String sql = getColumns().stream()
 				.map(Column::getName)
 				.collect(Collectors.joining(", ",
-						"SELECT " + ID_COLUMN.getName() + ", ",
+						"SELECT " + KeyColumn.PRIMARY.getName() + ", ",
 						" FROM " + getName() + " WHERE " + where.getSql()));
 		logStatements(sql);
 
@@ -71,17 +72,17 @@ public class SelectRequest<T> extends Request<T> {
 		ConfigurableResult<T> result = new ConfigurableResult<>();
 
 		while (rs.next()) {
-			result.add(ID_COLUMN.getValue(rs, context), toInstance(rs, context));
+			result.add(KeyColumn.PRIMARY.getValue(rs, context), toInstance(rs, context));
 		}
 		return result;
 	}
-	private T toInstance(ResultSet rs, ExecutionContext context) {
+	private T toInstance(ResultSet rs, ExecutionContext context) throws SQLException {
 		try {
 			Constructor<T> noArgConstructor = getType().getDeclaredConstructor();
 			noArgConstructor.setAccessible(true);
 
 			T instance = noArgConstructor.newInstance();
-			for (Column<?> column : getColumns()) {
+			for (FieldBackedColumn<?> column : getColumns()) {
 				column.contributeToInstance(instance, rs, context);
 			}
 			return instance;

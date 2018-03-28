@@ -1,6 +1,6 @@
 package dev.kkorolyov.sqlob.column.factory;
 
-import dev.kkorolyov.sqlob.column.Column;
+import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.ReferencingColumn;
 
 import java.lang.reflect.Field;
@@ -18,7 +18,7 @@ public class ReferencingColumnFactory extends BaseColumnFactory {
 	}
 
 	@Override
-	public Column<?> get(Field f) {
+	public FieldBackedColumn<?> get(Field f) {
 		return new ReferencingColumn(f);
 	}
 }

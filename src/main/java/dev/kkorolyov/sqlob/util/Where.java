@@ -1,6 +1,7 @@
 package dev.kkorolyov.sqlob.util;
 
 import dev.kkorolyov.simplefuncs.function.ThrowingFunction;
+import dev.kkorolyov.sqlob.column.KeyColumn;
 import dev.kkorolyov.sqlob.logging.Logger;
 
 import java.lang.reflect.Field;
@@ -13,7 +14,6 @@ import java.util.UUID;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import static dev.kkorolyov.sqlob.column.Column.ID_COLUMN;
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getName;
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getPersistableFields;
 
@@ -75,8 +75,7 @@ public class Where {
 
 	/** @return where matching on {@code id} */
 	public static Where eqId(UUID id) {
-		// TODO Abstract this id.toString() as a converter in Column
-		return eq(ID_COLUMN.getName(), id.toString());
+		return eq(KeyColumn.PRIMARY.getName(), id);
 	}
 	/** @return where matching {@code o}'s individual attributes */
 	public static Where eqObject(Object o) {

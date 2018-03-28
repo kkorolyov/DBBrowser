@@ -2,6 +2,7 @@ package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.simplegraphs.Graph;
 import dev.kkorolyov.sqlob.column.Column;
+import dev.kkorolyov.sqlob.column.KeyColumn;
 import dev.kkorolyov.sqlob.column.ReferencingColumn;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
@@ -12,8 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static dev.kkorolyov.sqlob.column.Column.ID_COLUMN;
 
 /**
  * Request to create a table for a specific class.
@@ -53,7 +52,7 @@ public class CreateRequest<T> extends Request<T> {
 
 	private void loadPrereqs(Graph<Class<?>> typeDependencies, Map<Class<?>, CreateRequest<?>> prereqRequests) {
 		getColumns(ReferencingColumn.class).stream()
-				.map(ReferencingColumn::getReferencedType)
+				.map(ReferencingColumn::getType)
 				.peek(referencedType -> typeDependencies.add(referencedType, getType()))
 				.filter(referencedType -> !prereqRequests.containsKey(referencedType))
 				.map(CreateRequest::new)
@@ -68,7 +67,7 @@ public class CreateRequest<T> extends Request<T> {
 				.map(Column::getSql)
 				.collect(Collectors.joining(", ",
 						"CREATE TABLE IF NOT EXISTS " + getName()
-								+ " (" + ID_COLUMN.getSql() + " PRIMARY KEY, ",
+								+ " (" + KeyColumn.PRIMARY.getSql() + ", ",
 						")"));
 	}
 }

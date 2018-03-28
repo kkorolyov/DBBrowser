@@ -8,26 +8,28 @@ import dev.kkorolyov.sqlob.util.Where;
 
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.UUID;
 
 /**
  * A {@link Column} which references another table to retrieve its value.
  */
-public class ReferencingColumn extends Column<Object> {
-	private final Class<?> referencedType;
+public class ReferencingColumn extends FieldBackedColumn<Object> {
 	private final String referencedName;
+	private final KeyColumn keyDelegate;
 
 	/**
 	 * Constructs a new referencing column.
 	 * @param f associated field
 	 */
 	public ReferencingColumn(Field f) {
-		super(f, ID_COLUMN.getSqlType(), (rs, column) -> {
-			String idString = rs.getString(column);
-			return idString != null ? UUID.fromString(idString) : null;
-		});
-		this.referencedType = f.getType();
-		this.referencedName = PersistenceHelper.getName(referencedType);
+		this(f, new KeyColumn(PersistenceHelper.getName(f)));
+	}
+	private ReferencingColumn(Field f, KeyColumn keyDelegate) {
+		super(f, keyDelegate.getSqlType());
+
+		this.referencedName = PersistenceHelper.getName(f.getType());
+		this.keyDelegate = keyDelegate;
 	}
 
 	@Override
@@ -44,16 +46,14 @@ public class ReferencingColumn extends Column<Object> {
 
 	@Override
 	public Object getValue(Object instance, ExecutionContext context) {
-		Object value = super.getValue(instance, context);
-
-		return new InsertRequest<>(value)
+		return new InsertRequest<>(super.getValue(instance, context))
 				.execute(context)
 				.getId()
 				.orElseThrow(() -> new IllegalStateException("This should never happen"));
 	}
 	@Override
-	public Object getValue(ResultSet rs, ExecutionContext context) {
-		return new SelectRequest<>(getType(), (UUID) super.getValue(rs, context))
+	public Object getValue(ResultSet rs, ExecutionContext context) throws SQLException {
+		return new SelectRequest<>(getType(), keyDelegate.getValue(rs, context))
 				.execute(context)
 				.getObject().orElse(null);
 	}
@@ -62,14 +62,15 @@ public class ReferencingColumn extends Column<Object> {
 	public String getSql() {
 		return super.getSql()
 				+ ", FOREIGN KEY (" + getName() + ")"
-				+ " REFERENCES " + getReferencedName() + " (" + ID_COLUMN.getName() + ")"
+				+ " REFERENCES " + getReferencedName() + " (" + KeyColumn.PRIMARY.getName() + ")"
 				+ " ON DELETE SET NULL";
 	}
 
-	/** @return associated referenced type */
-	public Class<?> getReferencedType() {
-		return referencedType;
+	@Override
+	public String getSqlType() {
+		return keyDelegate.getSqlType();
 	}
+
 	/** @return referenced table name */
 	public String getReferencedName() {
 		return referencedName;

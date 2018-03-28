@@ -1,7 +1,8 @@
 package dev.kkorolyov.sqlob.column.factory;
 
 import dev.kkorolyov.simplefuncs.function.ThrowingBiFunction;
-import dev.kkorolyov.sqlob.column.Column;
+import dev.kkorolyov.sqlob.column.FieldBackedColumn;
+import dev.kkorolyov.sqlob.column.PrimitiveColumn;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -13,6 +14,7 @@ import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -21,7 +23,7 @@ import java.util.function.Function;
 public class PrimitiveColumnFactory extends BaseColumnFactory {
 	private final Map<Class<?>, String> types = new HashMap<>();
 	private final Map<Class<?>, Function<?, ?>> converters = new HashMap<>();
-	private final Map<Class<?>, ThrowingBiFunction<ResultSet, String, ?, SQLException>> extractors = new HashMap<>();
+	private final Map<Class<?>, BiFunction<ResultSet, String, ?>> extractors = new HashMap<>();
 
 	/**
 	 * Constructs a new primitive column factory.
@@ -80,7 +82,7 @@ public class PrimitiveColumnFactory extends BaseColumnFactory {
 	}
 
 	@Override
-	public Column<?> get(Field f) {
-		return new Column<>(f, types.get(f.getType()), extractors.get(f.getType()));
+	public FieldBackedColumn<?> get(Field f) {
+		return new PrimitiveColumn<>(f, types.get(f.getType()), extractors.get(f.getType()));
 	}
 }

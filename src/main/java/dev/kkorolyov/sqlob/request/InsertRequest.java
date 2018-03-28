@@ -1,6 +1,8 @@
 package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.sqlob.column.Column;
+import dev.kkorolyov.sqlob.column.FieldBackedColumn;
+import dev.kkorolyov.sqlob.column.KeyColumn;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
 import dev.kkorolyov.sqlob.util.Where;
@@ -16,8 +18,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static dev.kkorolyov.sqlob.column.Column.ID_COLUMN;
 
 /**
  * Request to insert records of a class as table rows.
@@ -89,7 +89,7 @@ public class InsertRequest<T> extends Request<T> {
 
 			// TODO Abstract this UUID conversion
 			statement.setObject(index++, record.getKey().toString());
-			for (Column<?> column : getColumns()) {
+			for (FieldBackedColumn<?> column : getColumns()) {
 				column.contributeToStatement(statement, record.getValue(), index++, context);
 			}
 			statement.addBatch();
@@ -103,7 +103,7 @@ public class InsertRequest<T> extends Request<T> {
 
 	private String generateColumns(Function<Column, String> columnValueMapper) {
 		return Stream.concat(
-				Stream.of(ID_COLUMN),
+				Stream.of(KeyColumn.PRIMARY),
 				getColumns().stream()
 		).map(columnValueMapper)
 				.collect(Collectors.joining(", ", "(", ")"));
