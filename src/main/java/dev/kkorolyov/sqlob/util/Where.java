@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getName;
@@ -86,11 +87,6 @@ public class Where {
 	}
 
 	/**
-	 * Constructs a new, empty where.
-	 * This is useful for dynamic construction, such as in loops or as a collector.
-	 */
-	public Where() {}
-	/**
 	 * Constructs a new where.
 	 * @param attribute attribute to check
 	 * @param operator check operation
@@ -151,19 +147,6 @@ public class Where {
 		nodes.add(node);
 	}
 
-	/** @return whether all criteria in this where clause have been resolved */
-	public boolean isResolved() {
-		return nodes.stream()
-				.allMatch(WhereNode::isResolved);
-	}
-	/** @return all attributes in this where clause which have not been resolved */
-	public Collection<String> getUnresolvedAttributes() {
-		return nodes.stream()
-				.filter(node -> !node.isResolved())
-				.map(node -> node.attribute)
-				.collect(Collectors.toSet());
-	}
-
 	/**
 	 * Resolves values for all criteria for an attribute in this where clause.
 	 * @param attribute attribute name
@@ -176,6 +159,19 @@ public class Where {
 				.forEach(node -> node.resolve(resolver));
 
 		return this;
+	}
+
+	/** @return whether all criteria in this where clause have been resolved */
+	public boolean isResolved() {
+		return nodes.stream()
+				.allMatch(WhereNode::isResolved);
+	}
+	/** @return all attributes in this where clause which have not been resolved */
+	public Collection<String> getUnresolvedAttributes() {
+		return nodes.stream()
+				.filter(node -> !node.isResolved())
+				.map(node -> node.attribute)
+				.collect(Collectors.toSet());
 	}
 
 	/**
@@ -208,7 +204,7 @@ public class Where {
 	public String toString() {
 		return nodes.stream()
 				.reduce(sql.toString(),
-						(sql, node) -> sql.replaceFirst("\\?", String.valueOf(node.resolvedValue)),
+						(sql, node) -> sql.replaceFirst("\\?", Matcher.quoteReplacement(String.valueOf(node.resolvedValue))),
 						(sql1, sql2) -> sql1);
 	}
 
