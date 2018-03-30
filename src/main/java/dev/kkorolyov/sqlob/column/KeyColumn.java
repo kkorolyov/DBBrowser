@@ -6,6 +6,7 @@ import dev.kkorolyov.sqlob.util.Where;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
+import java.util.function.UnaryOperator;
 
 /**
  * A {@link Column} with value being a primary or foreign key.
@@ -24,8 +25,7 @@ public class KeyColumn extends Column<UUID> {
 
 	@Override
 	public Where contributeToWhere(Where where, ExecutionContext context) {
-		return where.resolve(getName(), value ->
-				value instanceof UUID ? value.toString() : value);
+		return where.resolve(getName(), UnaryOperator.identity());
 	}
 
 	@Override

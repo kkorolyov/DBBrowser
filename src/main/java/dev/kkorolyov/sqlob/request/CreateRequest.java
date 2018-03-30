@@ -2,6 +2,7 @@ package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.simplegraphs.Graph;
 import dev.kkorolyov.sqlob.column.Column;
+import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.KeyColumn;
 import dev.kkorolyov.sqlob.column.factory.ReferencingColumnFactory.ReferencingColumn;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
@@ -52,7 +53,7 @@ public class CreateRequest<T> extends Request<T> {
 
 	private void loadPrereqs(Graph<Class<?>> typeDependencies, Map<Class<?>, CreateRequest<?>> prereqRequests) {
 		getColumns(ReferencingColumn.class).stream()
-				.map(ReferencingColumn::getType)
+				.map(FieldBackedColumn::getType)
 				.peek(referencedType -> typeDependencies.add(referencedType, getType()))
 				.filter(referencedType -> !prereqRequests.containsKey(referencedType))
 				.map(CreateRequest::new)

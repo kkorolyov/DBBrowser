@@ -21,13 +21,13 @@ class KeyColumnSpec extends Specification {
 
 	KeyColumn column = new KeyColumn(attribute)
 
-	def "resolves UUID to string in Where"() {
+	def "contributes same value to where"() {
 		when:
 		column.contributeToWhere(where, context)
 		where.contributeToStatement(statement)
 
 		then:
-		1 * statement.setObject(1, key.toString())
+		1 * statement.setObject(1, key)
 	}
 
 	def "gets UUID from result set if non-null"() {

@@ -30,6 +30,7 @@ public class ReferencingColumnFactory extends BaseColumnFactory {
 		return new ReferencingColumn(f);
 	}
 
+	// TODO This shouldn't need to be exposed
 	public static class ReferencingColumn extends FieldBackedColumn<Object> {
 		private final String referencedName;
 		private final KeyColumn keyDelegate;
@@ -72,18 +73,13 @@ public class ReferencingColumnFactory extends BaseColumnFactory {
 		public String getSql() {
 			return super.getSql()
 					+ ", FOREIGN KEY (" + getName() + ")"
-					+ " REFERENCES " + getReferencedName() + " (" + KeyColumn.PRIMARY.getName() + ")"
+					+ " REFERENCES " + referencedName + " (" + KeyColumn.PRIMARY.getName() + ")"
 					+ " ON DELETE SET NULL";
 		}
 
 		@Override
 		public String getSqlType() {
 			return keyDelegate.getSqlType();
-		}
-
-		/** @return referenced table name */
-		public String getReferencedName() {
-			return referencedName;
 		}
 	}
 }

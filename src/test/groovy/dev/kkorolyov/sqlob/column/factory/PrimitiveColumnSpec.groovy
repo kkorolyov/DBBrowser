@@ -1,6 +1,7 @@
-package dev.kkorolyov.sqlob.column
+package dev.kkorolyov.sqlob.column.factory
 
 import dev.kkorolyov.simplefuncs.function.ThrowingBiFunction
+import dev.kkorolyov.sqlob.column.FieldBackedColumn
 import dev.kkorolyov.sqlob.column.factory.PrimitiveColumnFactory
 import dev.kkorolyov.sqlob.request.ExecutionContext
 import dev.kkorolyov.sqlob.util.Where
@@ -17,7 +18,7 @@ class PrimitiveColumnSpec extends Specification {
 	class Stub {
 		String value
 	}
-	Field f = Stub.class.getDeclaredField("value")
+	Field f = Stub.getDeclaredField("value")
 	String name = f.getName()
 	ThrowingBiFunction<ResultSet, String, ?, SQLException> extractor = new ThrowingBiFunction<ResultSet, String, Object, SQLException>() {
 		@Override
@@ -40,6 +41,7 @@ class PrimitiveColumnSpec extends Specification {
 		then:
 		1 * where.resolve(name, { value -> value })
 	}
+
 	def "gets field value from instance"() {
 		Stub instance = new Stub().with {
 			value = randString()

@@ -87,8 +87,7 @@ public class InsertRequest<T> extends Request<T> {
 		for (Entry<UUID, T> record : remainingRecords.entrySet()) {
 			int index = 1;
 
-			// TODO Abstract this UUID conversion
-			statement.setObject(index++, record.getKey().toString());
+			statement.setObject(index++, record.getKey());
 			for (FieldBackedColumn<?> column : getColumns()) {
 				column.contributeToStatement(statement, record.getValue(), index++, context);
 			}
