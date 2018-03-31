@@ -1,12 +1,13 @@
 package dev.kkorolyov.sqlob.column;
 
-import dev.kkorolyov.sqlob.request.ExecutionContext;
+import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.util.PersistenceHelper;
 
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
+
+import static dev.kkorolyov.sqlob.util.UncheckedSqlException.wrapSqlException;
 
 /**
  * A {@link Column} backed by a field on an object.
@@ -18,7 +19,7 @@ public abstract class FieldBackedColumn<T> extends Column<T> {
 	/**
 	 * Constructs a new field-backed column.
 	 * @param sqlType associated SQL type
- 	 * @param f associated field
+	 * @param f associated field
 	 */
 	protected FieldBackedColumn(Field f, String sqlType) {
 		super(PersistenceHelper.getName(f), sqlType);
@@ -32,11 +33,11 @@ public abstract class FieldBackedColumn<T> extends Column<T> {
 	 * @param index statement index to contribute to
 	 * @param context context to work in
 	 * @return {@code statement}
-	 * @throws SQLException if a SQL issue occurs
+	 * @throws dev.kkorolyov.sqlob.util.UncheckedSqlException if a SQL issue occurs
 	 * @throws IllegalArgumentException in an issue occurs extracting this column's field from {@code instance}
 	 */
-	public PreparedStatement contributeToStatement(PreparedStatement statement, Object instance, int index, ExecutionContext context) throws SQLException {
-		statement.setObject(index, getValue(instance, context));
+	public PreparedStatement contributeToStatement(PreparedStatement statement, Object instance, int index, ExecutionContext context) {
+		wrapSqlException(() -> statement.setObject(index, getValue(instance, context)));
 		return statement;
 	}
 	/**
@@ -45,10 +46,10 @@ public abstract class FieldBackedColumn<T> extends Column<T> {
 	 * @param rs result set to retrieve value from
 	 * @param context context to work in
 	 * @return {@code instance}
-	 * @throws SQLException if a SQL issue occurs
+	 * @throws dev.kkorolyov.sqlob.util.UncheckedSqlException if a SQL issue occurs
 	 * @throws IllegalArgumentException if an issue occurs contributing this column's field to {@code instance}
 	 */
-	public Object contributeToInstance(Object instance, ResultSet rs, ExecutionContext context) throws SQLException {
+	public Object contributeToInstance(Object instance, ResultSet rs, ExecutionContext context) {
 		try {
 			f.setAccessible(true);
 			f.set(instance, getValue(rs, context));

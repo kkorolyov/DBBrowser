@@ -1,6 +1,7 @@
 package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.simplegraphs.Graph;
+import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.KeyColumn;
@@ -28,7 +29,7 @@ public class CreateRequest<T> extends Request<T> {
 	}
 
 	@Override
-	Result<T> executeInContext(ExecutionContext context) throws SQLException {
+	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
 		Graph<Class<?>> typeDependencies = new Graph<>();
 		typeDependencies.add(getType());
 		Map<Class<?>, CreateRequest<?>> prereqRequests = new HashMap<>();

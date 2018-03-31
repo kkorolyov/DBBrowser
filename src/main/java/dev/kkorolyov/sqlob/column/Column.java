@@ -1,10 +1,9 @@
 package dev.kkorolyov.sqlob.column;
 
-import dev.kkorolyov.sqlob.request.ExecutionContext;
+import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.util.Where;
 
 import java.sql.ResultSet;
-import java.sql.SQLException;
 
 /**
  * Performs operations involving a single SQL column.
@@ -36,9 +35,9 @@ public abstract class Column<T> {
 	 * @param rs result set to extract from
 	 * @param context context to work in
 	 * @return object value extracted from the associated column in {@code rs}
-	 * @throws SQLException if a SQL issue occurs
+	 * @throws dev.kkorolyov.sqlob.util.UncheckedSqlException if a SQL issue occurs
 	 */
-	public abstract T getValue(ResultSet rs, ExecutionContext context) throws SQLException;
+	public abstract T getValue(ResultSet rs, ExecutionContext context);
 
 	/** @return SQL representation of this column */
 	public String getSql() {

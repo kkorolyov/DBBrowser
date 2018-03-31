@@ -1,5 +1,6 @@
 package dev.kkorolyov.sqlob.request;
 
+import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.KeyColumn;
@@ -63,13 +64,13 @@ public class InsertRequest<T> extends Request<T> {
 	}
 
 	@Override
-	Result<T> executeInContext(ExecutionContext context) throws SQLException {
+	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
 		// Avoid re-inserting existing instances
 		Collection<UUID> existing = new SelectRequest<>(getType(), records.values().stream()
 				.map(Where::eqObject)
 				.reduce(Where::or)
 				.orElseThrow(() -> new IllegalStateException("This should never happen"))
-		).executeInContext(context)
+		).execute(context)
 				.getIds();
 
 		Map<UUID, T> remainingRecords = records.entrySet().stream()
@@ -81,7 +82,7 @@ public class InsertRequest<T> extends Request<T> {
 				+ " VALUES " + generateColumns(column -> "?");
 		logStatements(sql);
 
-		PreparedStatement statement = context.getConnection().prepareStatement(sql);
+		PreparedStatement statement = context.prepareStatement(sql);
 		ConfigurableResult<T> result = new ConfigurableResult<>();
 
 		for (Entry<UUID, T> record : remainingRecords.entrySet()) {

@@ -1,8 +1,8 @@
 package dev.kkorolyov.sqlob.column.factory;
 
+import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.KeyColumn;
-import dev.kkorolyov.sqlob.request.ExecutionContext;
 import dev.kkorolyov.sqlob.request.InsertRequest;
 import dev.kkorolyov.sqlob.request.SelectRequest;
 import dev.kkorolyov.sqlob.util.PersistenceHelper;
@@ -10,7 +10,6 @@ import dev.kkorolyov.sqlob.util.Where;
 
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.UUID;
 
 /**
@@ -50,7 +49,7 @@ public class ReferencingColumnFactory extends BaseColumnFactory {
 			return where.resolve(getName(), value ->
 					value != null
 							? new SelectRequest<>(value)
-							.execute(context.getConnection())
+							.execute(context)
 							.getId().orElseGet(UUID::randomUUID)
 							: null);
 		}
@@ -63,7 +62,7 @@ public class ReferencingColumnFactory extends BaseColumnFactory {
 					.orElseThrow(() -> new IllegalStateException("This should never happen"));
 		}
 		@Override
-		public Object getValue(ResultSet rs, ExecutionContext context) throws SQLException {
+		public Object getValue(ResultSet rs, ExecutionContext context) {
 			return new SelectRequest<>(getType(), keyDelegate.getValue(rs, context))
 					.execute(context)
 					.getObject().orElse(null);

@@ -186,7 +186,6 @@ public class Where {
 			try {
 				statement.setObject(i + 1, nodes.get(i).resolvedValue);
 			} catch (SQLException e) {
-				LOG.exception(e);
 				throw new UncheckedSqlException(e);
 			}
 		}

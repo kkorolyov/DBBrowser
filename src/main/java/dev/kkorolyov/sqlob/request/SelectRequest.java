@@ -1,6 +1,7 @@
 package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.simplefuncs.stream.Iterables;
+import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.KeyColumn;
@@ -55,7 +56,7 @@ public class SelectRequest<T> extends Request<T> {
 	}
 
 	@Override
-	Result<T> executeInContext(ExecutionContext context) throws SQLException {
+	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
 		for (Column<?> column : Iterables.append(getColumns(), KeyColumn.PRIMARY)) {
 			column.contributeToWhere(where, context);
 		}
@@ -66,7 +67,7 @@ public class SelectRequest<T> extends Request<T> {
 						" FROM " + getName() + " WHERE " + where.getSql()));
 		logStatements(sql);
 
-		PreparedStatement statement = context.getConnection().prepareStatement(sql);
+		PreparedStatement statement = context.prepareStatement(sql);
 		ResultSet rs = where.contributeToStatement(statement).executeQuery();
 
 		ConfigurableResult<T> result = new ConfigurableResult<>();
@@ -76,7 +77,7 @@ public class SelectRequest<T> extends Request<T> {
 		}
 		return result;
 	}
-	private T toInstance(ResultSet rs, ExecutionContext context) throws SQLException {
+	private T toInstance(ResultSet rs, ExecutionContext context) {
 		try {
 			Constructor<T> noArgConstructor = getType().getDeclaredConstructor();
 			noArgConstructor.setAccessible(true);

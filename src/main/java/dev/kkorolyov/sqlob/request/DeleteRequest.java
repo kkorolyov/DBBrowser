@@ -1,5 +1,9 @@
 package dev.kkorolyov.sqlob.request;
 
+import dev.kkorolyov.simplefuncs.stream.Iterables;
+import dev.kkorolyov.sqlob.ExecutionContext;
+import dev.kkorolyov.sqlob.column.Column;
+import dev.kkorolyov.sqlob.column.KeyColumn;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
 import dev.kkorolyov.sqlob.util.Where;
@@ -65,11 +69,14 @@ public class DeleteRequest<T> extends Request<T> {
 	}
 
 	@Override
-	Result<T> executeInContext(ExecutionContext context) throws SQLException {
+	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
+		for (Column<?> column : Iterables.append(getColumns(), KeyColumn.PRIMARY)) {
+			column.contributeToWhere(where, context);
+		}
 		String sql = "DELETE FROM " + getName() + " WHERE " + where.getSql();
 		logStatements(sql);
 
-		PreparedStatement statement = context.getConnection().prepareStatement(sql);
+		PreparedStatement statement = context.prepareStatement(sql);
 
 		int updated = where.contributeToStatement(statement).executeUpdate();
 

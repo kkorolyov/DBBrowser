@@ -1,19 +1,20 @@
 package dev.kkorolyov.sqlob.column;
 
-import dev.kkorolyov.sqlob.request.ExecutionContext;
+import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.util.Where;
 
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
+
+import static dev.kkorolyov.sqlob.util.UncheckedSqlException.wrapSqlException;
 
 /**
  * A {@link Column} with value being a primary or foreign key.
  */
 public class KeyColumn extends Column<UUID> {
 	/** Column corresponding to the primary key of all persisted types */
-	public static KeyColumn PRIMARY = new KeyColumn("id");
+	public static final KeyColumn PRIMARY = new KeyColumn("id");
 
 	/**
 	 * Constructs a new key column.
@@ -29,8 +30,8 @@ public class KeyColumn extends Column<UUID> {
 	}
 
 	@Override
-	public UUID getValue(ResultSet rs, ExecutionContext context) throws SQLException {
-		String idString = rs.getString(getName());
+	public UUID getValue(ResultSet rs, ExecutionContext context) {
+		String idString = wrapSqlException(() -> rs.getString(getName()));
 		return idString != null ? UUID.fromString(idString) : null;
 	}
 

@@ -1,8 +1,8 @@
 package dev.kkorolyov.sqlob.column.factory;
 
 import dev.kkorolyov.simplefuncs.function.ThrowingBiFunction;
+import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.FieldBackedColumn;
-import dev.kkorolyov.sqlob.request.ExecutionContext;
 import dev.kkorolyov.sqlob.util.Where;
 
 import java.lang.reflect.Field;
@@ -24,6 +24,7 @@ import java.util.function.UnaryOperator;
  */
 public class PrimitiveColumnFactory extends BaseColumnFactory {
 	private final Map<Class<?>, String> types = new HashMap<>();
+	// TODO Actually use these
 	private final Map<Class<?>, Function<?, ?>> converters = new HashMap<>();
 	private final Map<Class<?>, BiFunction<ResultSet, String, ?>> extractors = new HashMap<>();
 
@@ -72,9 +73,11 @@ public class PrimitiveColumnFactory extends BaseColumnFactory {
 
 		addAll(types.keySet());
 	}
+	@SafeVarargs
 	private <T> void put(String sqlType, ThrowingBiFunction<ResultSet, String, T, SQLException> extractor, Class<T>... classes) {
 		put(sqlType, Function.identity(), extractor, classes);
 	}
+	@SafeVarargs
 	private <T> void put(String sqlType, Function<T, ?> converter, ThrowingBiFunction<ResultSet, String, T, SQLException> extractor, Class<T>... classes) {
 		for (Class<?> c : classes) {
 			types.put(c, sqlType);
@@ -106,13 +109,8 @@ public class PrimitiveColumnFactory extends BaseColumnFactory {
 			return (T) super.getValue(instance, context);
 		}
 		@Override
-		public T getValue(ResultSet rs, ExecutionContext context) throws SQLException {
-			try {
-				return extractor.apply(rs, getName());
-			} catch (RuntimeException e) {
-				if (e.getCause() instanceof SQLException) throw (SQLException) e.getCause();
-				else throw e;
-			}
+		public T getValue(ResultSet rs, ExecutionContext context) {
+			return extractor.apply(rs, getName());
 		}
 	}
 }

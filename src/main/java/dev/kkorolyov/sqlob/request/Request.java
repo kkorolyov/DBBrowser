@@ -1,5 +1,6 @@
 package dev.kkorolyov.sqlob.request;
 
+import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.factory.ColumnFactory;
@@ -9,7 +10,6 @@ import dev.kkorolyov.sqlob.util.PersistenceHelper;
 import dev.kkorolyov.sqlob.util.UncheckedSqlException;
 
 import java.lang.reflect.Field;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -73,31 +73,15 @@ public abstract class Request<T> {
 	}
 
 	/**
-	 * Executes this request in a new context wrapping the given connection.
-	 * @param connection connection to execute with
-	 * @see #execute(ExecutionContext)
-	 */
-	public final Result<T> execute(Connection connection) {
-		return wrapSqlException(
-				() -> new ExecutionContext(connection),
-				this::executeInContext);
-	}
-	/**
-	 * Executes this request and all prerequisites within the given context.
-	 * @param context context to execute in
+	 * Executes this request within the given context.
+	 * @param context execution context
 	 * @return execution result
 	 * @throws UncheckedSqlException if a SQL database issue occurs
 	 */
 	public final Result<T> execute(ExecutionContext context) {
-		return wrapSqlException(() -> executeInContext(context));
+		return wrapSqlException(() -> executeThrowing(context));
 	}
-	/**
-	 * Executes this request within a given context.
-	 * @param context execution context
-	 * @return execution result
-	 * @throws SQLException if a SQL database issue occurs
-	 */
-	abstract Result<T> executeInContext(ExecutionContext context) throws SQLException;
+	abstract Result<T> executeThrowing(ExecutionContext context) throws SQLException;
 
 	/**
 	 * @see #logStatements(Iterable)
