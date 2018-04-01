@@ -1,6 +1,6 @@
 package dev.kkorolyov.sqlob.column
 
-import dev.kkorolyov.sqlob.request.ExecutionContext
+import dev.kkorolyov.sqlob.ExecutionContext
 import dev.kkorolyov.sqlob.util.Where
 
 import spock.lang.Specification

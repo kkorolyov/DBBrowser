@@ -1,5 +1,6 @@
 package dev.kkorolyov.sqlob.request
 
+import dev.kkorolyov.sqlob.ExecutionContext
 import dev.kkorolyov.sqlob.column.FieldBackedColumn
 import dev.kkorolyov.sqlob.column.factory.ReferencingColumnFactory
 
@@ -38,7 +39,7 @@ class CreateRequestSpec extends Specification {
 		request.addColumn(refCol)
 		request.addColumn(refCol1)
 
-		request.executeInContext(context)
+		request.execute(context)
 
 		then:
 		1 * statement.addBatch({ it.contains("CREATE TABLE IF NOT EXISTS ${type.getSimpleName()}") })

@@ -1,13 +1,12 @@
 package dev.kkorolyov.sqlob.column.factory
 
+import dev.kkorolyov.sqlob.ExecutionContext
 import dev.kkorolyov.sqlob.column.FieldBackedColumn
-import dev.kkorolyov.sqlob.request.ExecutionContext
 import dev.kkorolyov.sqlob.util.Where
 
 import spock.lang.Specification
 
 import java.lang.reflect.Field
-import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 
@@ -20,7 +19,6 @@ class ReferencingColumnSpec extends Specification {
 	Stub instance = new Stub()
 	Field f = Stub.getDeclaredField("value")
 
-	Connection connection = Mock()
 	PreparedStatement statement = Mock()
 	ResultSet rs = Mock()
 	ExecutionContext context = Mock()
@@ -46,8 +44,7 @@ class ReferencingColumnSpec extends Specification {
 		where.contributeToStatement(statement)
 
 		then:
-		1 * context.getConnection() >> connection
-		1 * connection.prepareStatement({ it -> it.contains("SELECT") }) >> statement
+		1 * context.prepareStatement({ it -> it.contains("SELECT") }) >> statement
 		1 * statement.executeQuery() >> rs
 		1 * rs.next() >> false
 		1 * statement.setObject(1, _ as UUID)
@@ -58,11 +55,10 @@ class ReferencingColumnSpec extends Specification {
 		column.getValue(instance, context)
 
 		then:
-		2 * context.getConnection() >> connection
-		1 * connection.prepareStatement({ it -> it.contains("SELECT") }) >> statement
+		1 * context.prepareStatement({ it -> it.contains("SELECT") }) >> statement
 		1 * statement.executeQuery() >> rs
 		1 * rs.next() >> false
-		1 * connection.prepareStatement({ it -> it.contains("INSERT") }) >> statement
+		1 * context.prepareStatement({ it -> it.contains("INSERT") }) >> statement
 		1 * statement.setObject(1, _ as UUID)
 	}
 	def "gets selected object from result set column ID"() {
@@ -70,8 +66,7 @@ class ReferencingColumnSpec extends Specification {
 		column.getValue(rs, context)
 
 		then:
-		1 * context.getConnection() >> connection
-		1 * connection.prepareStatement({ it -> it.contains("SELECT") }) >> statement
+		1 * context.prepareStatement({ it -> it.contains("SELECT") }) >> statement
 		1 * statement.executeQuery() >> rs
 		1 * rs.next() >> false
 		1 * statement.setObject(1, null)

@@ -39,12 +39,23 @@ public class Session implements AutoCloseable {
 
 	/**
 	 * Executes a request using an available connection and returns its result.
+	 * Because a session is auto-closeable but infinitely reusable,
+	 * 	this method should be called with the session instance in a try-with-resources block to group related transactions and avoid unhandled commit failures.
+	 * <pre>
+	 *   Session session = new Session(ds);
+	 *   try (session) {
+	 *     session.execute(new InsertRequest(...));
+	 *     session.execute(new DeleteRequest(...));
+	 *   } catch (UncheckedSqlException e) {
+	 *     session.rollback();
+	 *   }
+	 * </pre>
 	 * @param request database request to execute
 	 * @param <T> request target type
 	 * @return result containing all changed records
 	 * @throws UncheckedSqlException if a SQL issue occurs
 	 */
-	public <T> Result<T> executeRequest(Request<T> request) {
+	public <T> Result<T> execute(Request<T> request) {
 		try (ExecutionContext context = startTransaction()) {
 			if (!prepared.contains(request.getType())) {
 				new CreateRequest<>(request.getType()).execute(context);

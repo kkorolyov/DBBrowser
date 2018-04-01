@@ -2,8 +2,7 @@ package dev.kkorolyov.sqlob.column.factory
 
 import dev.kkorolyov.simplefuncs.function.ThrowingBiFunction
 import dev.kkorolyov.sqlob.column.FieldBackedColumn
-import dev.kkorolyov.sqlob.column.factory.PrimitiveColumnFactory
-import dev.kkorolyov.sqlob.request.ExecutionContext
+import dev.kkorolyov.sqlob.ExecutionContext
 import dev.kkorolyov.sqlob.util.Where
 
 import spock.lang.Specification

@@ -1,9 +1,11 @@
 package dev.kkorolyov.sqlob.request
 
+import dev.kkorolyov.sqlob.ExecutionContext
+
 import spock.lang.Specification
 
-import java.sql.Connection
 import java.sql.PreparedStatement
+import java.sql.ResultSet
 
 import static dev.kkorolyov.simplespecs.SpecUtilities.randString
 
@@ -20,20 +22,21 @@ class InsertRequestSpec extends Specification {
 	]
 
 	PreparedStatement statement = Mock()
-	Connection connection = Mock()
-	ExecutionContext context = Mock() {
-		getConnection() >> connection
-	}
+	ResultSet rs = Mock()
+	ExecutionContext context = Mock()
 
 	InsertRequest<?> request = new InsertRequest(records)
 
 	def "inserts ID of each record"() {
 		when:
-		request.executeInContext(context)
+		request.execute(context)
 
 		then:
-		1 * connection.prepareStatement({ it.contains("INSERT INTO ${type.getSimpleName()}") }) >> statement
-		1 * statement.setObject(1, id.toString())
-		1 * statement.setObject(1, id1.toString())
+		1 * context.prepareStatement({ it.contains("SELECT") && it.contains("FROM ${type.getSimpleName()}") }) >> statement
+		1 * statement.executeQuery() >> rs
+		1 * rs.next() >> false
+		1 * context.prepareStatement({ it.contains("INSERT INTO ${type.getSimpleName()}") }) >> statement
+		1 * statement.setObject(1, id)
+		1 * statement.setObject(1, id1)
 	}
 }
