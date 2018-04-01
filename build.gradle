@@ -17,8 +17,10 @@ repositories {
 dependencies {
 	compileOnly 'dev.kkorolyov:simple-logs:3.+'
 
-	implementation 'dev.kkorolyov:simple-funcs:1.+'
-
+	implementation(
+			'dev.kkorolyov:simple-funcs:1.+',
+			'dev.kkorolyov:simple-graphs:1.+'
+	)
 	testImplementation(
 			'org.spockframework:spock-core:1.1-groovy-2.4',
 			'cglib:cglib-nodep:3.+',
@@ -29,7 +31,8 @@ dependencies {
 			'mysql:mysql-connector-java:6.+',
 
 			'dev.kkorolyov:simple-logs:3.+',
-			'dev.kkorolyov:simple-props:4.+'
+			'dev.kkorolyov:simple-props:4.+',
+			'dev.kkorolyov:simple-specs:1.+'
 	)
 }
 

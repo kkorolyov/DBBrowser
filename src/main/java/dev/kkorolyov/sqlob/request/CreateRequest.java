@@ -38,7 +38,7 @@ public class CreateRequest<T> extends Request<T> {
 		// Add all prereq types to graph, add request for each distinct type
 		loadPrereqs(typeDependencies, prereqRequests);
 
-		List<String> sql = typeDependencies.getTopologicalSorting().stream()
+		List<String> sql = typeDependencies.sortTopological().stream()
 				.map(prereqRequests::get)
 				.map(CreateRequest::getCreateStatement)
 				.collect(Collectors.toList());
