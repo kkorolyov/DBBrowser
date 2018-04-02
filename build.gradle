@@ -44,17 +44,18 @@ task integration(type: Test) {
 	description = "Runs integration tests."
 
 	filter.includeTestsMatching '*Int'
-
-	build.dependsOn check
 }
 task performance(type: Test) {
 	group = 'verification'
 	description = """Runs performance tests."""
 
 	filter.includeTestsMatching '*Perf'
-
-	build.dependsOn check
 }
+
+check.dependsOn(
+		test,
+		integration
+)
 
 task sourcesJar(type: Jar) {
 	classifier = 'sources'
