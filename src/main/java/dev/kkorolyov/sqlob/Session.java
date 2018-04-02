@@ -83,11 +83,13 @@ public class Session implements AutoCloseable {
 	 * @throws UncheckedSqlException if a SQL issue occurs
 	 */
 	public void rollback() {
-		wrapSqlException((ThrowingRunnable<SQLException>) connection::rollback);
+		if (connection != null) {
+			wrapSqlException((ThrowingRunnable<SQLException>) connection::rollback);
 
-		LOG.info("Rolled back {} transactions", bufferCounter);
+			LOG.info("Rolled back {} transactions", bufferCounter);
 
-		bufferCounter = 0;
+			bufferCounter = 0;
+		}
 	}
 
 	/**
@@ -96,14 +98,16 @@ public class Session implements AutoCloseable {
 	 */
 	@Override
 	public void close() {
-		wrapSqlException(() -> {
-			connection.close();
-			connection = null;
+		if (connection != null) {
+			wrapSqlException(() -> {
+				connection.close();
+				connection = null;
 
-			LOG.info("Committed {} transactions", bufferCounter);
+				LOG.info("Committed {} transactions", bufferCounter);
 
-			bufferCounter = 0;
-		});
+				bufferCounter = 0;
+			});
+		}
 	}
 
 	@Override

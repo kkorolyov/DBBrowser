@@ -23,7 +23,7 @@ class SelectRequestSpec extends Specification {
 		request.execute(context)
 
 		then:
-		1 * context.prepareStatement({ it.contains("SELECT") && it.contains("FROM ${type.getSimpleName()} WHERE $where") }) >> statement
+		1 * context.prepareStatement({ it.contains("SELECT") && it.contains("FROM ${type.getSimpleName()} WHERE ${where.getSql()}") }) >> statement
 		1 * where.contributeToStatement(statement) >> statement
 		1 * statement.executeQuery() >> rs
 	}

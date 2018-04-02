@@ -45,13 +45,15 @@ task integration(type: Test) {
 
 	filter.includeTestsMatching '*Int'
 
-	build.dependsOn integration
+	build.dependsOn check
 }
 task performance(type: Test) {
 	group = 'verification'
 	description = """Runs performance tests."""
 
 	filter.includeTestsMatching '*Perf'
+
+	build.dependsOn check
 }
 
 task sourcesJar(type: Jar) {
