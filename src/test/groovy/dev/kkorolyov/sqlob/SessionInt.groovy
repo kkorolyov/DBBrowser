@@ -1,11 +1,17 @@
 package dev.kkorolyov.sqlob
 
 import com.mysql.cj.jdbc.MysqlDataSource
-import dev.kkorolyov.sqlob.util.Where
-import groovy.transform.CompileStatic
+import dev.kkorolyov.simplelogs.Level
+import dev.kkorolyov.simplelogs.Logger
+import dev.kkorolyov.simplelogs.append.Appenders
+import dev.kkorolyov.simplelogs.format.Formatters
+import dev.kkorolyov.sqlob.request.DeleteRequest
+import dev.kkorolyov.sqlob.request.InsertRequest
+import dev.kkorolyov.sqlob.request.SelectRequest
 import org.postgresql.ds.PGSimpleDataSource
 import org.sqlite.SQLiteConfig
 import org.sqlite.SQLiteDataSource
+
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -23,11 +29,14 @@ class SessionInt extends Specification {
 
 	@Shared DataSource[] dataSources = [sqliteDS]
 
-	@Shared Where allCondition = null
 	@Shared BasicStub bs = BasicStub.random()
 	@Shared SmartStub ss = SmartStub.random()
 
 	Session session
+
+	def setupSpec() {
+		Logger.getLogger("", Level.DEBUG, Formatters.simple(), Appenders.err(Level.DEBUG))
+	}
 
 	def cleanup() {
 		session.close()
@@ -47,128 +56,46 @@ class SessionInt extends Specification {
 		}
 	}
 
-	def "gets by ID"() {
+	def "inserts and selects"() {
 		prepareSession(ds)
 
 		when:
-		UUID bsId = session.put(bs)
-		UUID ssId = session.put(ss)
+		UUID bsId = insert(bs)
+		UUID ssId = insert(ss)
 
 		then:
-		session.get(BasicStub, bsId) == bs
-		session.get(SmartStub, ssId) == ss
-
-		where:
-		ds << dataSources
-	}
-	def "gets by condition"() {
-		prepareSession(ds)
-
-		when:
-		session.put(bs)
-		session.put(ss)
-
-		then:
-		session.get(BasicStub, new Where('short0', '=', bs.getShort0())).values()[0] == bs
-		session.get(SmartStub, new Where('stub', '=', ss.getStub())).values()[0] == ss
+		select(BasicStub, bsId) == bs
+		select(SmartStub, ssId) == ss
 
 		where:
 		ds << dataSources
 	}
 
-	def "gets ID"() {
+	def "inserts and deletes"() {
 		prepareSession(ds)
 
 		when:
-		UUID bsId = session.put(bs)
-		UUID ssId = session.put(ss)
+		UUID bsId = insert(bs)
+		UUID ssId = insert(ss)
+		delete(BasicStub, bsId)
+		delete(SmartStub, ssId)
 
 		then:
-		session.getId(bs) == bsId
-		session.getId(ss) == ssId
+		!select(BasicStub, bsId)
+		!select(SmartStub, ssId)
 
 		where:
 		ds << dataSources
 	}
 
-	def "put with ID updates"() {
-		prepareSession(ds)
-
-		BasicStub bs2 = BasicStub.random()
-		SmartStub ss2 = SmartStub.random()
-
-		when:
-		UUID bsId = session.put(bs)
-		UUID ssId = session.put(ss)
-
-		then:
-		session.get(BasicStub, bsId) == bs
-		session.get(SmartStub, ssId) == ss
-
-		when:
-		session.put(bsId, bs2)
-		session.put(ssId, ss2)
-
-		then:
-		session.get(BasicStub, bsId) == bs2
-		session.get(SmartStub, ssId) == ss2
-
-		where:
-		ds << dataSources
+	private <T> T select(Class<T> c, UUID id) {
+		return session.execute(new SelectRequest<>(c, id)).getObject().orElse(null)
 	}
-
-	def "drops by ID"() {
-		prepareSession(ds)
-
-		when:
-		UUID bsId = session.put(bs)
-		UUID ssId = session.put(ss)
-
-		then:
-		getAll(BasicStub).size() == 2
-		getAll(SmartStub).size() == 1
-
-		when:
-		session.drop(BasicStub, bsId)
-		session.drop(SmartStub, ssId)
-
-		then:
-		getAll(BasicStub).size() == 1
-		getAll(SmartStub).size() == 0
-
-		where:
-		ds << dataSources
+	private UUID insert(Object o) {
+		return session.execute(new InsertRequest<>(o)).getId().orElse(null)
 	}
-	def "drops by Condition"() {
-		prepareSession(ds)
-
-		when:
-		session.put(bs)
-		session.put(ss)
-
-		then:
-		getAll(BasicStub).size() == 2
-		getAll(SmartStub).size() == 1
-
-		when:
-		dropAll(BasicStub)
-		dropAll(SmartStub)
-
-		then:
-		getAll(BasicStub).size() == 0
-		getAll(SmartStub).size() == 0
-
-		where:
-		ds << dataSources
-	}
-
-	@CompileStatic
-	private <T> Map<UUID, T> getAll(Class<T> c) {
-		return session.get(c, allCondition)
-	}
-	@CompileStatic
-	private <T> void dropAll(Class<T> c) {
-		session.drop(c, allCondition)
+	private void delete(Class<?> c, UUID id) {
+		session.execute(new DeleteRequest<>(c, id))
 	}
 
 	private void prepareSession(DataSource ds) {
@@ -176,31 +103,26 @@ class SessionInt extends Specification {
 	}
 
 	private static DataSource buildSQLiteDS() {
-		String sqliteFile = "M:\\test\\sqlite.db"
-		new File(sqliteFile).delete()
-
 		SQLiteConfig config = new SQLiteConfig()
 		config.enforceForeignKeys(true)
 
 		SQLiteDataSource ds = new SQLiteDataSource(config)
-		ds.setUrl("jdbc:sqlite:${sqliteFile}")
+		ds.setUrl("jdbc:sqlite::memory:")
 
 		return ds
 	}
 	private static DataSource buildPostgresDS() {
 		PGSimpleDataSource ds = new PGSimpleDataSource()
-		ds.setServerName("192.168.1.195")
+		ds.setServerName("127.1")
 		ds.setDatabaseName("sqlobtest")
-		ds.setUser("sqlob")
-		ds.setPassword("Password1!")
+		ds.setUser("postgres")
 
 		return ds
 	}
 	private static DataSource buildMySQLDS() {
 		MysqlDataSource ds = new MysqlDataSource()
-		ds.setUrl("jdbc:mysql://192.168.1.195/sqlobtest?useLegacyDatetimeCode=false&serverTimezone=America/Los_Angeles")
-		ds.setUser("sqlob")
-		ds.setPassword("Password1!")
+		ds.setUrl("jdbc:mysql://127.1/sqlobtest?useLegacyDatetimeCode=false&serverTimezone=America/Los_Angeles")
+		ds.setUser("travis")
 
 		return ds
 	}

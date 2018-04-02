@@ -5,15 +5,16 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Random;
-import java.util.UUID;
+import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static dev.kkorolyov.simplespecs.SpecUtilities.randByte;
+import static dev.kkorolyov.simplespecs.SpecUtilities.randString;
 
 /**
  * All stub classes used for unit tests.
  */
 public class Stub {
-	static final Random rand = new Random();
-	
 	/**
 	 * Contains all default simple types.
 	 */
@@ -24,21 +25,21 @@ public class Stub {
 		private float float0;
 		private double double0;
 		private BigDecimal bigDecimal0;
-		
+
 		private boolean boolean0;
-		
+
 		private String string0;
-		
+
 		private Date date0;
 		private Time time0;
 		private Timestamp timestamp0;
-		
-		/** @return	new basic stub with random values */
+
+		/** @return new basic stub with random values */
 		public static BasicStub random() {
-			return new BasicStub((byte) rand.nextInt(Byte.MAX_VALUE + 1), rand.nextBoolean(), UUID.randomUUID().toString().replaceAll("-", ""), LocalDateTime.now());
+			return new BasicStub(randByte(), ThreadLocalRandom.current().nextBoolean(), randString(), LocalDateTime.now());
 		}
-		
-		private BasicStub(){}
+
+		private BasicStub() {}
 		public BasicStub(byte num, boolean bool, String string, LocalDateTime time) {
 			short0 = num;
 			int0 = num;
@@ -46,14 +47,15 @@ public class Stub {
 			float0 = num;
 			double0 = num;
 			bigDecimal0 = new BigDecimal(num);
-			
+
 			boolean0 = bool;
-			
+
 			string0 = string;
-			
+
 			date0 = Date.valueOf(time.toLocalDate());
 			time0 = Time.valueOf(time.toLocalTime());
 			timestamp0 = Timestamp.valueOf(time);
+			timestamp0.setNanos(0);
 		}
 
 		public short getShort0() {
@@ -91,81 +93,44 @@ public class Stub {
 		}
 
 		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((bigDecimal0 == null) ? 0 : bigDecimal0.hashCode());
-			result = prime * result + (boolean0 ? 1231 : 1237);
-			result = prime * result + ((date0 == null) ? 0 : date0.hashCode());
-			long temp = Double.doubleToLongBits(double0);
-			result = prime * result + (int) (temp ^ (temp >>> 32));
-			result = prime * result + Float.floatToIntBits(float0);
-			result = prime * result + int0;
-			result = prime * result + (int) (long0 ^ (long0 >>> 32));
-			result = prime * result + short0;
-			result = prime * result + ((string0 == null) ? 0 : string0.hashCode());
-			result = prime * result + ((time0 == null) ? 0 : time0.hashCode());
-			result = prime * result	+ ((timestamp0 == null) ? 0 : timestamp0.hashCode());
-			return result;
-		}
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
 
+			BasicStub other = (BasicStub) o;
+
+			return short0 == other.short0 &&
+					int0 == other.int0 &&
+					long0 == other.long0 &&
+					Float.compare(other.float0, float0) == 0 &&
+					Double.compare(other.double0, double0) == 0 &&
+					boolean0 == other.boolean0 &&
+					Objects.equals(bigDecimal0, other.bigDecimal0) &&
+					Objects.equals(string0, other.string0) &&
+					Objects.equals(date0, other.date0) &&
+					Objects.equals(time0, other.time0) &&
+					Objects.equals(timestamp0, other.timestamp0);
+		}
 		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (!(obj instanceof BasicStub))
-				return false;
-			
-			BasicStub other = (BasicStub) obj;
-			if (bigDecimal0 == null) {
-				if (other.bigDecimal0 != null)
-					return false;
-			} else if (!bigDecimal0.equals(other.bigDecimal0))
-				return false;
-			if (boolean0 != other.boolean0)
-				return false;
-			if (date0 == null) {
-				if (other.date0 != null)
-					return false;
-			} else if (!date0.equals(other.date0))
-				return false;
-			if (Double.doubleToLongBits(double0) != Double.doubleToLongBits(other.double0))
-				return false;
-			if (Float.floatToIntBits(float0) != Float.floatToIntBits(other.float0))
-				return false;
-			if (int0 != other.int0)
-				return false;
-			if (long0 != other.long0)
-				return false;
-			if (short0 != other.short0)
-				return false;
-			if (string0 == null) {
-				if (other.string0 != null)
-					return false;
-			} else if (!string0.equals(other.string0))
-				return false;
-			if (time0 == null) {
-				if (other.time0 != null)
-					return false;
-			} else if (!time0.equals(other.time0))
-				return false;
-			if (timestamp0 == null) {
-				if (other.timestamp0 != null)
-					return false;
-			} else if (!timestamp0.equals(other.timestamp0))
-				return false;
-			return true;
+		public int hashCode() {
+			return Objects.hash(short0, int0, long0, float0, double0, bigDecimal0, boolean0, string0, date0, time0, timestamp0);
 		}
 
 		@Override
 		public String toString() {
-			return "BasicStub [short0=" + short0 + ", int0="
-					+ int0 + ", long0=" + long0 + ", float0=" + float0 + ", double0="
-					+ double0 + ", bigDecimal0=" + bigDecimal0 + ", boolean0=" + boolean0
-					+ ", string0=" + string0 + ", date0=" + date0 + ", time0="
-					+ time0 + ", timestamp0=" + timestamp0 + "]";
+			return "BasicStub{" +
+					"short0=" + short0 +
+					", int0=" + int0 +
+					", long0=" + long0 +
+					", float0=" + float0 +
+					", double0=" + double0 +
+					", bigDecimal0=" + bigDecimal0 +
+					", boolean0=" + boolean0 +
+					", string0='" + string0 + '\'' +
+					", date0=" + date0 +
+					", time0=" + time0 +
+					", timestamp0=" + timestamp0 +
+					'}';
 		}
 	}
 
@@ -174,12 +139,12 @@ public class Stub {
 	 */
 	public static class SmartStub {
 		private BasicStub stub;
-		
+
 		public static SmartStub random() {
 			return new SmartStub(BasicStub.random());
 		}
-		
-		private SmartStub(){}
+
+		private SmartStub() {}
 		public SmartStub(BasicStub stub) {
 			this.stub = stub;
 		}
@@ -189,28 +154,24 @@ public class Stub {
 		}
 
 		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+
+			SmartStub other = (SmartStub) o;
+
+			return Objects.equals(stub, other.stub);
+		}
+		@Override
 		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((stub == null) ? 0 : stub.hashCode());
-			return result;
+			return Objects.hash(stub);
 		}
 
 		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (!(obj instanceof SmartStub))
-				return false;
-			SmartStub other = (SmartStub) obj;
-			if (stub == null) {
-				if (other.stub != null)
-					return false;
-			} else if (!stub.equals(other.stub))
-				return false;
-			return true;
+		public String toString() {
+			return "SmartStub{" +
+					"stub=" + stub +
+					'}';
 		}
 	}
 }

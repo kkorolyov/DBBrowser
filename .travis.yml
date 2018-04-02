@@ -2,7 +2,6 @@ language: java
 jdk: oraclejdk9
 
 install: TRUE
-script: ./gradlew build
 
 # Some Gradle nuance
 before_cache:
@@ -12,6 +11,18 @@ cache:
   directories:
     $HOME/.gradle/caches/
     $HOME/.gradle/wrapper/
+
+# DB services
+services:
+  sqlite3
+  postgresql
+  mysql
+
+before_script:
+  mysql -e "CREATE DATABASE sqlobtest"
+  psql -U postgres -c "CREATE DATABASE sqlobtest"
+
+script: ./gradlew build
 
 # Generate and deploy Javadoc
 before_deploy:
