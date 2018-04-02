@@ -5,22 +5,22 @@ install: TRUE
 
 # Some Gradle nuance
 before_cache:
-  rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
-  rm -rf $HOME/.gradle/caches/*/plugin-resolution/
+  - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -rf $HOME/.gradle/caches/*/plugin-resolution/
 cache:
   directories:
-    $HOME/.gradle/caches/
-    $HOME/.gradle/wrapper/
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
 
 # DB services
 services:
-  sqlite3
-  postgresql
-  mysql
+  - sqlite3
+  - postgresql
+  - mysql
 
 before_script:
-  mysql -e "CREATE DATABASE sqlobtest"
-  psql -U postgres -c "CREATE DATABASE sqlobtest"
+  - mysql -e "CREATE DATABASE sqlobtest"
+  - psql -U postgres -c "CREATE DATABASE sqlobtest"
 
 script: ./gradlew build
 
