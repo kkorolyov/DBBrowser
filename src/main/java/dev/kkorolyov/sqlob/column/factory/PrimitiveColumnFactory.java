@@ -42,7 +42,7 @@ public class PrimitiveColumnFactory extends BaseColumnFactory {
 				Long.TYPE, Long.class);
 		put("REAL", ResultSet::getFloat,
 				Float.TYPE, Float.class);
-		put("DOUBLE", ResultSet::getDouble,
+		put("DOUBLE PRECISION", ResultSet::getDouble,
 				Double.TYPE, Double.class);
 		put("NUMERIC", ResultSet::getBigDecimal,
 				BigDecimal.class);
@@ -68,7 +68,7 @@ public class PrimitiveColumnFactory extends BaseColumnFactory {
 		put("TIMESTAMP(6)", ResultSet::getTimestamp,
 				Timestamp.class);
 
-		put("CHAR(16)", UUID::toString, (rs, column) -> UUID.fromString(rs.getString(column)),
+		put("UUID", (rs, column) -> UUID.fromString(rs.getString(column)),
 				UUID.class);
 
 		addAll(types.keySet());

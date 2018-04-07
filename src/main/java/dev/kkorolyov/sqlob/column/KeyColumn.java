@@ -21,7 +21,7 @@ public class KeyColumn extends Column<UUID> {
 	 * @param name column name
 	 */
 	public KeyColumn(String name) {
-		super(name, "CHAR(16)");
+		super(name, "UUID");
 	}
 
 	@Override

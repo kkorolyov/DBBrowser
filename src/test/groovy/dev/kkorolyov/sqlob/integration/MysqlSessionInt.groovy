@@ -12,5 +12,4 @@ class MysqlSessionInt extends SessionInt {
 
 		return ds
 	}
-
 }

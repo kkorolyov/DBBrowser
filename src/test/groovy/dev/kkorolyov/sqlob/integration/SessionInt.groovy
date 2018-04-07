@@ -39,7 +39,7 @@ abstract class SessionInt extends Specification {
 		Connection conn = dataSource.getConnection()
 
 		Statement statement = conn.createStatement()
-		['BasicStub', 'SmartStub'].each {
+		['SmartStub', 'BasicStub'].each {
 			String sql = "DROP TABLE IF EXISTS $it"
 			statement.addBatch(sql)
 			statement.addBatch(sql.toLowerCase())
