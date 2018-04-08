@@ -31,16 +31,13 @@ public class ReferencingColumnFactory extends BaseColumnFactory {
 
 	// TODO This shouldn't need to be exposed
 	public static class ReferencingColumn extends FieldBackedColumn<Object> {
-		private final String referencedName;
 		private final KeyColumn keyDelegate;
 
 		private ReferencingColumn(Field f) {
-			this(f, new KeyColumn(PersistenceHelper.getName(f)));
+			this(f, KeyColumn.foreign(PersistenceHelper.getName(f), PersistenceHelper.getName(f.getType())));
 		}
 		private ReferencingColumn(Field f, KeyColumn keyDelegate) {
 			super(f, keyDelegate.getSqlType());
-
-			this.referencedName = PersistenceHelper.getName(f.getType());
 			this.keyDelegate = keyDelegate;
 		}
 
@@ -70,15 +67,7 @@ public class ReferencingColumnFactory extends BaseColumnFactory {
 
 		@Override
 		public String getSql() {
-			return super.getSql()
-					+ ", FOREIGN KEY (" + getName() + ")"
-					+ " REFERENCES " + referencedName + " (" + KeyColumn.PRIMARY.getName() + ")"
-					+ " ON DELETE SET NULL";
-		}
-
-		@Override
-		public String getSqlType() {
-			return keyDelegate.getSqlType();
+			return keyDelegate.getSql();
 		}
 	}
 }

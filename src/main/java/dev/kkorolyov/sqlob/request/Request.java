@@ -103,7 +103,7 @@ public abstract class Request<T> {
 		return type;
 	}
 	/** @return table name of type handled by this request */
-	final String getName() {
+	String getName() {
 		return name;
 	}
 }

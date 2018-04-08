@@ -19,7 +19,7 @@ class KeyColumnSpec extends Specification {
 	PreparedStatement statement = Mock()
 	ResultSet rs = Mock()
 
-	KeyColumn column = new KeyColumn(attribute)
+	KeyColumn column = KeyColumn.primary(attribute)
 
 	def "contributes same value to where"() {
 		when:
