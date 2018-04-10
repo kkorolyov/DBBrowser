@@ -57,23 +57,23 @@ public class SelectRequest<T> extends Request<T> {
 
 	@Override
 	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
-		for (Column<?> column : Iterables.append(getColumns(), KeyColumn.PRIMARY)) {
-			column.contributeToWhere(where, context);
-		}
 		String sql = getColumns().stream()
 				.map(Column::getName)
 				.collect(Collectors.joining(", ",
-						"SELECT " + KeyColumn.PRIMARY.getName() + ", ",
+						"SELECT " + KeyColumn.ID.getName() + ", ",
 						" FROM " + getName() + " WHERE " + where.getSql()));
 		logStatements(sql);
 
 		PreparedStatement statement = context.prepareStatement(sql);
-		ResultSet rs = where.contributeToStatement(statement).executeQuery();
+		for (Column<?> column : Iterables.append(getColumns(), KeyColumn.ID)) {
+			column.contributeToStatement(statement, where, context);
+		}
+		ResultSet rs = statement.executeQuery();
 
 		ConfigurableResult<T> result = new ConfigurableResult<>();
 
 		while (rs.next()) {
-			result.add(KeyColumn.PRIMARY.getValue(rs, context), toInstance(rs, context));
+			result.add(KeyColumn.ID.getValue(rs, context), toInstance(rs, context));
 		}
 		return result;
 	}

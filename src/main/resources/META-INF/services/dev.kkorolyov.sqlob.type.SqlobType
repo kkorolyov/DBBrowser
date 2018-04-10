@@ -1,0 +1,15 @@
+dev.kkorolyov.sqlob.type.BigDecimalSqlobType
+dev.kkorolyov.sqlob.type.BooleanSqlobType
+dev.kkorolyov.sqlob.type.ByteSqlobType
+dev.kkorolyov.sqlob.type.BytesSqlobType
+dev.kkorolyov.sqlob.type.CharSqlobType
+dev.kkorolyov.sqlob.type.DoubleSqlobType
+dev.kkorolyov.sqlob.type.FloatSqlobType
+dev.kkorolyov.sqlob.type.IntSqlobType
+dev.kkorolyov.sqlob.type.LongSqlobType
+dev.kkorolyov.sqlob.type.ShortSqlobType
+dev.kkorolyov.sqlob.type.SqlDateSqlobType
+dev.kkorolyov.sqlob.type.SqlTimeSqlobType
+dev.kkorolyov.sqlob.type.SqlTimestampSqlobType
+dev.kkorolyov.sqlob.type.StringSqlobType
+dev.kkorolyov.sqlob.type.UuidSqlobType

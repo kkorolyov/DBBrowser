@@ -2,7 +2,6 @@ package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.simplegraphs.Graph;
 import dev.kkorolyov.sqlob.ExecutionContext;
-import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.KeyColumn;
 import dev.kkorolyov.sqlob.column.factory.ReferencingColumnFactory.ReferencingColumn;
@@ -15,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Request to create a table for a specific class.
@@ -40,7 +40,7 @@ public class CreateRequest<T> extends Request<T> {
 
 		List<String> sql = typeDependencies.sortTopological().stream()
 				.map(prereqRequests::get)
-				.map(CreateRequest::getCreateStatement)
+				.map(createRequest -> getCreateStatement(context))
 				.collect(Collectors.toList());
 
 		logStatements(sql);
@@ -64,12 +64,13 @@ public class CreateRequest<T> extends Request<T> {
 				});
 	}
 
-	private String getCreateStatement() {
-		return getColumns().stream()
-				.map(Column::getSql)
+	private String getCreateStatement(ExecutionContext context) {
+		return Stream.concat(
+				Stream.of(KeyColumn.ID),
+				getColumns().stream()
+		).map(column -> column.getSql(context))
 				.collect(Collectors.joining(", ",
-						"CREATE TABLE IF NOT EXISTS " + getName()
-								+ " (" + KeyColumn.PRIMARY.getSql() + ", ",
+						"CREATE TABLE IF NOT EXISTS " + getName() + " (",
 						")"));
 	}
 }

@@ -70,15 +70,14 @@ public class DeleteRequest<T> extends Request<T> {
 
 	@Override
 	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
-		for (Column<?> column : Iterables.append(getColumns(), KeyColumn.PRIMARY)) {
-			column.contributeToWhere(where, context);
-		}
 		String sql = "DELETE FROM " + getName() + " WHERE " + where.getSql();
 		logStatements(sql);
 
 		PreparedStatement statement = context.prepareStatement(sql);
-
-		int updated = where.contributeToStatement(statement).executeUpdate();
+		for (Column<?> column : Iterables.append(getColumns(), KeyColumn.ID)) {
+			column.contributeToStatement(statement, where, context);
+		}
+		int updated = statement.executeUpdate();
 
 		return new ConfigurableResult<T>()
 				.size(updated);

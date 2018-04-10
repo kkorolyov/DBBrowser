@@ -86,9 +86,9 @@ public class InsertRequest<T> extends Request<T> {
 		ConfigurableResult<T> result = new ConfigurableResult<>();
 
 		for (Entry<UUID, T> record : remainingRecords.entrySet()) {
-			int index = 1;
+			int index = 0;
 
-			statement.setObject(index++, record.getKey());
+			KeyColumn.ID.getSqlobType().set(context.getMetadata(), statement, index++, record.getKey());
 			for (FieldBackedColumn<?> column : getColumns()) {
 				column.contributeToStatement(statement, record.getValue(), index++, context);
 			}
@@ -103,7 +103,7 @@ public class InsertRequest<T> extends Request<T> {
 
 	private String generateColumns(Function<Column, String> columnValueMapper) {
 		return Stream.concat(
-				Stream.of(KeyColumn.PRIMARY),
+				Stream.of(KeyColumn.ID),
 				getColumns().stream()
 		).map(columnValueMapper)
 				.collect(Collectors.joining(", ", "(", ")"));

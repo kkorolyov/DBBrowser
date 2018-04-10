@@ -1,28 +1,19 @@
 package dev.kkorolyov.sqlob.column;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
-import dev.kkorolyov.sqlob.util.Where;
+import dev.kkorolyov.sqlob.type.factory.SqlobTypeFactory;
 
-import java.sql.ResultSet;
 import java.util.UUID;
-import java.util.function.UnaryOperator;
-
-import static dev.kkorolyov.sqlob.util.UncheckedSqlException.wrapSqlException;
 
 /**
  * A {@link Column} with value being a primary or foreign key.
  */
 public abstract class KeyColumn extends Column<UUID> {
-	/** Column corresponding to the primary key of all persisted types */
-	public static final KeyColumn PRIMARY = id();
+	/** Column corresponding to the default primary key of all persisted types */
+	public static final KeyColumn ID = primary("id");
 
 	private KeyColumn(String name) {
-		super(name, "UUID");
-	}
-
-	/** @return primary key column of all persisted types */
-	public static KeyColumn id() {
-		return primary("id");
+		super(name, SqlobTypeFactory.get(UUID.class));
 	}
 
 	/**
@@ -47,8 +38,8 @@ public abstract class KeyColumn extends Column<UUID> {
 	public static KeyColumn primary(String name) {
 		return new KeyColumn(name) {
 			@Override
-			public String getSql() {
-				return super.getSql()
+			public String getSql(ExecutionContext context) {
+				return super.getSql(context)
 						+ " PRIMARY KEY";
 			}
 		};
@@ -61,23 +52,12 @@ public abstract class KeyColumn extends Column<UUID> {
 	public static KeyColumn foreign(String name, String referencedName) {
 		return new KeyColumn(name) {
 			@Override
-			public String getSql() {
-				return super.getSql()
+			public String getSql(ExecutionContext context) {
+				return super.getSql(context)
 						+ ", FOREIGN KEY (" + getName() + ")"
-						+ " REFERENCES " + referencedName + " (" + KeyColumn.PRIMARY.getName() + ")"
+						+ " REFERENCES " + referencedName + " (" + KeyColumn.ID.getName() + ")"
 						+ " ON DELETE SET NULL";
 			}
 		};
-	}
-
-	@Override
-	public Where contributeToWhere(Where where, ExecutionContext context) {
-		return where.resolve(getName(), UnaryOperator.identity());
-	}
-
-	@Override
-	public UUID getValue(ResultSet rs, ExecutionContext context) {
-		String idString = wrapSqlException(() -> rs.getString(getName()));
-		return idString != null ? UUID.fromString(idString) : null;
 	}
 }

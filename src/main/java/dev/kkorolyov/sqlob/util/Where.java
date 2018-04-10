@@ -2,18 +2,14 @@ package dev.kkorolyov.sqlob.util;
 
 import dev.kkorolyov.simplefuncs.function.ThrowingFunction;
 import dev.kkorolyov.sqlob.column.KeyColumn;
-import dev.kkorolyov.sqlob.logging.Logger;
 
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.UnaryOperator;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
-import java.util.stream.Collectors;
 
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getName;
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getPersistableFields;
@@ -29,11 +25,12 @@ import static dev.kkorolyov.sqlob.util.PersistenceHelper.getPersistableFields;
  * - Contribute the Where to the prepared statement
  * </pre>
  */
+// TODO Major cleanup
 public class Where {
-	private static final Logger LOG = Logger.getLogger(Where.class.getName());
-
 	private final StringBuilder sql = new StringBuilder();
 	private final List<WhereNode> nodes = new ArrayList<>();
+
+	private int index;
 
 	/** @return where for {@code attribute == value}; translates to {@link #isNull(String)} if {@code value} is {@code null} */
 	public static Where eq(String attribute, Object value) {
@@ -76,7 +73,7 @@ public class Where {
 
 	/** @return where matching on {@code id} */
 	public static Where eqId(UUID id) {
-		return eq(KeyColumn.PRIMARY.getName(), id);
+		return eq(KeyColumn.ID.getName(), id);
 	}
 	/** @return where matching {@code o}'s individual attributes */
 	public static Where eqObject(Object o) {
@@ -93,7 +90,7 @@ public class Where {
 	 * @param value value to match
 	 */
 	public Where(String attribute, String operator, Object value) {
-		append(new WhereNode(attribute, operator, value));
+		append(new WhereNode(attribute, operator, value, index++));
 	}
 
 	/**
@@ -138,7 +135,9 @@ public class Where {
 		if (sql.length() > 0) sql.append(" ").append(joiner).append(" ");
 		sql.append("(").append(where.getSql()).append(")");
 
-		nodes.addAll(where.nodes);
+		where.nodes.stream()
+				.map(node -> new WhereNode(node.attribute, node.operator, node.value, index++))
+				.forEach(nodes::add);
 
 		return this;
 	}
@@ -148,50 +147,14 @@ public class Where {
 	}
 
 	/**
-	 * Resolves values for all criteria for an attribute in this where clause.
-	 * @param attribute attribute name
-	 * @param resolver function resolving a criterion's value
-	 * @return {@code this}
+	 * Consumes all {index, value} pairs of an attribute.
+	 * @param attribute attribute to filter on
+	 * @param action bi-consumer invoked with each {index, value} pair of {@code attribute} in this where clause
 	 */
-	public Where resolve(String attribute, UnaryOperator<Object> resolver) {
+	public void consumeValues(String attribute, BiConsumer<Integer, Object> action) {
 		nodes.stream()
 				.filter(node -> node.attribute.equals(attribute))
-				.forEach(node -> node.resolve(resolver));
-
-		return this;
-	}
-
-	/** @return whether all criteria in this where clause have been resolved */
-	public boolean isResolved() {
-		return nodes.stream()
-				.allMatch(WhereNode::isResolved);
-	}
-	/** @return all attributes in this where clause which have not been resolved */
-	public Collection<String> getUnresolvedAttributes() {
-		return nodes.stream()
-				.filter(node -> !node.isResolved())
-				.map(node -> node.attribute)
-				.collect(Collectors.toSet());
-	}
-
-	/**
-	 * Prepares a prepared statement with this where clause's values.
-	 * @param statement statement to prepare
-	 * @return {@code statement}
-	 */
-	public PreparedStatement contributeToStatement(PreparedStatement statement) {
-		if (!isResolved()) throw new IllegalStateException("Contains unresolved attributes: " + getUnresolvedAttributes());
-
-		for (int i = 0; i < nodes.size(); i++) {
-			try {
-				statement.setObject(i + 1, nodes.get(i).resolvedValue);
-			} catch (SQLException e) {
-				throw new UncheckedSqlException(e);
-			}
-		}
-		LOG.debug("Contributed {} to {}", this, statement);
-
-		return statement;
+				.forEach(node -> action.accept(node.index, node.value));
 	}
 
 	/** @return SQL representation of this where clause */
@@ -203,7 +166,7 @@ public class Where {
 	public String toString() {
 		return nodes.stream()
 				.reduce(sql.toString(),
-						(sql, node) -> sql.replaceFirst("\\?", Matcher.quoteReplacement(String.valueOf(node.resolvedValue))),
+						(sql, node) -> sql.replaceFirst("\\?", Matcher.quoteReplacement(String.valueOf(node.value))),
 						(sql1, sql2) -> sql1);
 	}
 
@@ -211,19 +174,13 @@ public class Where {
 		private final String attribute;
 		private final String operator;
 		private final Object value;
-		private Object resolvedValue;
+		private final int index;
 
-		WhereNode(String attribute, String operator, Object value) {
+		WhereNode(String attribute, String operator, Object value, int index) {
 			this.attribute = attribute;
 			this.operator = operator;
 			this.value = value;
-		}
-
-		boolean isResolved() {
-			return value == null || resolvedValue != null;
-		}
-		void resolve(UnaryOperator<Object> resolver) {
-			resolvedValue = resolver.apply(value);
+			this.index = index;
 		}
 
 		String getSql() {
@@ -232,7 +189,7 @@ public class Where {
 
 		@Override
 		public String toString() {
-			return attribute + " " + operator + " " + resolvedValue;
+			return attribute + " " + operator + " " + value;
 		}
 	}
 }

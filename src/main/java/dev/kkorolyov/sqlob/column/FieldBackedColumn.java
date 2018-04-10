@@ -1,13 +1,12 @@
 package dev.kkorolyov.sqlob.column;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
+import dev.kkorolyov.sqlob.type.SqlobType;
 import dev.kkorolyov.sqlob.util.PersistenceHelper;
 
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-
-import static dev.kkorolyov.sqlob.util.UncheckedSqlException.wrapSqlException;
 
 /**
  * A {@link Column} backed by a field on an object.
@@ -18,11 +17,11 @@ public abstract class FieldBackedColumn<T> extends Column<T> {
 
 	/**
 	 * Constructs a new field-backed column.
-	 * @param sqlType associated SQL type
 	 * @param f associated field
+	 * @param sqlobType column SQLOb type
 	 */
-	protected FieldBackedColumn(Field f, String sqlType) {
-		super(PersistenceHelper.getName(f), sqlType);
+	protected FieldBackedColumn(Field f, SqlobType<? super T> sqlobType) {
+		super(PersistenceHelper.getName(f), sqlobType);
 		this.f = f;
 	}
 
@@ -37,7 +36,7 @@ public abstract class FieldBackedColumn<T> extends Column<T> {
 	 * @throws IllegalArgumentException in an issue occurs extracting this column's field from {@code instance}
 	 */
 	public PreparedStatement contributeToStatement(PreparedStatement statement, Object instance, int index, ExecutionContext context) {
-		wrapSqlException(() -> statement.setObject(index, getValue(instance, context)));
+		getSqlobType().set(context.getMetadata(), statement, index, (T) toFieldValue(instance, context));
 		return statement;
 	}
 	/**
@@ -66,7 +65,7 @@ public abstract class FieldBackedColumn<T> extends Column<T> {
 	 * @return field value extracted from the associated field in {@code instance}
 	 * @throws IllegalArgumentException in an issue occurs extracting this column's field from {@code instance}
 	 */
-	public Object getValue(Object instance, ExecutionContext context) {
+	public Object toFieldValue(Object instance, ExecutionContext context) {
 		try {
 			f.setAccessible(true);
 			return f.get(instance);

@@ -3,6 +3,7 @@ package dev.kkorolyov.sqlob;
 import dev.kkorolyov.sqlob.request.Request;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 
@@ -55,6 +56,13 @@ public class ExecutionContext implements AutoCloseable {
 
 		preparedStatement = wrapSqlException(() -> connection.prepareStatement(sql));
 		return preparedStatement;
+	}
+
+	/** @return database metadata */
+	public DatabaseMetaData getMetadata() {
+		verifyNotClosed();
+
+		return wrapSqlException(connection::getMetaData);
 	}
 
 	private void verifyNotClosed() {

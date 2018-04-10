@@ -1,8 +1,10 @@
 package dev.kkorolyov.sqlob.column;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
+import dev.kkorolyov.sqlob.type.SqlobType;
 import dev.kkorolyov.sqlob.util.Where;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 /**
@@ -11,25 +13,39 @@ import java.sql.ResultSet;
  */
 public abstract class Column<T> {
 	private final String name;
-	private final String sqlType;
+	private final SqlobType<? super T> sqlobType;
 
 	/**
 	 * Constructs a new column.
 	 * @param name column name
-	 * @param sqlType associated SQL type
+	 * @param sqlobType column SQLOb type
 	 */
-	protected Column(String name, String sqlType) {
+	protected Column(String name, SqlobType<? super T> sqlobType) {
 		this.name = name;
-		this.sqlType = sqlType;
+		this.sqlobType = sqlobType;
 	}
 
 	/**
-	 * Resolves this column's values in {@code where}.
-	 * @param where where to resolve in
+	 * Contributes this column's resolved values in {@code where} to {@code statement}.
+	 * @param statement statement to contribute to
+	 * @param where where to resolve values from
 	 * @param context context to work in
-	 * @return {@code where}
+	 * @return {@code statement}
 	 */
-	public abstract Where contributeToWhere(Where where, ExecutionContext context);
+	public PreparedStatement contributeToStatement(PreparedStatement statement, Where where, ExecutionContext context) {
+		// TODO Fix this cast
+		where.consumeValues(getName(), (index, value) -> sqlobType.set(context.getMetadata(), statement, index, resolveCriterion(value, context)));
+		return statement;
+	}
+
+	/**
+	 * @param value criterion value to resolve
+	 * @param context context to work in
+	 * @return resolved form of {@code value} ready for persistence
+	 */
+	public T resolveCriterion(Object value, ExecutionContext context) {
+		return (T) value;
+	}
 
 	/**
 	 * @param rs result set to extract from
@@ -37,19 +53,25 @@ public abstract class Column<T> {
 	 * @return object value extracted from the associated column in {@code rs}
 	 * @throws dev.kkorolyov.sqlob.util.UncheckedSqlException if a SQL issue occurs
 	 */
-	public abstract T getValue(ResultSet rs, ExecutionContext context);
+	public T getValue(ResultSet rs, ExecutionContext context) {
+		// TODO Not quite the safe cast
+		return (T) getSqlobType().get(context.getMetadata(), rs, getName());
+	}
 
-	/** @return SQL representation of this column */
-	public String getSql() {
-		return getName() + " " + getSqlType();
+	/**
+	 * @param context context to work in
+	 * @return SQL representation of this column within {@code context}
+	 */
+	public String getSql(ExecutionContext context) {
+		return getName() + " " + getSqlobType().getSqlType(context.getMetadata());
 	}
 
 	/** @return column name */
 	public String getName() {
 		return name;
 	}
-	/** @return associated SQL type */
-	public String getSqlType() {
-		return sqlType;
+	/** @return column SQLOb type */
+	public SqlobType<? super T> getSqlobType() {
+		return sqlobType;
 	}
 }
