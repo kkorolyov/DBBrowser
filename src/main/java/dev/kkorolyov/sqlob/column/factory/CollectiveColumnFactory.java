@@ -1,6 +1,5 @@
 package dev.kkorolyov.sqlob.column.factory;
 
-import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.KeyColumn;
 import dev.kkorolyov.sqlob.type.SqlobType;
@@ -33,11 +32,6 @@ public class CollectiveColumnFactory implements ColumnFactory {
 		private CollectiveColumn(Field f, KeyColumn keyDelegate) {
 			super(f, (SqlobType<? super Collection>) keyDelegate.getSqlobType());
 			this.keyDelegate = keyDelegate;
-		}
-
-		@Override
-		public Collection toFieldValue(Object instance, ExecutionContext context) {
-			return (Collection) super.toFieldValue(instance, context);
 		}
 	}
 }

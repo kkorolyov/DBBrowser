@@ -36,7 +36,7 @@ public abstract class FieldBackedColumn<T> extends Column<T> {
 	 * @throws IllegalArgumentException in an issue occurs extracting this column's field from {@code instance}
 	 */
 	public PreparedStatement contributeToStatement(PreparedStatement statement, Object instance, int index, ExecutionContext context) {
-		getSqlobType().set(context.getMetadata(), statement, index, (T) toFieldValue(instance, context));
+		getSqlobType().set(context.getMetadata(), statement, index, getValue(instance, context));
 		return statement;
 	}
 	/**
@@ -65,10 +65,10 @@ public abstract class FieldBackedColumn<T> extends Column<T> {
 	 * @return field value extracted from the associated field in {@code instance}
 	 * @throws IllegalArgumentException in an issue occurs extracting this column's field from {@code instance}
 	 */
-	public Object toFieldValue(Object instance, ExecutionContext context) {
+	public T getValue(Object instance, ExecutionContext context) {
 		try {
 			f.setAccessible(true);
-			return f.get(instance);
+			return (T) f.get(instance);
 		} catch (IllegalAccessException e) {
 			throw new IllegalArgumentException("Unable to extract " + getField() + " value from " + instance, e);
 		}

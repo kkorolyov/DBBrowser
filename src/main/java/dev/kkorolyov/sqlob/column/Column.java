@@ -33,20 +33,19 @@ public abstract class Column<T> {
 	 * @return {@code statement}
 	 */
 	public PreparedStatement contributeToStatement(PreparedStatement statement, Where where, ExecutionContext context) {
-		// TODO Fix this cast
-		where.consumeValues(getName(), (index, value) -> sqlobType.set(context.getMetadata(), statement, index, resolveCriterion(value, context)));
+		where.consumeValues(getName(), (index, value) -> getSqlobType().set(context.getMetadata(), statement, index, resolveCriterion(value, context)));
 		return statement;
 	}
 
 	/**
-	 * @param value criterion value to resolve
+	 * @param value {@link Where} criterion value to resolve
 	 * @param context context to work in
 	 * @return resolved form of {@code value} ready for persistence
 	 */
 	public T resolveCriterion(Object value, ExecutionContext context) {
+		// Just let it throw a class-cast if occurs
 		return (T) value;
 	}
-
 	/**
 	 * @param rs result set to extract from
 	 * @param context context to work in

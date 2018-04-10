@@ -62,7 +62,7 @@ public class SelectRequest<T> extends Request<T> {
 				.collect(Collectors.joining(", ",
 						"SELECT " + KeyColumn.ID.getName() + ", ",
 						" FROM " + getName() + " WHERE " + where.getSql()));
-		logStatements(sql);
+		logStatements(sql.replace(where.getSql(), where.toString()));
 
 		PreparedStatement statement = context.prepareStatement(sql);
 		for (Column<?> column : Iterables.append(getColumns(), KeyColumn.ID)) {

@@ -35,7 +35,7 @@ public class ReferencingColumnFactory implements ColumnFactory {
 			this(f, KeyColumn.foreign(PersistenceHelper.getName(f), PersistenceHelper.getName(f.getType())));
 		}
 		private ReferencingColumn(Field f, KeyColumn keyDelegate) {
-			super(f, (SqlobType<? super Object>) keyDelegate.getSqlobType());
+			super(f, (SqlobType<Object>) keyDelegate.getSqlobType());
 			this.keyDelegate = keyDelegate;
 		}
 
@@ -47,15 +47,13 @@ public class ReferencingColumnFactory implements ColumnFactory {
 					.getId().orElseGet(UUID::randomUUID)
 					: null;
 		}
-
 		@Override
-		public Object toFieldValue(Object instance, ExecutionContext context) {
-			return new InsertRequest<>(super.toFieldValue(instance, context))
+		public Object getValue(Object instance, ExecutionContext context) {
+			return new InsertRequest<>(super.getValue(instance, context))
 					.execute(context)
 					.getId()
 					.orElseThrow(() -> new IllegalStateException("This should never happen"));
 		}
-
 		@Override
 		public Object getValue(ResultSet rs, ExecutionContext context) {
 			return new SelectRequest<>(getType(), keyDelegate.getValue(rs, context))

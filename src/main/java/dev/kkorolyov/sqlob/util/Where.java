@@ -25,12 +25,9 @@ import static dev.kkorolyov.sqlob.util.PersistenceHelper.getPersistableFields;
  * - Contribute the Where to the prepared statement
  * </pre>
  */
-// TODO Major cleanup
 public class Where {
 	private final StringBuilder sql = new StringBuilder();
 	private final List<WhereNode> nodes = new ArrayList<>();
-
-	private int index;
 
 	/** @return where for {@code attribute == value}; translates to {@link #isNull(String)} if {@code value} is {@code null} */
 	public static Where eq(String attribute, Object value) {
@@ -90,7 +87,7 @@ public class Where {
 	 * @param value value to match
 	 */
 	public Where(String attribute, String operator, Object value) {
-		append(new WhereNode(attribute, operator, value, index++));
+		append(new WhereNode(attribute, operator, value));
 	}
 
 	/**
@@ -132,12 +129,10 @@ public class Where {
 	}
 
 	private Where append(Where where, String joiner) {
-		if (sql.length() > 0) sql.append(" ").append(joiner).append(" ");
-		sql.append("(").append(where.getSql()).append(")");
+		sql.append(" ").append(joiner).append(" ")
+				.append("(").append(where.getSql()).append(")");
 
-		where.nodes.stream()
-				.map(node -> new WhereNode(node.attribute, node.operator, node.value, index++))
-				.forEach(nodes::add);
+		nodes.addAll(where.nodes);
 
 		return this;
 	}
@@ -154,7 +149,7 @@ public class Where {
 	public void consumeValues(String attribute, BiConsumer<Integer, Object> action) {
 		nodes.stream()
 				.filter(node -> node.attribute.equals(attribute))
-				.forEach(node -> action.accept(node.index, node.value));
+				.forEach(node -> action.accept(nodes.indexOf(node), node.value));
 	}
 
 	/** @return SQL representation of this where clause */
@@ -174,13 +169,11 @@ public class Where {
 		private final String attribute;
 		private final String operator;
 		private final Object value;
-		private final int index;
 
-		WhereNode(String attribute, String operator, Object value, int index) {
+		WhereNode(String attribute, String operator, Object value) {
 			this.attribute = attribute;
 			this.operator = operator;
 			this.value = value;
-			this.index = index;
 		}
 
 		String getSql() {
