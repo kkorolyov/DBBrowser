@@ -70,16 +70,16 @@ public abstract class FieldBackedColumn<T> extends Column<T> {
 			f.setAccessible(true);
 			return (T) f.get(instance);
 		} catch (IllegalAccessException e) {
-			throw new IllegalArgumentException("Unable to extract " + getField() + " value from " + instance, e);
+			throw new IllegalArgumentException("Unable to extract " + f + " value from " + instance, e);
 		}
 	}
 
 	/** @return associated field */
-	public Field getField() {
+	public final Field getField() {
 		return f;
 	}
 	/** @return associated field's type */
-	public Class<?> getType() {
+	public final Class<?> getType() {
 		return f.getType();
 	}
 }

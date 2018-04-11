@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.column.factory
+package dev.kkorolyov.sqlob.column.handler
 
 import dev.kkorolyov.simplefuncs.function.ThrowingBiFunction
 import dev.kkorolyov.sqlob.column.FieldBackedColumn
@@ -27,7 +27,7 @@ class PrimitiveColumnSpec extends Specification {
 	}
 	ExecutionContext context = Mock()
 
-	PrimitiveColumnFactory columnFactory = new PrimitiveColumnFactory()
+	PrimitiveColumnHandler columnFactory = new PrimitiveColumnHandler()
 	FieldBackedColumn<?> column = columnFactory.get(f)
 
 	def "contributes same value to where"() {

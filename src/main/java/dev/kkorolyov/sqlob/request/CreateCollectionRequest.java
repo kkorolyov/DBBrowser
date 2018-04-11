@@ -16,7 +16,6 @@ import java.util.stream.Stream;
 public class CreateCollectionRequest extends Request<Collection<?>> {
 	private final KeyColumn parent;
 	private final KeyColumn child;
-	private final String fieldName;
 
 	/**
 	 * Constructs a new create collection request.
@@ -24,11 +23,13 @@ public class CreateCollectionRequest extends Request<Collection<?>> {
 	 * @throws IllegalArgumentException if {@code f}'s type is not a {@link Collection}
 	 */
 	CreateCollectionRequest(Field f) {
-		super(verifyType(f));
+		this(f, KeyColumn.parent(PersistenceHelper.getName(f.getDeclaringClass())), KeyColumn.child(PersistenceHelper.getName(f.getType())));
+	}
+	private CreateCollectionRequest(Field f, KeyColumn parent, KeyColumn child) {
+		super(verifyType(f), parent + "_" + PersistenceHelper.getName(f));
 
-		parent = KeyColumn.parent(PersistenceHelper.getName(f.getDeclaringClass()));
-		child = KeyColumn.child(PersistenceHelper.getName(f.getType()));
-		fieldName = PersistenceHelper.getName(f);
+		this.parent = parent;
+		this.child = child;
 	}
 	private static Class<Collection<?>> verifyType(Field f) {
 		if (!Collection.class.isAssignableFrom(f.getType())) {
@@ -53,10 +54,5 @@ public class CreateCollectionRequest extends Request<Collection<?>> {
 		statement.execute(sql);
 
 		return new ConfigurableResult<>();
-	}
-
-	@Override
-	String getName() {
-		return parent.getName() + "_" + fieldName;
 	}
 }

@@ -8,10 +8,10 @@ import java.util.ServiceLoader;
 import java.util.stream.StreamSupport;
 
 /**
- * Provides for retrieval of {@link SqlobType}'s by the associated Java type.
+ * Provides for retrieval of {@link SqlobType}s by the associated Java type.
  */
 public class SqlobTypeFactory {
-	public static final Iterable<SqlobType> sqlobTypes = ServiceLoader.load(SqlobType.class);
+	private static final Iterable<SqlobType> SQLOB_TYPES = ServiceLoader.load(SqlobType.class);
 
 	/**
 	 * @param value value to get SQLOb type for
@@ -35,7 +35,7 @@ public class SqlobTypeFactory {
 	 * @return optional containing most appropriate SQLOb type for {@code type}
 	 */
 	public static <T> Optional<? extends SqlobType<? super T>> poll(Class<T> type) {
-		return StreamSupport.stream(sqlobTypes.spliterator(), false)
+		return StreamSupport.stream(SQLOB_TYPES.spliterator(), false)
 				.map(sqlobType -> (SqlobType<?>) sqlobType)  // Cast raw to wildcard
 				.filter(sqlobType -> sqlobType.getTypes().stream()
 						.anyMatch(acceptedType -> acceptedType.isAssignableFrom(type)))

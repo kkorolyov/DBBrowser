@@ -1,4 +1,4 @@
-package dev.kkorolyov.sqlob.column.factory
+package dev.kkorolyov.sqlob.column.handler
 
 import dev.kkorolyov.sqlob.ExecutionContext
 import dev.kkorolyov.sqlob.column.FieldBackedColumn
@@ -23,7 +23,7 @@ class ReferencingColumnSpec extends Specification {
 	ResultSet rs = Mock()
 	ExecutionContext context = Mock()
 
-	ReferencingColumnFactory columnFactory = new ReferencingColumnFactory()
+	ReferencingColumnHandler columnFactory = new ReferencingColumnHandler()
 	FieldBackedColumn<?> column = columnFactory.get(f)
 
 	def "contributes null to null resolution in where"() {

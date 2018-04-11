@@ -33,7 +33,7 @@ public abstract class Column<T> {
 	 * @return {@code statement}
 	 */
 	public PreparedStatement contributeToStatement(PreparedStatement statement, Where where, ExecutionContext context) {
-		where.consumeValues(getName(), (index, value) -> getSqlobType().set(context.getMetadata(), statement, index, resolveCriterion(value, context)));
+		where.consumeValues(name, (index, value) -> getSqlobType().set(context.getMetadata(), statement, index, resolveCriterion(value, context)));
 		return statement;
 	}
 
@@ -54,7 +54,7 @@ public abstract class Column<T> {
 	 */
 	public T getValue(ResultSet rs, ExecutionContext context) {
 		// TODO Not quite the safe cast
-		return (T) getSqlobType().get(context.getMetadata(), rs, getName());
+		return (T) sqlobType.get(context.getMetadata(), rs, name);
 	}
 
 	/**
@@ -62,15 +62,15 @@ public abstract class Column<T> {
 	 * @return SQL representation of this column within {@code context}
 	 */
 	public String getSql(ExecutionContext context) {
-		return getName() + " " + getSqlobType().getSqlType(context.getMetadata());
+		return name + " " + sqlobType.getSqlType(context.getMetadata());
 	}
 
 	/** @return column name */
-	public String getName() {
+	public final String getName() {
 		return name;
 	}
 	/** @return column SQLOb type */
-	public SqlobType<? super T> getSqlobType() {
+	public final SqlobType<? super T> getSqlobType() {
 		return sqlobType;
 	}
 }
