@@ -17,13 +17,16 @@ cache:
 before_deploy:
   ./gradlew javadoc
 deploy:
-  skip_cleanup: true
-  on:
-    branch: master
   # Deploy Javadoc
   - provider: pages
     github_token: $GH_PAGES_TOKEN
     local_dir: build/docs
+    skip_cleanup: true
+    on:
+      branch: master
   # Publish
   - provider: script
     script: ./gradlew bintray
+    skip_cleanup: true
+    on:
+      branch: master
