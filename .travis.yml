@@ -13,14 +13,17 @@ cache:
     $HOME/.gradle/caches/
     $HOME/.gradle/wrapper/
 
-# Generate and deploy Javadoc
+# Generate Javadoc
 before_deploy:
   ./gradlew javadoc
 deploy:
-  provider: pages
   skip_cleanup: true
-  github_token: $GH_PAGES_TOKEN
-  local_dir: build/docs
   on:
     branch: master
-
+  # Deploy Javadoc
+  - provider: pages
+    github_token: $GH_PAGES_TOKEN
+    local_dir: build/docs
+  # Publish
+  - provider: script
+    script: ./gradlew bintray
