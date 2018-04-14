@@ -20,7 +20,7 @@ public abstract class FieldBackedColumn<T> extends Column<T> {
 	 * @param f associated field
 	 * @param sqlobType column SQLOb type
 	 */
-	protected FieldBackedColumn(Field f, SqlobType<? super T> sqlobType) {
+	protected FieldBackedColumn(Field f, SqlobType<T> sqlobType) {
 		super(PersistenceHelper.getName(f), sqlobType);
 		this.f = f;
 	}

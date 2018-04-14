@@ -65,7 +65,7 @@ public class ReferencingColumnHandler implements ColumnHandler {
 			this(f, KeyColumn.foreign(PersistenceHelper.getName(f), PersistenceHelper.getName(f.getType())));
 		}
 		private ReferencingColumn(Field f, KeyColumn keyDelegate) {
-			super(f, (SqlobType<Object>) keyDelegate.getSqlobType());
+			super(f, (SqlobType<Object>) (SqlobType<?>) keyDelegate.getSqlobType());
 			this.keyDelegate = keyDelegate;
 		}
 
@@ -89,11 +89,6 @@ public class ReferencingColumnHandler implements ColumnHandler {
 			return new SelectRequest<>(getType(), keyDelegate.getValue(rs, context))
 					.execute(context)
 					.getObject().orElse(null);
-		}
-
-		@Override
-		public String getSql(ExecutionContext context) {
-			return keyDelegate.getSql(context);
 		}
 	}
 }

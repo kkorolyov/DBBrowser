@@ -4,7 +4,6 @@ import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.KeyColumn;
 import dev.kkorolyov.sqlob.request.CreateRequest;
-import dev.kkorolyov.sqlob.type.SqlobType;
 import dev.kkorolyov.sqlob.util.PersistenceHelper;
 
 import java.lang.reflect.Field;
@@ -38,7 +37,7 @@ public class CollectiveColumnHandler implements ColumnHandler {
 			this(f, KeyColumn.foreign(PersistenceHelper.getName(f), PersistenceHelper.getName(f.getType())));
 		}
 		private CollectiveColumn(Field f, KeyColumn keyDelegate) {
-			super(f, (SqlobType<? super Collection>) keyDelegate.getSqlobType());
+			super(f, null);
 			this.keyDelegate = keyDelegate;
 		}
 

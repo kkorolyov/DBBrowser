@@ -13,14 +13,14 @@ import java.sql.ResultSet;
  */
 public abstract class Column<T> {
 	private final String name;
-	private final SqlobType<? super T> sqlobType;
+	private final SqlobType<T> sqlobType;
 
 	/**
 	 * Constructs a new column.
 	 * @param name column name
 	 * @param sqlobType column SQLOb type
 	 */
-	protected Column(String name, SqlobType<? super T> sqlobType) {
+	protected Column(String name, SqlobType<T> sqlobType) {
 		this.name = name;
 		this.sqlobType = sqlobType;
 	}
@@ -33,7 +33,7 @@ public abstract class Column<T> {
 	 * @return {@code statement}
 	 */
 	public PreparedStatement contributeToStatement(PreparedStatement statement, Where where, ExecutionContext context) {
-		where.consumeValues(name, (index, value) -> getSqlobType().set(context.getMetadata(), statement, index, resolveCriterion(value, context)));
+		where.consumeValues(name, (index, value) -> sqlobType.set(context.getMetadata(), statement, index, resolveCriterion(value, context)));
 		return statement;
 	}
 
@@ -53,8 +53,7 @@ public abstract class Column<T> {
 	 * @throws dev.kkorolyov.sqlob.util.UncheckedSqlException if a SQL issue occurs
 	 */
 	public T getValue(ResultSet rs, ExecutionContext context) {
-		// TODO Not quite the safe cast
-		return (T) sqlobType.get(context.getMetadata(), rs, name);
+		return sqlobType.get(context.getMetadata(), rs, name);
 	}
 
 	/**
@@ -70,7 +69,7 @@ public abstract class Column<T> {
 		return name;
 	}
 	/** @return column SQLOb type */
-	public final SqlobType<? super T> getSqlobType() {
+	public final SqlobType<T> getSqlobType() {
 		return sqlobType;
 	}
 }

@@ -26,7 +26,7 @@ public class SqlobTypeFactory {
 	 * Like {@link #poll(Class)}, but throws an exception if no SQLOb type accepts {@code type}.
 	 * @throws NoSuchElementException if no SQLOb type accepts {@code type}
 	 */
-	public static <T> SqlobType<? super T> get(Class<T> type) {
+	public static <T> SqlobType<T> get(Class<T> type) {
 		return poll(type)
 				.orElseThrow(() -> new NoSuchElementException("No SQLOb type accepts: " + type));
 	}
@@ -34,12 +34,12 @@ public class SqlobTypeFactory {
 	 * @param type Java type to convert to SQLOb type.
 	 * @return optional containing most appropriate SQLOb type for {@code type}
 	 */
-	public static <T> Optional<? extends SqlobType<? super T>> poll(Class<T> type) {
+	public static <T> Optional<? extends SqlobType<T>> poll(Class<T> type) {
 		return StreamSupport.stream(SQLOB_TYPES.spliterator(), false)
 				.map(sqlobType -> (SqlobType<?>) sqlobType)  // Cast raw to wildcard
 				.filter(sqlobType -> sqlobType.getTypes().stream()
 						.anyMatch(acceptedType -> acceptedType.isAssignableFrom(type)))
-				.map(sqlobType -> (SqlobType<? super T>) sqlobType)
+				.map(sqlobType -> (SqlobType<T>) sqlobType)
 				.findFirst();
 	}
 }

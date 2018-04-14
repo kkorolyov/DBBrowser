@@ -28,7 +28,7 @@ public class PrimitiveColumnHandler implements ColumnHandler {
 	}
 
 	private static class PrimitiveColumn<T> extends FieldBackedColumn<T> {
-		PrimitiveColumn(Field f, SqlobType<? super T> sqlobType) {
+		PrimitiveColumn(Field f, SqlobType<T> sqlobType) {
 			super(f, sqlobType);
 		}
 	}
