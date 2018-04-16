@@ -1,0 +1,203 @@
+@startuml
+package sqlob {
+	class Session {
+		-DataSource
+		-Connection
+		..
+		-bufferCounter: int
+		..
+		-prepared: {Class<?>}
+		__
+		+Session(DataSource)
+		--
+		+execute(Request<T>): Result<T>
+		-startTransation(): ExecutionContext
+		-endTransation()
+		..
+		+rollback()
+		
+	}
+	AutoCloseable <|.. Session
+	Session --> sqlob.request.Request
+	Session --> sqlob.request.Result
+
+	class ExecutionContext {
+		-Connection
+		-Statement
+		-PreparedStatement
+		-closed: boolean
+		__
+		+ExecutionContext(Connection)
+		--
+		+getStatement(): Statement
+		+prepareStatement(): PreparedStatement
+		..
+		+getMetadata(): DatabaseMetaData
+		..
+		-verifyNotClosed()
+	}
+	AutoCloseable <|.. ExecutionContext
+}
+
+newpage
+
+package sqlob {
+	package request {
+		abstract class Request<T> {
+			-type: Class<T>
+			-name: String
+			-columns: {FieldBackedColumn<?>}
+			__
+			~Request(type: Class<T>)
+			~Request(type: Class<T>, String name)
+			--
+			+addColumn(FieldBackedColumn<?>)
+			..
+			+execute(ExecutionContext): Result<T>
+			~executeThrowing(ExecutionContext): Result<T>
+		}
+		class CreateRequest<T>
+		class InsertRequest<T>
+		class DeleteRequest<T>
+		class SelectRequest<T>
+
+		Request <|-- CreateRequest
+		Request <|-- InsertRequest
+		Request <|-- DeleteRequest
+		Request <|--SelectRequest
+
+		Request -> Result
+	}
+
+	package result {
+		interface Result<T> {
+			+getRecords(): {UUID, T}
+			..
+			+getIds(): {UUID}
+			+getObjects(): {T}
+			..
+			+getId(): Optional<UUID>
+			+getObject(): Optional<T>
+			..
+			+size(): int
+			..
+			+asOptional(): <Optional<Result<T>>
+		}
+
+		class ConfigurableResult<T> {
+			-records: {UUID, T}
+			__
+			+add(record: Entry<UUID, T>): ConfigurableResult<T>
+			+add(id: UUID, instance: T): ConfigurableResult<T>
+			..
+			+size(size: Integer): ConfigurableResult<T>
+		}
+		Result <|.. ConfigurableResult
+	}
+}
+
+newpage
+
+package sqlob {
+	package type {
+		interface SqlobType<T> {
+
+		}
+
+		class BaseSqlobType<T> {
+
+		}
+		SqlobType <|.. BaseSqlobType
+
+		BaseSqlobType <|-- BooleanSqlobType
+		BaseSqlobType <|-- ByteSqlobType
+		BaseSqlobType <|-- BytesSqlobType
+		BaseSqlobType <|-- CharSqlobType
+		BaseSqlobType <|-- DoubleSqlobType
+		BaseSqlobType <|-- FloatSqlobType
+		BaseSqlobType <|-- IntSqlobType
+		BaseSqlobType <|-- LongSqlobType
+		BaseSqlobType <|-- ShortSqlobType
+		BaseSqlobType <|-- SqlDateSqlobType
+		BaseSqlobType <|-- SqlTimeSqlobType
+		BaseSqlobType <|-- SqlTimestampSqlobType
+		BaseSqlobType <|-- StringSqlobType
+		BaseSqlobType <|-- UuidSqlobType
+
+		package factory {
+			class SqlobTypeFactory {
+				-{static} SQLOB_TYPE: [SqlobType]
+				__
+				+{static} get(value: Object): SqlobType<?>
+				..
+				+{static} get(type: Class<T>): SqlobType<T>
+				+{static} poll(type: Class<T>): Optional<? extends SqlobType<T>>
+			}
+			SqlobTypeFactory --> SqlobType
+		}
+	}
+
+	package column {
+		abstract class Column<T> {
+
+		}
+
+		class KeyColumn
+		Column <|-- KeyColumn
+
+		abstract class FieldBackedColumn
+		Column <|- FieldBackedColumn
+
+		package handler {
+			interface ColumnHandler {
+				+get(f: Field): FieldBackedColumn<?>
+				+accepts(f: Field): boolean
+				+expandCreates(primaryRequest: CreateRequest<T>): Stream<CreateRequest<?>>
+			}
+
+			ColumnHandler <|.. PrimitiveColumnHandler
+			PrimitiveColumn ..|> FieldBackedColumn
+			PrimitiveColumnHandler +-- PrimitiveColumn
+
+			ColumnHandler <|.. ReferencingColumnHandler
+			ReferencingColumn ..|> FieldBackedColumn
+			ReferencingColumnHandler +-- ReferencingColumn
+
+			ColumnHandler <|.. CollectiveColumnHandler
+			CollectiveColum ..|> FieldBackedColumn
+			CollectiveColumnHandler +-- CollectiveColum
+		}
+	}
+}
+
+newpage
+
+package sqlob.annotation {
+	annotation Table
+	annotation Column
+
+	annotation Transient
+}
+
+newpage
+
+package sqlob.util {
+	class PersistenceHelper {
+
+	}
+
+	class UncheckedSqlException {
+
+	}
+
+	class Where {
+
+	}
+
+	class WhereNode {
+
+	}
+	Where +-- WhereNode
+}
+
+@enduml
