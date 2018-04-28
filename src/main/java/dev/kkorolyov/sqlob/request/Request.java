@@ -12,6 +12,7 @@ import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getPersistableFields;
@@ -94,5 +95,30 @@ public abstract class Request<T> {
 	/** @return all request columns */
 	public final Set<FieldBackedColumn<?>> getColumns() {
 		return columns;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		Request<?> request = (Request<?>) o;
+
+		return Objects.equals(type, request.type) &&
+				Objects.equals(name, request.name) &&
+				Objects.equals(columns, request.columns);
+	}
+	@Override
+	public int hashCode() {
+		return Objects.hash(type, name, columns);
+	}
+
+	@Override
+	public String toString() {
+		return "Request{" +
+				"type=" + type +
+				", name='" + name + '\'' +
+				", columns=" + columns +
+				'}';
 	}
 }

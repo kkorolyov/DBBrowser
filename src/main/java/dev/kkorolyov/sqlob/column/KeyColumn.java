@@ -55,7 +55,7 @@ public abstract class KeyColumn extends Column<UUID> {
 			public String getSql(ExecutionContext context) {
 				return super.getSql(context)
 						+ ", FOREIGN KEY (" + getName() + ")"
-						+ " REFERENCES " + referencedName + " (" + KeyColumn.ID.getName() + ")"
+						+ " REFERENCES " + referencedName + "(" + KeyColumn.ID.getName() + ")"
 						+ " ON DELETE SET NULL";
 			}
 		};

@@ -6,12 +6,13 @@ import dev.kkorolyov.sqlob.util.Where;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Objects;
 
 /**
  * Performs operations involving a single SQL column.
  * @param <T> column value type
  */
-public abstract class Column<T> {
+public class Column<T> {
 	private final String name;
 	private final SqlobType<T> sqlobType;
 
@@ -20,7 +21,7 @@ public abstract class Column<T> {
 	 * @param name column name
 	 * @param sqlobType column SQLOb type
 	 */
-	protected Column(String name, SqlobType<T> sqlobType) {
+	public Column(String name, SqlobType<T> sqlobType) {
 		this.name = name;
 		this.sqlobType = sqlobType;
 	}
@@ -71,5 +72,20 @@ public abstract class Column<T> {
 	/** @return column SQLOb type */
 	public final SqlobType<T> getSqlobType() {
 		return sqlobType;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		Column<?> column = (Column<?>) o;
+
+		return Objects.equals(name, column.name) &&
+				Objects.equals(sqlobType, column.sqlobType);
+	}
+	@Override
+	public int hashCode() {
+		return Objects.hash(name, sqlobType);
 	}
 }

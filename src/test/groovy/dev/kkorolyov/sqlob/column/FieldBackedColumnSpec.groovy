@@ -1,10 +1,12 @@
 package dev.kkorolyov.sqlob.column
 
 import dev.kkorolyov.sqlob.ExecutionContext
+import dev.kkorolyov.sqlob.type.SqlobType
 
 import spock.lang.Specification
 
 import java.lang.reflect.Field
+import java.sql.DatabaseMetaData
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 
@@ -17,31 +19,35 @@ class FieldBackedColumnSpec extends Specification {
 	}
 	Stub instance = new Stub()
 	Field f = Stub.getDeclaredField("value")
-	String sqlType = randString()
+	SqlobType sqlobType = Mock()
+	String name = "value"
 
 	PreparedStatement statement = Mock()
 	ResultSet rs = Mock()
+	DatabaseMetaData metaData = Mock()
 	ExecutionContext context = Mock()
 
-	FieldBackedColumn<String> column = Spy(constructorArgs: [f, sqlType])
+	FieldBackedColumn<String> column = new FieldBackedColumn(f, sqlobType)
 
-	def "contributes instance value to statement"() {
+	def "contributes instance field value to statement"() {
 		int index = randInt()
 
 		when:
 		column.contributeToStatement(statement, instance, index, context)
 
 		then:
-		1 * statement.setObject(index, instance.value)
+		1 * context.getMetadata() >> metaData
+		1 * sqlobType.set(metaData, statement, index, instance.value)
 	}
-	def "contributes statement value to instance field"() {
+	def "contributes result set value to instance field"() {
 		String newValue = randString()
 
 		when:
 		column.contributeToInstance(instance, rs, context)
 
 		then:
-		1 * column.getValue(rs, context) >> newValue
+		1 * context.getMetadata() >> metaData
+		1 * sqlobType.get(metaData, rs, name) >> newValue
 		instance.value == newValue
 	}
 

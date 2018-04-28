@@ -12,7 +12,7 @@ import java.sql.ResultSet;
  * A {@link Column} backed by a field on an object.
  * @param <T> column value type
  */
-public abstract class FieldBackedColumn<T> extends Column<T> {
+public class FieldBackedColumn<T> extends Column<T> {
 	private final Field f;
 
 	/**
@@ -20,7 +20,7 @@ public abstract class FieldBackedColumn<T> extends Column<T> {
 	 * @param f associated field
 	 * @param sqlobType column SQLOb type
 	 */
-	protected FieldBackedColumn(Field f, SqlobType<T> sqlobType) {
+	public FieldBackedColumn(Field f, SqlobType<T> sqlobType) {
 		super(PersistenceHelper.getName(f), sqlobType);
 		this.f = f;
 	}

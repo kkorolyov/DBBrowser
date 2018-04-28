@@ -1,49 +1,53 @@
 package dev.kkorolyov.sqlob.column
 
 import dev.kkorolyov.sqlob.ExecutionContext
-import dev.kkorolyov.sqlob.util.Where
+import dev.kkorolyov.sqlob.type.SqlobType
 
 import spock.lang.Specification
 
-import java.sql.PreparedStatement
-import java.sql.ResultSet
+import java.sql.DatabaseMetaData
 
 import static dev.kkorolyov.simplespecs.SpecUtilities.randString
+import static dev.kkorolyov.simplespecs.SpecUtilities.setField
 
 class KeyColumnSpec extends Specification {
-	String attribute = randString()
-	UUID key = UUID.randomUUID()
-	Where where = new Where(attribute, randString(), key)
-
 	ExecutionContext context = Mock()
-	PreparedStatement statement = Mock()
-	ResultSet rs = Mock()
+	DatabaseMetaData metaData = Mock()
 
-	KeyColumn column = KeyColumn.primary(attribute)
+	def "primary sql is primary key"() {
+		String name = randString()
+		String sqlType = randString()
+		SqlobType<UUID> sqlobType = Mock()
 
-	def "contributes same value to where"() {
+		KeyColumn column = KeyColumn.primary(name).with {
+			setField("sqlobType", Column, it, sqlobType)
+			it
+		}
 		when:
-		column.contributeToWhere(where, context)
-		where.contributeToStatement(statement)
+		String sql = column.getSql(context)
 
 		then:
-		1 * statement.setObject(1, key)
+		1 * context.getMetadata() >> metaData
+		1 * sqlobType.getSqlType(metaData) >> sqlType
+		sql == "$name $sqlType PRIMARY KEY"
 	}
 
-	def "gets UUID from result set if non-null"() {
+	def "foreign sql is foreign key"() {
+		String name = randString()
+		String referencedName = randString()
+		String sqlType = randString()
+		SqlobType<UUID> sqlobType = Mock()
+
+		KeyColumn column = KeyColumn.foreign(name, referencedName).with {
+			setField("sqlobType", Column, it, sqlobType)
+			it
+		}
 		when:
-		UUID result = column.getValue(rs, context)
+		String sql = column.getSql(context)
 
 		then:
-		1 * rs.getString(attribute) >> key.toString()
-		result == key
-	}
-	def "gets null from result set if null"() {
-		when:
-		UUID result = column.getValue(rs, context)
-
-		then:
-		1 * rs.getString(attribute) >> null
-		result == null
+		1 * context.getMetadata() >> metaData
+		1 * sqlobType.getSqlType(metaData) >> sqlType
+		sql == "$name $sqlType, FOREIGN KEY ($name) REFERENCES $referencedName(${KeyColumn.ID.getName()}) ON DELETE SET NULL"
 	}
 }

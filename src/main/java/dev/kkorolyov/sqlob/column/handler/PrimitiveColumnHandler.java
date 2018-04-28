@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 public class PrimitiveColumnHandler implements ColumnHandler {
 	@Override
 	public FieldBackedColumn<?> get(Field f) {
-		return new PrimitiveColumn<>(f, SqlobTypeFactory.get(f.getType()));
+		return new FieldBackedColumn<>(f, SqlobTypeFactory.get(f.getType()));
 	}
 	@Override
 	public boolean accepts(Field f) {
@@ -25,11 +25,5 @@ public class PrimitiveColumnHandler implements ColumnHandler {
 	@Override
 	public Stream<CreateRequest<?>> expandCreates(CreateRequest<?> primaryRequest) {
 		return Stream.of(primaryRequest);
-	}
-
-	private static class PrimitiveColumn<T> extends FieldBackedColumn<T> {
-		PrimitiveColumn(Field f, SqlobType<T> sqlobType) {
-			super(f, sqlobType);
-		}
 	}
 }
