@@ -1,49 +1,29 @@
 package dev.kkorolyov.sqlob.request
 
 import dev.kkorolyov.sqlob.ExecutionContext
-import dev.kkorolyov.sqlob.column.FieldBackedColumn
-import dev.kkorolyov.sqlob.column.handler.ReferencingColumnHandler
 
 import spock.lang.Specification
 
+import java.sql.DatabaseMetaData
 import java.sql.Statement
 
 class CreateRequestSpec extends Specification {
-	Class<?> type = Byte
-	Class<?> colType = String
-	Class<?> refColType = Integer
-
-	FieldBackedColumn<String> col = Mock() {
-		getType() >> colType
-		getName() >> colType.getSimpleName()
-	}
-	ReferencingColumnHandler.ReferencingColumn refCol = Mock() {
-		getType() >> refColType
-		getReferencedName() >> refColType.getSimpleName()
-	}
-	ReferencingColumnHandler.ReferencingColumn refCol1 = Mock() {
-		getType() >> refColType
-		getReferencedName() >> refColType.getSimpleName()
-	}
-
+	class Stub {}
+	String database = "SQLite"
+	DatabaseMetaData metaData = Mock()
 	Statement statement = Mock()
-	ExecutionContext context = Mock() {
-		getStatement() >> statement
-	}
+	ExecutionContext context = Mock()
 
-	CreateRequest<?> request = new CreateRequest<>(type)
+	CreateRequest<?> request = new CreateRequest<>(Stub)
 
-	def "batch executes create table statements for self and each distinct referencing column type"() {
+	def "batch executes statement"() {
 		when:
-		request.addColumn(col)
-		request.addColumn(refCol)
-		request.addColumn(refCol1)
-
 		request.execute(context)
 
 		then:
-		1 * statement.addBatch({ it.contains("CREATE TABLE IF NOT EXISTS ${type.getSimpleName()}") })
-		1 * statement.addBatch({ it.contains("CREATE TABLE IF NOT EXISTS ${refColType.getSimpleName()}") })
+		2 * metaData.getDatabaseProductName() >> database
+		2 * context.getMetadata() >> metaData
+		1 * context.getStatement() >> statement
 		1 * statement.executeBatch()
 	}
 }

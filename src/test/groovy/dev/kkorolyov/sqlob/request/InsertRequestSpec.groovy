@@ -4,23 +4,25 @@ import dev.kkorolyov.sqlob.ExecutionContext
 
 import spock.lang.Specification
 
+import java.sql.DatabaseMetaData
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 
-import static dev.kkorolyov.simplespecs.SpecUtilities.randString
-
 class InsertRequestSpec extends Specification {
-	Class<?> type = String
-
+	class Stub {
+		String value
+	}
 	UUID id = UUID.randomUUID()
 	UUID id1 = UUID.randomUUID()
-	String obj = randString()
-	String obj1 = randString()
+	Stub obj = new Stub()
+	Stub obj1 = new Stub()
 	Map<UUID, ?> records = [
 			(id): obj,
 			(id1): obj1,
 	]
 
+	String database = "SQLite"
+	DatabaseMetaData metaData = Mock()
 	PreparedStatement statement = Mock()
 	ResultSet rs = Mock()
 	ExecutionContext context = Mock()
@@ -32,11 +34,14 @@ class InsertRequestSpec extends Specification {
 		request.execute(context)
 
 		then:
-		1 * context.prepareStatement({ it.contains("SELECT") && it.contains("FROM ${type.getSimpleName()}") }) >> statement
+		6 * metaData.getDatabaseProductName() >> database
+		6 * context.getMetadata() >> metaData
+		1 * context.prepareStatement({ it.contains("SELECT") && it.contains("FROM ${Stub.getSimpleName()}") }) >> statement
 		1 * statement.executeQuery() >> rs
 		1 * rs.next() >> false
-		1 * context.prepareStatement({ it.contains("INSERT INTO ${type.getSimpleName()}") }) >> statement
+		1 * context.prepareStatement({ it.contains("INSERT INTO ${Stub.getSimpleName()}") }) >> statement
 		1 * statement.setObject(1, id)
 		1 * statement.setObject(1, id1)
+		1 * statement.executeBatch()
 	}
 }
