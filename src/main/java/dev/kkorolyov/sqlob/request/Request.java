@@ -1,7 +1,8 @@
 package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
-import dev.kkorolyov.sqlob.column.FieldBackedColumn;
+import dev.kkorolyov.sqlob.column.Column;
+import dev.kkorolyov.sqlob.column.KeyColumn;
 import dev.kkorolyov.sqlob.column.handler.factory.ColumnHandlerFactory;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.result.Result;
@@ -11,9 +12,11 @@ import dev.kkorolyov.sqlob.util.UncheckedSqlException;
 import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.LinkedHashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getPersistableFields;
 import static dev.kkorolyov.sqlob.util.UncheckedSqlException.wrapSqlException;
@@ -25,7 +28,7 @@ import static dev.kkorolyov.sqlob.util.UncheckedSqlException.wrapSqlException;
 public abstract class Request<T> {
 	private final Class<T> type;
 	private final String name;
-	private final Set<FieldBackedColumn<?>> columns = new LinkedHashSet<>();
+	private final Map<Integer, Column<?>> columns = new HashMap<>();
 
 	/**
 	 * Constructs a new request with name retrieved from {@code type} using {@link PersistenceHelper}.
@@ -43,11 +46,12 @@ public abstract class Request<T> {
 		this.type = type;
 		this.name = name;
 
-		getPersistableFields(type)
-				.map(this::asColumn)
-				.forEach(this::addColumn);
+		Stream.concat(
+				Stream.of(KeyColumn.ID),
+				getPersistableFields(type).map(this::asColumn)
+		).forEach(this::addColumn);
 	}
-	private FieldBackedColumn<?> asColumn(Field f) {
+	private Column<?> asColumn(Field f) {
 		return ColumnHandlerFactory.get(f)
 				.get(f);
 	}
@@ -56,8 +60,8 @@ public abstract class Request<T> {
 	 * Adds a column to this request.
 	 * @param column column to add
 	 */
-	public void addColumn(FieldBackedColumn<?> column) {
-		columns.add(column);
+	public void addColumn(Column<?> column) {
+		columns.put(columns.size(), column);
 	}
 
 	/**
@@ -92,9 +96,32 @@ public abstract class Request<T> {
 	public final String getName() {
 		return name;
 	}
-	/** @return all request columns */
-	public final Set<FieldBackedColumn<?>> getColumns() {
-		return columns;
+
+	/**
+	 * Invokes an action for each filtered {@code {columnIndex, column}} pair
+	 * @param c column superinterface or superclass to filter by
+	 * @param action action to invoke with index and column from all columns in this request which subclass {@code c}
+	 * @param <C> interface type
+	 */
+	public final <C> void forEachColumn(Class<C> c, BiConsumer<Integer, C> action) {
+		columns.entrySet().stream()
+				.filter(entry -> c.isInstance(entry.getValue()))
+				.forEach(entry -> action.accept(entry.getKey(), (C) entry.getValue()));
+	}
+
+	/** @return stream over all columns in this request */
+	public final Stream<Column<?>> streamColumns() {
+		return columns.values().stream();
+	}
+	/**
+	 * @param c column superinterface or superclass to filter by
+	 * @param <C> interface type
+	 * @return stream over all columns in this request which subclass {@code c}
+	 */
+	public final <C> Stream<C> streamColumns(Class<C> c) {
+		return streamColumns()
+				.filter(c::isInstance)
+				.map(c::cast);
 	}
 
 	@Override

@@ -1,14 +1,17 @@
 package dev.kkorolyov.sqlob.column;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
+import dev.kkorolyov.sqlob.contributor.RecordStatementContributor;
+import dev.kkorolyov.sqlob.result.Record;
 import dev.kkorolyov.sqlob.type.factory.SqlobTypeFactory;
 
+import java.sql.PreparedStatement;
 import java.util.UUID;
 
 /**
  * A {@link Column} with value being a primary or foreign key.
  */
-public abstract class KeyColumn extends Column<UUID> {
+public abstract class KeyColumn extends Column<UUID> implements RecordStatementContributor {
 	/** Column corresponding to the default primary key of all persisted types */
 	public static final KeyColumn ID = primary("id");
 
@@ -59,5 +62,12 @@ public abstract class KeyColumn extends Column<UUID> {
 						+ " ON DELETE SET NULL";
 			}
 		};
+	}
+
+	@Override
+	public <O> PreparedStatement contribute(PreparedStatement statement, Record<UUID, O> record, int index, ExecutionContext context) {
+		getSqlobType().set(context.getMetadata(), statement, index, record.getKey());
+
+		return statement;
 	}
 }

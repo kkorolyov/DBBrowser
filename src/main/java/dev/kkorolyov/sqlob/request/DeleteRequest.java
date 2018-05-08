@@ -1,9 +1,7 @@
 package dev.kkorolyov.sqlob.request;
 
-import dev.kkorolyov.simplefuncs.stream.Iterables;
 import dev.kkorolyov.sqlob.ExecutionContext;
-import dev.kkorolyov.sqlob.column.Column;
-import dev.kkorolyov.sqlob.column.KeyColumn;
+import dev.kkorolyov.sqlob.contributor.WhereStatementContributor;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
 import dev.kkorolyov.sqlob.util.Where;
@@ -74,9 +72,10 @@ public class DeleteRequest<T> extends Request<T> {
 		logStatements(sql);
 
 		PreparedStatement statement = context.prepareStatement(sql);
-		for (Column<?> column : Iterables.append(getColumns(), KeyColumn.ID)) {
-			column.contributeToStatement(statement, where, context);
-		}
+
+		streamColumns(WhereStatementContributor.class)
+				.forEach(column -> column.contribute(statement, where, context));
+
 		int updated = statement.executeUpdate();
 
 		return new ConfigurableResult<T>()

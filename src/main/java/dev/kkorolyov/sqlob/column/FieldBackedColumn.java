@@ -1,18 +1,22 @@
 package dev.kkorolyov.sqlob.column;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
+import dev.kkorolyov.sqlob.contributor.RecordStatementContributor;
+import dev.kkorolyov.sqlob.contributor.ResultInstanceContributor;
+import dev.kkorolyov.sqlob.result.Record;
 import dev.kkorolyov.sqlob.type.SqlobType;
 import dev.kkorolyov.sqlob.util.PersistenceHelper;
 
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.UUID;
 
 /**
  * A {@link Column} backed by a field on an object.
  * @param <T> column value type
  */
-public class FieldBackedColumn<T> extends Column<T> {
+public class FieldBackedColumn<T> extends Column<T> implements RecordStatementContributor, ResultInstanceContributor {
 	private final Field f;
 
 	/**
@@ -25,30 +29,29 @@ public class FieldBackedColumn<T> extends Column<T> {
 		this.f = f;
 	}
 
-	/**
-	 * Contribute's this column's value in an instance to a statement.
-	 * @param statement statement to contribute to
-	 * @param instance instance to retrieve value from
-	 * @param index statement index to contribute to
-	 * @param context context to work in
-	 * @return {@code statement}
-	 * @throws dev.kkorolyov.sqlob.util.UncheckedSqlException if a SQL issue occurs
-	 * @throws IllegalArgumentException in an issue occurs extracting this column's field from {@code instance}
-	 */
-	public PreparedStatement contributeToStatement(PreparedStatement statement, Object instance, int index, ExecutionContext context) {
-		getSqlobType().set(context.getMetadata(), statement, index, getValue(instance, context));
+	@Override
+	public <O> PreparedStatement contribute(PreparedStatement statement, Record<UUID, O> record, int index, ExecutionContext context) {
+		getSqlobType().set(context.getMetadata(), statement, index, getValue(record.getObject(), context));
 		return statement;
 	}
 	/**
-	 * Contributes this column's value to its associated field on an instance.
-	 * @param instance instance to contribute to
-	 * @param rs result set to retrieve value from
+	 * @param instance instance to extract from
 	 * @param context context to work in
-	 * @return {@code instance}
-	 * @throws dev.kkorolyov.sqlob.util.UncheckedSqlException if a SQL issue occurs
-	 * @throws IllegalArgumentException if an issue occurs contributing this column's field to {@code instance}
+	 * @return field value extracted from the associated field in {@code instance}
+	 * @throws IllegalArgumentException if an issue occurs extracting this column's field from {@code instance}
+	 * @throws ClassCastException if this column's field type is not assignable to {@code T}
 	 */
-	public Object contributeToInstance(Object instance, ResultSet rs, ExecutionContext context) {
+	protected T getValue(Object instance, ExecutionContext context) {
+		try {
+			f.setAccessible(true);
+			return (T) f.get(instance);
+		} catch (IllegalAccessException e) {
+			throw new IllegalArgumentException("Unable to extract " + f + " value from " + instance, e);
+		}
+	}
+
+	@Override
+	public Object contribute(Object instance, ResultSet rs, ExecutionContext context) {
 		try {
 			f.setAccessible(true);
 			f.set(instance, getValue(rs, context));
@@ -56,21 +59,6 @@ public class FieldBackedColumn<T> extends Column<T> {
 			return instance;
 		} catch (IllegalAccessException e) {
 			throw new IllegalArgumentException("Unable to contribute " + f + " to " + instance, e);
-		}
-	}
-
-	/**
-	 * @param instance instance to extract from
-	 * @param context context to work in
-	 * @return field value extracted from the associated field in {@code instance}
-	 * @throws IllegalArgumentException in an issue occurs extracting this column's field from {@code instance}
-	 */
-	public T getValue(Object instance, ExecutionContext context) {
-		try {
-			f.setAccessible(true);
-			return (T) f.get(instance);
-		} catch (IllegalAccessException e) {
-			throw new IllegalArgumentException("Unable to extract " + f + " value from " + instance, e);
 		}
 	}
 

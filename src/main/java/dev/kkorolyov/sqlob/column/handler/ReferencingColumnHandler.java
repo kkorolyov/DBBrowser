@@ -46,9 +46,8 @@ public class ReferencingColumnHandler implements ColumnHandler {
 			Class<?> requestType = request.getType();
 			requests.put(requestType, request);
 
-			request.getColumns().stream()
-					.filter(ReferencingColumn.class::isInstance)
-					.map(FieldBackedColumn::getType)
+			request.streamColumns(ReferencingColumn.class)
+					.map(ReferencingColumn::getType)
 					.peek(referencedType -> typeDependencies.add(referencedType, requestType))
 					.filter(referencedType -> !requests.containsKey(referencedType))
 					.map(CreateRequest::new)

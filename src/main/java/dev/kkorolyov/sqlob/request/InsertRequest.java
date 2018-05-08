@@ -2,9 +2,9 @@ package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.Column;
-import dev.kkorolyov.sqlob.column.FieldBackedColumn;
-import dev.kkorolyov.sqlob.column.KeyColumn;
+import dev.kkorolyov.sqlob.contributor.RecordStatementContributor;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
+import dev.kkorolyov.sqlob.result.Record;
 import dev.kkorolyov.sqlob.result.Result;
 import dev.kkorolyov.sqlob.util.Where;
 
@@ -12,19 +12,16 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
  * Request to insert records of a class as table rows.
  */
 public class InsertRequest<T> extends Request<T> {
-	private final Map<UUID, T> records;
+	private final Collection<Record<UUID, T>> records;
 
 	/**
 	 * Constructs a single-instance insert request with random ID.
@@ -35,29 +32,30 @@ public class InsertRequest<T> extends Request<T> {
 	}
 	/**
 	 * Constructs a single-instance insert request.
-	 * @see #InsertRequest(Map)
+	 * @see #InsertRequest(Collection)
 	 */
 	public InsertRequest(UUID id, T instance) {
-		this(Collections.singletonMap(id, instance));
+		this(Collections.singleton(new Record<>(id, instance)));
 	}
 	/**
 	 * Constructs an insert request with random IDs.
-	 * @see #InsertRequest(Map)
+	 * @see #InsertRequest(Collection)
 	 */
 	public InsertRequest(Iterable<T> instances) {
 		this(StreamSupport.stream(instances.spliterator(), false)
-				.collect(Collectors.toMap(instance -> UUID.randomUUID(), Function.identity())));
+				.collect(Record.collector(instance -> UUID.randomUUID())));
 	}
 	/**
 	 * Constructs a new insert request.
-	 * @param records instances to insert mapped by their IDs
+	 * @param records records to insert
 	 * @throws IllegalArgumentException if {@code records} is empty
 	 * @see Request#Request(Class)
 	 */
-	public InsertRequest(Map<UUID, T> records) {
-		super((Class<T>) records.values().stream()
+	public InsertRequest(Collection<Record<UUID, T>> records) {
+		super((Class<T>) records.stream()
 				.findFirst()
-				.map(T::getClass)
+				.map(Record::getObject)
+				.map(Object::getClass)
 				.orElseThrow(() -> new IllegalArgumentException("No records supplied")));
 
 		this.records = records;
@@ -66,16 +64,17 @@ public class InsertRequest<T> extends Request<T> {
 	@Override
 	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
 		// Avoid re-inserting existing instances
-		Collection<UUID> existing = new SelectRequest<>(getType(), records.values().stream()
+		Collection<UUID> existing = new SelectRequest<>(getType(), records.stream()
+				.map(Record::getObject)
 				.map(Where::eqObject)
 				.reduce(Where::or)
 				.orElseThrow(() -> new IllegalStateException("This should never happen"))
 		).execute(context)
 				.getIds();
 
-		Map<UUID, T> remainingRecords = records.entrySet().stream()
-				.filter(entry -> !existing.contains(entry.getKey()))
-				.collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+		Collection<Record<UUID, T>> remainingRecords = records.stream()
+				.filter(record -> !existing.contains(record.getKey()))
+				.collect(Collectors.toSet());
 
 		String sql = "INSERT INTO " + getName() + " "
 				+ generateColumns(Column::getName)
@@ -85,13 +84,10 @@ public class InsertRequest<T> extends Request<T> {
 		PreparedStatement statement = context.prepareStatement(sql);
 		ConfigurableResult<T> result = new ConfigurableResult<>();
 
-		for (Entry<UUID, T> record : remainingRecords.entrySet()) {
-			int index = 0;
+		for (Record<UUID, T> record : remainingRecords) {
+			forEachColumn(RecordStatementContributor.class,
+					(i, column) -> column.contribute(statement, record, i, context));
 
-			KeyColumn.ID.getSqlobType().set(context.getMetadata(), statement, index++, record.getKey());
-			for (FieldBackedColumn<?> column : getColumns()) {
-				column.contributeToStatement(statement, record.getValue(), index++, context);
-			}
 			statement.addBatch();
 
 			result.add(record);
@@ -102,10 +98,8 @@ public class InsertRequest<T> extends Request<T> {
 	}
 
 	private String generateColumns(Function<Column, String> columnValueMapper) {
-		return Stream.concat(
-				Stream.of(KeyColumn.ID),
-				getColumns().stream()
-		).map(columnValueMapper)
+		return streamColumns()
+				.map(columnValueMapper)
 				.collect(Collectors.joining(", ", "(", ")"));
 	}
 }

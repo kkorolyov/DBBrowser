@@ -1,6 +1,7 @@
 package dev.kkorolyov.sqlob.column;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
+import dev.kkorolyov.sqlob.contributor.WhereStatementContributor;
 import dev.kkorolyov.sqlob.type.SqlobType;
 import dev.kkorolyov.sqlob.util.Where;
 
@@ -12,7 +13,7 @@ import java.util.Objects;
  * Performs operations involving a single SQL column.
  * @param <T> column value type
  */
-public class Column<T> {
+public class Column<T> implements WhereStatementContributor {
 	private final String name;
 	private final SqlobType<T> sqlobType;
 
@@ -26,27 +27,21 @@ public class Column<T> {
 		this.sqlobType = sqlobType;
 	}
 
-	/**
-	 * Contributes this column's resolved values in {@code where} to {@code statement}.
-	 * @param statement statement to contribute to
-	 * @param where where to resolve values from
-	 * @param context context to work in
-	 * @return {@code statement}
-	 */
-	public PreparedStatement contributeToStatement(PreparedStatement statement, Where where, ExecutionContext context) {
+	@Override
+	public PreparedStatement contribute(PreparedStatement statement, Where where, ExecutionContext context) {
 		where.consumeValues(name, (index, value) -> sqlobType.set(context.getMetadata(), statement, index, resolveCriterion(value, context)));
 		return statement;
 	}
-
 	/**
 	 * @param value {@link Where} criterion value to resolve
 	 * @param context context to work in
 	 * @return resolved form of {@code value} ready for persistence
 	 */
-	public T resolveCriterion(Object value, ExecutionContext context) {
+	protected T resolveCriterion(Object value, ExecutionContext context) {
 		// Just let it throw a class-cast if occurs
 		return (T) value;
 	}
+
 	/**
 	 * @param rs result set to extract from
 	 * @param context context to work in

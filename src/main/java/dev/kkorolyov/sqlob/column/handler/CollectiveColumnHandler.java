@@ -4,12 +4,14 @@ import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.KeyColumn;
 import dev.kkorolyov.sqlob.request.CreateRequest;
+import dev.kkorolyov.sqlob.result.Record;
 import dev.kkorolyov.sqlob.util.PersistenceHelper;
 
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 /**
@@ -42,14 +44,14 @@ public class CollectiveColumnHandler implements ColumnHandler {
 		}
 
 		@Override
-		public PreparedStatement contributeToStatement(PreparedStatement statement, Object instance, int index, ExecutionContext context) {
+		public <O> PreparedStatement contribute(PreparedStatement statement, Record<UUID, O> instance, int index, ExecutionContext context) {
 			// TODO Execute InsertCollection request instead
-			return super.contributeToStatement(statement, instance, index, context);
+			return super.contribute(statement, instance, index, context);
 		}
 		@Override
-		public Object contributeToInstance(Object instance, ResultSet rs, ExecutionContext context) {
+		public Object contribute(Object instance, ResultSet rs, ExecutionContext context) {
 			// TODO Execute SelectCollection request instead
-			return super.contributeToInstance(instance, rs, context);
+			return super.contribute(instance, rs, context);
 		}
 
 		@Override

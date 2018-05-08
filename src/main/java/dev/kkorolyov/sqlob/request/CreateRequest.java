@@ -1,7 +1,6 @@
 package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
-import dev.kkorolyov.sqlob.column.KeyColumn;
 import dev.kkorolyov.sqlob.column.handler.factory.ColumnHandlerFactory;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
@@ -10,7 +9,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Request to create a table for a specific class.
@@ -41,10 +39,8 @@ public class CreateRequest<T> extends Request<T> {
 	}
 
 	private String getCreateStatement(ExecutionContext context) {
-		return Stream.concat(
-				Stream.of(KeyColumn.ID),
-				getColumns().stream()
-		).map(column -> column.getSql(context))
+		return streamColumns()
+				.map(column -> column.getSql(context))
 				.collect(Collectors.joining(", ",
 						"CREATE TABLE IF NOT EXISTS " + getName() + " (",
 						")"));

@@ -1,11 +1,12 @@
 package dev.kkorolyov.sqlob.request;
 
-import dev.kkorolyov.simplefuncs.stream.Iterables;
 import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.Column;
-import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.KeyColumn;
+import dev.kkorolyov.sqlob.contributor.ResultInstanceContributor;
+import dev.kkorolyov.sqlob.contributor.WhereStatementContributor;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
+import dev.kkorolyov.sqlob.result.Record;
 import dev.kkorolyov.sqlob.result.Result;
 import dev.kkorolyov.sqlob.util.Where;
 
@@ -57,7 +58,7 @@ public class SelectRequest<T> extends Request<T> {
 
 	@Override
 	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
-		String sql = getColumns().stream()
+		String sql = streamColumns()
 				.map(Column::getName)
 				.collect(Collectors.joining(", ",
 						"SELECT " + KeyColumn.ID.getName() + ", ",
@@ -65,15 +66,16 @@ public class SelectRequest<T> extends Request<T> {
 		logStatements(sql.replace(where.getSql(), where.toString()));
 
 		PreparedStatement statement = context.prepareStatement(sql);
-		for (Column<?> column : Iterables.append(getColumns(), KeyColumn.ID)) {
-			column.contributeToStatement(statement, where, context);
-		}
+
+		streamColumns(WhereStatementContributor.class)
+				.forEach(column -> column.contribute(statement, where, context));
+
 		ResultSet rs = statement.executeQuery();
 
 		ConfigurableResult<T> result = new ConfigurableResult<>();
 
 		while (rs.next()) {
-			result.add(KeyColumn.ID.getValue(rs, context), toInstance(rs, context));
+			result.add(new Record<>(KeyColumn.ID.getValue(rs, context), toInstance(rs, context)));
 		}
 		return result;
 	}
@@ -83,9 +85,10 @@ public class SelectRequest<T> extends Request<T> {
 			noArgConstructor.setAccessible(true);
 
 			T instance = noArgConstructor.newInstance();
-			for (FieldBackedColumn<?> column : getColumns()) {
-				column.contributeToInstance(instance, rs, context);
-			}
+
+			streamColumns(ResultInstanceContributor.class)
+					.forEach(column -> column.contribute(instance, rs, context));
+
 			return instance;
 		} catch (NoSuchMethodException e) {
 			throw new IllegalArgumentException(getType() + " does not provide a no-arg constructor");

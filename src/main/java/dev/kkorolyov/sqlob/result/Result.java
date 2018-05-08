@@ -3,7 +3,6 @@ package dev.kkorolyov.sqlob.result;
 import dev.kkorolyov.sqlob.request.Request;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,12 +11,12 @@ import java.util.UUID;
  * @param <T> response object type
  */
 public interface Result<T> {
-	/** @return IDs mapped to persisted objects */
-	Map<UUID, T> getRecords();
+	/** @return all relevant records */
+	Collection<Record<UUID, T>> getRecords();
 
-	/** @return persisted object IDs */
+	/** @return persisted record IDs */
 	Collection<UUID> getIds();
-	/** @return persisted objects */
+	/** @return persisted record objects */
 	Collection<T> getObjects();
 
 	/** @return ID of first record, if any */
