@@ -65,7 +65,7 @@ public class SelectRequest<T> extends Request<T> {
 						" FROM " + getName() + " WHERE " + where.getSql()));
 		logStatements(sql.replace(where.getSql(), where.toString()));
 
-		PreparedStatement statement = context.prepareStatement(sql);
+		PreparedStatement statement = context.generateStatement(sql);
 
 		streamColumns(WhereStatementContributor.class)
 				.forEach(column -> column.contribute(statement, where, context));

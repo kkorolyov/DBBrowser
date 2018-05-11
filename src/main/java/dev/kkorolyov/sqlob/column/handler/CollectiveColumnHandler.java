@@ -32,7 +32,7 @@ public class CollectiveColumnHandler implements ColumnHandler {
 		return Stream.of(primaryRequest);
 	}
 
-	private static class CollectiveColumn extends FieldBackedColumn<Collection> {
+	private static class CollectiveColumn extends FieldBackedColumn<Collection<?>> {
 		private final KeyColumn keyDelegate;
 
 		CollectiveColumn(Field f) {
@@ -55,16 +55,7 @@ public class CollectiveColumnHandler implements ColumnHandler {
 		}
 
 		@Override
-		public Collection resolveCriterion(Object value, ExecutionContext context) {
-			return super.resolveCriterion(value, context);
-		}
-
-		@Override
-		public Collection getValue(Object instance, ExecutionContext context) {
-			return super.getValue(instance, context);
-		}
-		@Override
-		public Collection getValue(ResultSet rs, ExecutionContext context) {
+		public Collection<?> getValue(ResultSet rs, ExecutionContext context) {
 			return super.getValue(rs, context);
 		}
 

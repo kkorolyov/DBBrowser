@@ -31,7 +31,7 @@ public class CreateRequest<T> extends Request<T> {
 
 		logStatements(sql);
 
-		Statement statement = context.getStatement();
+		Statement statement = context.generateStatement();
 		for (String s : sql) statement.addBatch(s);
 		statement.executeBatch();
 

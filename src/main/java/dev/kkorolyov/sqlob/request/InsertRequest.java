@@ -81,7 +81,7 @@ public class InsertRequest<T> extends Request<T> {
 				+ " VALUES " + generateColumns(column -> "?");
 		logStatements(sql);
 
-		PreparedStatement statement = context.prepareStatement(sql);
+		PreparedStatement statement = context.generateStatement(sql);
 		ConfigurableResult<T> result = new ConfigurableResult<>();
 
 		for (Record<UUID, T> record : remainingRecords) {

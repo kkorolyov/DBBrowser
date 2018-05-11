@@ -50,7 +50,7 @@ public class CreateCollectionRequest extends Request<Collection<?>> {
 
 		logStatements(sql);
 
-		Statement statement = context.getStatement();
+		Statement statement = context.generateStatement();
 		statement.execute(sql);
 
 		return new ConfigurableResult<>();

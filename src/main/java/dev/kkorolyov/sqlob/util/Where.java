@@ -1,9 +1,7 @@
 package dev.kkorolyov.sqlob.util;
 
-import dev.kkorolyov.simplefuncs.function.ThrowingFunction;
 import dev.kkorolyov.sqlob.column.KeyColumn;
 
-import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +11,7 @@ import java.util.regex.Matcher;
 
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getName;
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getPersistableFields;
+import static dev.kkorolyov.sqlob.util.ReflectionHelper.getValue;
 
 /**
  * Criteria usable in requests as a SQL WHERE clause.
@@ -75,7 +74,7 @@ public class Where {
 	/** @return where matching {@code o}'s individual attributes */
 	public static Where eqObject(Object o) {
 		return getPersistableFields(o.getClass())
-				.map((ThrowingFunction<Field, Where, IllegalAccessException>) f -> eq(getName(f), f.get(o)))
+				.map(f -> eq(getName(f), getValue(o, f)))
 				.reduce(Where::and)
 				.orElseThrow(() -> new IllegalArgumentException("Object 'o' has no persistable fields"));
 	}

@@ -40,11 +40,10 @@ public final class PersistenceHelper {
 		return (override == null) ? f.getName() : override.value();
 	}
 
-	/** @return all declared fields in {@code c} matching the requirements of {@link #isPersistable(Field)} with their accessibility restrictions removed */
+	/** @return all declared fields in {@code c} matching the requirements of {@link #isPersistable(Field)} */
 	public static Stream<Field> getPersistableFields(Class<?> c) {
 		return Arrays.stream(c.getDeclaredFields())
-				.filter(PersistenceHelper::isPersistable)
-				.peek(f -> f.setAccessible(true));
+				.filter(PersistenceHelper::isPersistable);
 	}
 	/**
 	 * Checks whether {@code f} is a "persistable" field.

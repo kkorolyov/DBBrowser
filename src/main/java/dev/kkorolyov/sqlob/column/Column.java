@@ -29,17 +29,8 @@ public class Column<T> implements WhereStatementContributor {
 
 	@Override
 	public PreparedStatement contribute(PreparedStatement statement, Where where, ExecutionContext context) {
-		where.consumeValues(name, (index, value) -> sqlobType.set(context.getMetadata(), statement, index, resolveCriterion(value, context)));
+		where.consumeValues(name, (index, value) -> sqlobType.set(context.getMetadata(), statement, index, (T) value));
 		return statement;
-	}
-	/**
-	 * @param value {@link Where} criterion value to resolve
-	 * @param context context to work in
-	 * @return resolved form of {@code value} ready for persistence
-	 */
-	protected T resolveCriterion(Object value, ExecutionContext context) {
-		// Just let it throw a class-cast if occurs
-		return (T) value;
 	}
 
 	/**

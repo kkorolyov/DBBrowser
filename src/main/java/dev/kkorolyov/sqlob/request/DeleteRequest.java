@@ -71,7 +71,7 @@ public class DeleteRequest<T> extends Request<T> {
 		String sql = "DELETE FROM " + getName() + " WHERE " + where.getSql();
 		logStatements(sql);
 
-		PreparedStatement statement = context.prepareStatement(sql);
+		PreparedStatement statement = context.generateStatement(sql);
 
 		streamColumns(WhereStatementContributor.class)
 				.forEach(column -> column.contribute(statement, where, context));
