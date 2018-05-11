@@ -37,14 +37,7 @@ public class FieldBackedColumn<T> extends Column<T> implements RecordStatementCo
 	}
 	@Override
 	public Object contribute(Object instance, ResultSet rs, ExecutionContext context) {
-		try {
-			f.setAccessible(true);
-			f.set(instance, getValue(rs, context));
-
-			return instance;
-		} catch (IllegalAccessException e) {
-			throw new IllegalArgumentException("Unable to contribute " + f + " to " + instance, e);
-		}
+		return ReflectionHelper.setValue(instance, getField(), getValue(rs, context));
 	}
 
 	/** @return associated field */

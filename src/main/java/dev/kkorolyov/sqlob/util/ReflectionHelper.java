@@ -21,4 +21,21 @@ public class ReflectionHelper {
 			throw new IllegalArgumentException("Unable to extract " + f + " value from " + instance, e);
 		}
 	}
+	/**
+	 * @param instance instance to set field value on
+	 * @param f field to set value on
+	 * @param value value to set
+	 * @return {@code instance}
+	 * @throws IllegalArgumentException if an issue occurs setting {@code f}'s value on {@code instance}
+	 */
+	public static Object setValue(Object instance, Field f, Object value) {
+		try {
+			f.setAccessible(true);
+			f.set(instance, value);
+
+			return instance;
+		} catch (IllegalAccessException e) {
+			throw new IllegalArgumentException("Unable to contribute " + f + " to " + instance, e);
+		}
+	}
 }

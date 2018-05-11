@@ -1,8 +1,16 @@
 package dev.kkorolyov.sqlob.column.handler
 
 import dev.kkorolyov.sqlob.ExecutionContext
+import dev.kkorolyov.sqlob.column.Column
 import dev.kkorolyov.sqlob.column.FieldBackedColumn
+import dev.kkorolyov.sqlob.column.KeyColumn
 import dev.kkorolyov.sqlob.request.CreateRequest
+import dev.kkorolyov.sqlob.request.InsertRequest
+import dev.kkorolyov.sqlob.request.SelectRequest
+import dev.kkorolyov.sqlob.result.Record
+import dev.kkorolyov.sqlob.result.Result
+import dev.kkorolyov.sqlob.type.SqlobType
+import dev.kkorolyov.sqlob.util.Where
 
 import spock.lang.Specification
 
@@ -12,7 +20,7 @@ import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.util.stream.Collectors
 
-import static dev.kkorolyov.simplespecs.SpecUtilities.randString
+import static dev.kkorolyov.simplespecs.SpecUtilities.*
 
 class ReferencingColumnHandlerSpec extends Specification {
 	class Stub {
@@ -23,17 +31,22 @@ class ReferencingColumnHandlerSpec extends Specification {
 		String value = randString()
 	}
 	Stub instance = new Stub()
-	Field f = Stub.getDeclaredField("value")
-	Field otherF = Stub.getDeclaredField("otherValue")
+	Record<UUID, Stub> record = new Record<>(UUID.randomUUID(), instance)
 
-	PreparedStatement statement = Mock()
-	ResultSet rs = Mock()
-	DatabaseMetaData metaData = Mock()
-	String database = "SQLite"
+	String name = "value"
+	SqlobType<UUID> sqlobType = Mock()
+	Field f = Stub.getDeclaredField(name)
+
 	ExecutionContext context = Mock()
+	DatabaseMetaData metaData = Mock()
 
-	ReferencingColumnHandler handler = new ReferencingColumnHandler()
+	ReferencingColumnHandler handler = Spy()
 	FieldBackedColumn<?> column = handler.get(f)
+
+	def setup() {
+		KeyColumn keyDelegate = getField("keyDelegate", column) as KeyColumn
+		setField("sqlobType", Column, keyDelegate, sqlobType)
+	}
 
 	def "accepts field not accepted by other handlers"() {
 		// TODO Write in a way that works
@@ -42,7 +55,7 @@ class ReferencingColumnHandlerSpec extends Specification {
 	}
 	def "rejects field accepted by primitive handler"() {
 		expect:
-		!handler.accepts(otherF)
+		!handler.accepts(Stub.getDeclaredField("otherValue"))
 	}
 
 	def "expands creates to entire referenced type hierarchy"() {
@@ -52,47 +65,81 @@ class ReferencingColumnHandlerSpec extends Specification {
 				[Stub, Stub1].collect { new CreateRequest<>(it) } as Set
 	}
 
-	def "column resolves null criterion to null"() {
-		expect:
-		column.resolveCriterion(null, context) == null
-	}
-	def "column resolves criterion to select result's ID"() {
+	def "contributes null criterion as null"() {
+		UUID value = null
+		Where where = Where.eq(name, value)
+
+		PreparedStatement statement = Mock()
+
 		when:
-		Object result = column.resolveCriterion(instance.value, context)
+		column.contribute(statement, where, context);
+
+		then:
+		1 * context.metadata >> metaData
+		1 * sqlobType.set(metaData, statement, 0, value)
+	}
+	def "contributes criterion as select result's ID"() {
+		Object value = randString()
+		UUID id = UUID.randomUUID()
+		Where where = Where.eq(name, value)
+
+		PreparedStatement statement = Mock()
+
+		SelectRequest<?> request = Mock()
+		Result<?> result = Mock()
+
+		when:
+		column.contribute(statement, where, context)
 
 		then:
 		1 * context.getMetadata() >> metaData
-		1 * context.prepareStatement({ it -> it.contains("SELECT") }) >> statement
-		1 * statement.executeQuery() >> rs
-		1 * rs.next() >> false
-		result instanceof UUID
+		1 * handler.select(value) >> request
+		// FIXME? Can't mock final execute()
+		1 * request.executeThrowing(context) >> result
+		1 * result.id >> Optional.of(id)
+		1 * sqlobType.set(metaData, statement, 0, id)
 	}
 
-	def "column gets ID of persisted field value record"() {
+	def "contributes persisted field value record's ID to statement"() {
+		UUID id = UUID.randomUUID()
+
+		PreparedStatement statement = Mock()
+		int index = randInt()
+
+		InsertRequest<?> request = Mock()
+		Result<?> result = Mock()
+
 		when:
-		column.getValue(instance, context)
+		column.contribute(statement, new Record<>(id, instance), index, context)
 
 		then:
-		3 * context.getMetadata() >> metaData
-		3 * metaData.getDatabaseProductName() >> database
-		1 * context.prepareStatement({ it -> it.contains("SELECT") }) >> statement
-		1 * statement.executeQuery() >> rs
-		1 * rs.next() >> false
-		1 * context.prepareStatement({ it -> it.contains("INSERT") }) >> statement
-		1 * statement.setObject(1, _ as UUID)
+		1 * context.getMetadata() >> metaData
+		1 * handler.insert(instance.value) >> request
+		// FIXME? Can't mock final execute()
+		1 * request.executeThrowing(context) >> result
+		1 * result.id >> Optional.of(id)
+		1 * sqlobType.set(metaData, statement, index, id)
 	}
-	def "column gets selected object from result set column ID"() {
-		UUID valueId = UUID.randomUUID()
+
+	def "gets field value record's object from result set"() {
+		UUID id = UUID.randomUUID()
+
+		ResultSet rs = Mock()
+
+		SelectRequest<?> request = Mock()
+		Result<?> result = Mock()
 
 		when:
-		column.getValue(rs, context)
+		Object value = column.getValue(rs, context)
 
 		then:
-		2 * context.getMetadata() >> metaData
-		2 * metaData.getDatabaseProductName() >> database
-		1 * context.prepareStatement({ it -> it.contains("SELECT") }) >> statement
-		1 * statement.executeQuery() >> rs
-		1 * rs.getString(f.getName()) >> valueId.toString()
-		1 * statement.setObject(1, valueId)
+		1 * context.getMetadata() >> metaData
+		1 * sqlobType.get(metaData, rs, name) >> id
+		1 * handler.select(f.getType(), id) >> request
+		// FIXME? Can't mock final execute()
+		1 * request.executeThrowing(context) >> result
+		1 * result.getObject() >> Optional.of(instance.value)
+
+		value == instance.value
 	}
 }

@@ -27,7 +27,7 @@ class KeyColumnSpec extends Specification {
 		String sql = column.getSql(context)
 
 		then:
-		1 * context.getMetadata() >> metaData
+		1 * context.metadata >> metaData
 		1 * sqlobType.getSqlType(metaData) >> sqlType
 		sql == "$name $sqlType PRIMARY KEY"
 	}
@@ -46,7 +46,7 @@ class KeyColumnSpec extends Specification {
 		String sql = column.getSql(context)
 
 		then:
-		1 * context.getMetadata() >> metaData
+		1 * context.metadata >> metaData
 		1 * sqlobType.getSqlType(metaData) >> sqlType
 		sql == "$name $sqlType, FOREIGN KEY ($name) REFERENCES $referencedName(${KeyColumn.ID.getName()}) ON DELETE SET NULL"
 	}
