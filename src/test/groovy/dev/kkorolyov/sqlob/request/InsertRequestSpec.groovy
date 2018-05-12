@@ -6,15 +6,12 @@ import dev.kkorolyov.sqlob.result.Result
 
 import java.sql.PreparedStatement
 
+import static dev.kkorolyov.simplespecs.SpecUtilities.randString
+
 class InsertRequestSpec extends BaseRequestSpec<InsertRequest<?>> {
-	Collection<Record<?, ?>> records;
+	Collection<Record<?, ?>> records = (0..5).collect { new Record<>(UUID.randomUUID(), Stub.BasicStub.random()) }
 
-	@Override
-	InsertRequest<?> buildRequest() {
-		records = (0..5).collect { new Record<>(UUID.randomUUID(), Stub.BasicStub.random()) }
-
-		return Spy(InsertRequest, constructorArgs: [records])
-	}
+	InsertRequest<?> request = Spy(InsertRequest, constructorArgs: [records, randString(), columns])
 
 	def "inserts non-existent records"() {
 		def (Collection<Record<?>> existent, Collection<Record<?>> remaining) = records.collate(records.size() / 2 as int)
@@ -34,7 +31,7 @@ class InsertRequestSpec extends BaseRequestSpec<InsertRequest<?>> {
 		1 * innerResult.getIds() >> existent.collect { it.key }
 		1 * context.generateStatement({ it.contains("INSERT INTO ${request.name}") }) >> statement
 		remaining.each { record ->
-			columns.eachWithIndex{ column, i ->
+			columns.eachWithIndex { column, i ->
 				1 * column.contribute(statement, record, i, context)
 			}
 		}

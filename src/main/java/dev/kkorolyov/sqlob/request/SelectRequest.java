@@ -56,6 +56,16 @@ public class SelectRequest<T> extends Request<T> {
 		this.where = where;
 	}
 
+	/**
+	 * Constructs a new select request with custom columns.
+	 * @see Request#Request(Class, String, Iterable)
+	 */
+	SelectRequest(Class<T> type, String name, Where where, Iterable<Column<?>> columns) {
+		super(type, name, columns);
+
+		this.where = where;
+	}
+
 	@Override
 	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
 		String sql = streamColumns()

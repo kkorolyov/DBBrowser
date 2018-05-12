@@ -13,17 +13,12 @@ import static dev.kkorolyov.simplespecs.SpecUtilities.setField
 
 class SelectRequestSpec extends BaseRequestSpec<SelectRequest<?>> {
 	KeyColumn idColumn = Mock()
-	Where where
+	Where where = Where.eq(randString(), randString())
+
+	SelectRequest<?> request = new SelectRequest<>(Stub.BasicStub, randString(), where, columns)
 
 	def setup() {
 		setField("ID", KeyColumn, idColumn)
-	}
-
-	@Override
-	SelectRequest<?> buildRequest() {
-		where = Where.eq(randString(), randString())
-
-		return new SelectRequest<>(Stub.BasicStub, where)
 	}
 
 	def "selects by where clause"() {

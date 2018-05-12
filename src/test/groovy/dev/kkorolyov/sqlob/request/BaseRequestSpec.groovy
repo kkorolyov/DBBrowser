@@ -18,13 +18,9 @@ abstract class BaseRequestSpec<T extends Request<?>> extends Specification {
 	Collection<AllContributorColumn> columns = (0..5).collect { Mock(AllContributorColumn) }
 
 	ExecutionContext context = Mock()
-	T request = buildRequest()
-
-	abstract T buildRequest()
 
 	def setup() {
 		setField("COLUMN_FACTORIES", ColumnHandlerFactory, [columnHandler])
-		setField("columns", Request, request, columns.withIndex().collectEntries { column, i -> [(i): column] })
 	}
 
 	abstract class AllContributorColumn<T> extends Column<T> implements WhereStatementContributor, RecordStatementContributor, ResultInstanceContributor {

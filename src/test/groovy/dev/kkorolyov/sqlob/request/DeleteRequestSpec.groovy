@@ -8,14 +8,9 @@ import java.sql.PreparedStatement
 import static dev.kkorolyov.simplespecs.SpecUtilities.randString
 
 class DeleteRequestSpec extends BaseRequestSpec<DeleteRequest<?>> {
-	Where where
+		Where where = Where.eq(randString(), randString()) // Yay for non-initialized fields at this point
 
-	@Override
-	DeleteRequest<?> buildRequest() {
-		where = Where.eq(randString(), randString()) // Yay for non-initialized fields at this point
-
-		return new DeleteRequest(Stub.BasicStub, where)
-	}
+		DeleteRequest<?> request = new DeleteRequest(Stub.BasicStub, randString(), where, columns)
 
 	def "deletes by where clause"() {
 		PreparedStatement statement = Mock()

@@ -1,6 +1,7 @@
 package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
+import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.contributor.WhereStatementContributor;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
@@ -62,6 +63,16 @@ public class DeleteRequest<T> extends Request<T> {
 	 */
 	public DeleteRequest(Class<T> type, Where where) {
 		super(type);
+
+		this.where = where;
+	}
+
+	/**
+	 * Constructs a new delete request with custom columns.
+	 * @see Request#Request(Class, String, Iterable)
+	 */
+	DeleteRequest(Class<T> type, String name, Where where, Iterable<Column<?>> columns) {
+		super(type, name, columns);
 
 		this.where = where;
 	}

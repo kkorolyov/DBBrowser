@@ -1,6 +1,7 @@
 package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
+import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.column.handler.factory.ColumnHandlerFactory;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
@@ -20,6 +21,14 @@ public class CreateRequest<T> extends Request<T> {
 	 */
 	public CreateRequest(Class<T> type) {
 		super(type);
+	}
+
+	/**
+	 * Constructs a new create request with custom columns.
+	 * @see Request#Request(Class, String, Iterable)
+	 */
+	CreateRequest(Class<T> type, String name, Iterable<Column<?>> columns) {
+		super(type, name, columns);
 	}
 
 	@Override

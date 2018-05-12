@@ -9,13 +9,13 @@ import dev.kkorolyov.sqlob.result.Result;
 import dev.kkorolyov.sqlob.util.PersistenceHelper;
 import dev.kkorolyov.sqlob.util.UncheckedSqlException;
 
-import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getPersistableFields;
@@ -34,7 +34,7 @@ public abstract class Request<T> {
 	 * Constructs a new request with name retrieved from {@code type} using {@link PersistenceHelper}.
 	 * @see #Request(Class, String)
 	 */
-	Request(Class<T> type) {
+	protected Request(Class<T> type) {
 		this(type, PersistenceHelper.getName(type));
 	}
 	/**
@@ -42,26 +42,27 @@ public abstract class Request<T> {
 	 * @param type associated type
 	 * @param name associated table name
 	 */
-	Request(Class<T> type, String name) {
-		this.type = type;
-		this.name = name;
-
-		Stream.concat(
-				Stream.of(KeyColumn.ID),
-				getPersistableFields(type).map(this::asColumn)
-		).forEach(this::addColumn);
-	}
-	private Column<?> asColumn(Field f) {
-		return ColumnHandlerFactory.get(f)
-				.get(f);
+	protected Request(Class<T> type, String name) {
+		this(
+				type,
+				name,
+				Stream.concat(
+						Stream.of(KeyColumn.ID),
+						getPersistableFields(type).map(f -> ColumnHandlerFactory.get(f).get(f))
+				).collect(Collectors.toList()));
 	}
 
 	/**
-	 * Adds a column to this request.
-	 * @param column column to add
+	 * Constructs a new request with custom columns.
+	 * @param type associated type
+	 * @param name associated table name
+	 * @param columns associated columns
 	 */
-	public void addColumn(Column<?> column) {
-		columns.put(columns.size(), column);
+	protected Request(Class<T> type, String name, Iterable<? extends Column<?>> columns) {
+		this.type = type;
+		this.name = name;
+
+		columns.forEach(column -> this.columns.put(this.columns.size(), column));
 	}
 
 	/**

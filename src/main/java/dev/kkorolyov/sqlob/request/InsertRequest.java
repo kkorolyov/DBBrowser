@@ -52,13 +52,27 @@ public class InsertRequest<T> extends Request<T> {
 	 * @see Request#Request(Class)
 	 */
 	public InsertRequest(Collection<Record<UUID, T>> records) {
-		super((Class<T>) records.stream()
+		super(getType(records));
+
+		this.records = records;
+	}
+
+	/**
+	 * Constructs a new insert request with custom columns.
+	 * @see Request#Request(Class, String, Iterable)
+	 */
+	InsertRequest(Collection<Record<UUID, T>> records, String name, Iterable<Column<?>> columns) {
+		super(getType(records), name, columns);
+
+		this.records = records;
+	}
+
+	private static <T> Class<T> getType(Collection<Record<UUID, T>> records) {
+		return (Class<T>) records.stream()
 				.findFirst()
 				.map(Record::getObject)
 				.map(Object::getClass)
-				.orElseThrow(() -> new IllegalArgumentException("No records supplied")));
-
-		this.records = records;
+				.orElseThrow(() -> new IllegalArgumentException("No records supplied"));
 	}
 
 	@Override

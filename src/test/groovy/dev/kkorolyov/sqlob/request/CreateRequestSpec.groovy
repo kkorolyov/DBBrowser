@@ -4,11 +4,10 @@ import dev.kkorolyov.sqlob.Stub
 
 import java.sql.PreparedStatement
 
+import static dev.kkorolyov.simplespecs.SpecUtilities.randString
+
 class CreateRequestSpec extends BaseRequestSpec<CreateRequest<?>> {
-	@Override
-	CreateRequest<?> buildRequest() {
-		return new CreateRequest<>(Stub.BasicStub)
-	}
+	CreateRequest<?> request = new CreateRequest<>(Stub.BasicStub, randString(), columns)
 
 	def "batch executes statement"() {
 		PreparedStatement statement = Mock()
