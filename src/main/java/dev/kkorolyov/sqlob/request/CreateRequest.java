@@ -26,7 +26,7 @@ public class CreateRequest<T> extends Request<T> {
 	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
 		List<String> sql = ColumnHandlerFactory.stream()
 				.flatMap(columnHandler -> columnHandler.expandCreates(this))
-				.map(createRequest -> getCreateStatement(context))
+				.map(createRequest -> createRequest.getCreateStatement(context))
 				.collect(Collectors.toList());
 
 		logStatements(sql);

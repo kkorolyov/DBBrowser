@@ -64,7 +64,7 @@ public class InsertRequest<T> extends Request<T> {
 	@Override
 	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
 		// Avoid re-inserting existing instances
-		Collection<UUID> existing = new SelectRequest<>(getType(), records.stream()
+		Collection<UUID> existing = select(getType(), records.stream()
 				.map(Record::getObject)
 				.map(Where::eqObject)
 				.reduce(Where::or)
@@ -76,24 +76,26 @@ public class InsertRequest<T> extends Request<T> {
 				.filter(record -> !existing.contains(record.getKey()))
 				.collect(Collectors.toSet());
 
-		String sql = "INSERT INTO " + getName() + " "
-				+ generateColumns(Column::getName)
-				+ " VALUES " + generateColumns(column -> "?");
-		logStatements(sql);
-
-		PreparedStatement statement = context.generateStatement(sql);
 		ConfigurableResult<T> result = new ConfigurableResult<>();
 
-		for (Record<UUID, T> record : remainingRecords) {
-			forEachColumn(RecordStatementContributor.class,
-					(i, column) -> column.contribute(statement, record, i, context));
+		if (!remainingRecords.isEmpty()) {
+			String sql = "INSERT INTO " + getName() + " "
+					+ generateColumns(Column::getName)
+					+ " VALUES " + generateColumns(column -> "?");
+			logStatements(sql);
 
-			statement.addBatch();
+			PreparedStatement statement = context.generateStatement(sql);
 
-			result.add(record);
+			for (Record<UUID, T> record : remainingRecords) {
+				forEachColumn(RecordStatementContributor.class,
+						(i, column) -> column.contribute(statement, record, i, context));
+
+				statement.addBatch();
+
+				result.add(record);
+			}
+			statement.executeBatch();
 		}
-		statement.executeBatch();
-
 		return result;
 	}
 
@@ -101,5 +103,9 @@ public class InsertRequest<T> extends Request<T> {
 		return streamColumns()
 				.map(columnValueMapper)
 				.collect(Collectors.joining(", ", "(", ")"));
+	}
+
+	SelectRequest<?> select(Class<?> c, Where where) {
+		return new SelectRequest<>(c, where);
 	}
 }

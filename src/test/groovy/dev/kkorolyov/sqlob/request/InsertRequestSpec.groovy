@@ -1,47 +1,45 @@
 package dev.kkorolyov.sqlob.request
 
-import dev.kkorolyov.sqlob.ExecutionContext
+import dev.kkorolyov.sqlob.Stub
+import dev.kkorolyov.sqlob.result.Record
+import dev.kkorolyov.sqlob.result.Result
 
-import spock.lang.Specification
-
-import java.sql.DatabaseMetaData
 import java.sql.PreparedStatement
-import java.sql.ResultSet
 
-class InsertRequestSpec extends Specification {
-	class Stub {
-		String value
+class InsertRequestSpec extends BaseRequestSpec<InsertRequest<?>> {
+	Collection<Record<?, ?>> records;
+
+	@Override
+	InsertRequest<?> buildRequest() {
+		records = (0..5).collect { new Record<>(UUID.randomUUID(), Stub.BasicStub.random()) }
+
+		return Spy(InsertRequest, constructorArgs: [records])
 	}
-	UUID id = UUID.randomUUID()
-	UUID id1 = UUID.randomUUID()
-	Stub obj = new Stub()
-	Stub obj1 = new Stub()
-	Map<UUID, ?> records = [
-			(id): obj,
-			(id1): obj1,
-	]
 
-	String database = "SQLite"
-	DatabaseMetaData metaData = Mock()
-	PreparedStatement statement = Mock()
-	ResultSet rs = Mock()
-	ExecutionContext context = Mock()
+	def "inserts non-existent records"() {
+		def (Collection<Record<?>> existent, Collection<Record<?>> remaining) = records.collate(records.size() / 2 as int)
 
-	InsertRequest<?> request = new InsertRequest(records)
+		SelectRequest<?> innerSelect = Mock()
+		Result<?> innerResult = Mock()
 
-	def "inserts ID of each record"() {
+		PreparedStatement statement = Mock()
+
 		when:
-		request.execute(context)
+		Result<?> result = request.execute(context)
 
 		then:
-		6 * metaData.getDatabaseProductName() >> database
-		6 * context.getMetadata() >> metaData
-		1 * context.prepareStatement({ it.contains("SELECT") && it.contains("FROM ${Stub.getSimpleName()}") }) >> statement
-		1 * statement.executeQuery() >> rs
-		1 * rs.next() >> false
-		1 * context.prepareStatement({ it.contains("INSERT INTO ${Stub.getSimpleName()}") }) >> statement
-		1 * statement.setObject(1, id)
-		1 * statement.setObject(1, id1)
+		1 * request.select(request.type, _) >> innerSelect
+		// FIXME? Cannot mock final
+		1 * innerSelect.executeThrowing(context) >> innerResult
+		1 * innerResult.getIds() >> existent.collect { it.key }
+		1 * context.generateStatement({ it.contains("INSERT INTO ${request.name}") }) >> statement
+		remaining.each { record ->
+			columns.eachWithIndex{ column, i ->
+				1 * column.contribute(statement, record, i, context)
+			}
+		}
+		remaining.size() * statement.addBatch()
 		1 * statement.executeBatch()
+		result.getRecords() == remaining as Set
 	}
 }
