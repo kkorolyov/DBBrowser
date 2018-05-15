@@ -72,10 +72,10 @@ abstract class SessionInt extends Specification {
 	}
 
 	private <T> T select(Class<T> c, UUID id) {
-		return session.execute(new SelectRequest<>(c, id)).getObject().orElse(null)
+		session.execute(new SelectRequest<>(c, id)).object.orElse(null)
 	}
 	private UUID insert(Object o) {
-		return session.execute(new InsertRequest<>(o)).getId().orElse(null)
+		session.execute(new InsertRequest<>(o)).key.orElse(null)
 	}
 	private void delete(Class<?> c, UUID id) {
 		session.execute(new DeleteRequest<>(c, id))

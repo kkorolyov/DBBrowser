@@ -4,6 +4,7 @@ import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.column.KeyColumn;
 import dev.kkorolyov.sqlob.request.CreateRequest;
+import dev.kkorolyov.sqlob.result.ConfigurableRecord;
 import dev.kkorolyov.sqlob.result.Record;
 import dev.kkorolyov.sqlob.util.PersistenceHelper;
 
@@ -49,9 +50,9 @@ public class CollectiveColumnHandler implements ColumnHandler {
 			return super.contribute(statement, instance, index, context);
 		}
 		@Override
-		public Object contribute(Object instance, ResultSet rs, ExecutionContext context) {
+		public <O> ConfigurableRecord<UUID, O> contribute(ConfigurableRecord<UUID, O> record, ResultSet rs, ExecutionContext context) {
 			// TODO Execute SelectCollection request instead
-			return super.contribute(instance, rs, context);
+			return super.contribute(record, rs, context);
 		}
 
 		@Override

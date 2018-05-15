@@ -15,12 +15,12 @@ public interface Result<T> {
 	Collection<Record<UUID, T>> getRecords();
 
 	/** @return persisted record IDs */
-	Collection<UUID> getIds();
+	Collection<UUID> getKeys();
 	/** @return persisted record objects */
 	Collection<T> getObjects();
 
 	/** @return ID of first record, if any */
-	Optional<UUID> getId();
+	Optional<UUID> getKey();
 	/** @return ID of first record, if any */
 	Optional<T> getObject();
 

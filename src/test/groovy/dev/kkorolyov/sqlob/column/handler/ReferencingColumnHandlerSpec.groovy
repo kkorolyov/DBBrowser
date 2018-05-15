@@ -7,6 +7,7 @@ import dev.kkorolyov.sqlob.column.KeyColumn
 import dev.kkorolyov.sqlob.request.CreateRequest
 import dev.kkorolyov.sqlob.request.InsertRequest
 import dev.kkorolyov.sqlob.request.SelectRequest
+import dev.kkorolyov.sqlob.result.ConfigurableRecord
 import dev.kkorolyov.sqlob.result.Record
 import dev.kkorolyov.sqlob.result.Result
 import dev.kkorolyov.sqlob.type.SqlobType
@@ -31,7 +32,7 @@ class ReferencingColumnHandlerSpec extends Specification {
 		String value = randString()
 	}
 	Stub instance = new Stub()
-	Record<UUID, Stub> record = new Record<>(UUID.randomUUID(), instance)
+	Record<UUID, Stub> record = new ConfigurableRecord<>(UUID.randomUUID(), instance)
 
 	String name = "value"
 	SqlobType<UUID> sqlobType = Mock()
@@ -96,13 +97,11 @@ class ReferencingColumnHandlerSpec extends Specification {
 		1 * handler.select(value) >> request
 		// FIXME? Can't mock final execute()
 		1 * request.executeThrowing(context) >> result
-		1 * result.id >> Optional.of(id)
+		1 * result.key >> Optional.of(id)
 		1 * sqlobType.set(metaData, statement, 0, id)
 	}
 
 	def "contributes persisted field value record's ID to statement"() {
-		UUID id = UUID.randomUUID()
-
 		PreparedStatement statement = Mock()
 		int index = randInt()
 
@@ -110,15 +109,15 @@ class ReferencingColumnHandlerSpec extends Specification {
 		Result<?> result = Mock()
 
 		when:
-		column.contribute(statement, new Record<>(id, instance), index, context)
+		column.contribute(statement, record, index, context)
 
 		then:
 		1 * context.getMetadata() >> metaData
 		1 * handler.insert(instance.value) >> request
 		// FIXME? Can't mock final execute()
 		1 * request.executeThrowing(context) >> result
-		1 * result.id >> Optional.of(id)
-		1 * sqlobType.set(metaData, statement, index, id)
+		1 * result.key >> Optional.of(record.key)
+		1 * sqlobType.set(metaData, statement, index, record.key)
 	}
 
 	def "gets field value record's object from result set"() {

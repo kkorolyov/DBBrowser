@@ -37,7 +37,7 @@ public class ConfigurableResult<T> implements Result<T> {
 	}
 
 	@Override
-	public Collection<UUID> getIds() {
+	public Collection<UUID> getKeys() {
 		return getRecords().stream()
 				.map(Record::getKey)
 				.collect(Collectors.toSet());
@@ -50,8 +50,8 @@ public class ConfigurableResult<T> implements Result<T> {
 	}
 
 	@Override
-	public Optional<UUID> getId() {
-		return getIds().stream()
+	public Optional<UUID> getKey() {
+		return getKeys().stream()
 				.findFirst();
 	}
 	@Override

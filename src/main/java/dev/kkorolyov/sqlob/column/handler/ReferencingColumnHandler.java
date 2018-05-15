@@ -93,7 +93,7 @@ public class ReferencingColumnHandler implements ColumnHandler {
 							value != null
 									? select(value)
 									.execute(context)
-									.getId().orElseGet(UUID::randomUUID)
+									.getKey().orElseGet(UUID::randomUUID)
 									: null));
 
 			return statement;
@@ -102,7 +102,7 @@ public class ReferencingColumnHandler implements ColumnHandler {
 		public <O> PreparedStatement contribute(PreparedStatement statement, Record<UUID, O> record, int index, ExecutionContext context) {
 			UUID referencedId = insert(ReflectionHelper.getValue(record.getObject(), getField()))
 					.execute(context)
-					.getId()
+					.getKey()
 					.orElseThrow(() -> new IllegalStateException("This should never happen"));
 
 			keyDelegate.getSqlobType().set(context.getMetadata(), statement, index, referencedId);

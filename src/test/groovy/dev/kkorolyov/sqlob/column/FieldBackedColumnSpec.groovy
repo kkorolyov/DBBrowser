@@ -1,6 +1,7 @@
 package dev.kkorolyov.sqlob.column
 
 import dev.kkorolyov.sqlob.ExecutionContext
+import dev.kkorolyov.sqlob.result.ConfigurableRecord
 import dev.kkorolyov.sqlob.result.Record
 import dev.kkorolyov.sqlob.type.SqlobType
 
@@ -19,6 +20,7 @@ class FieldBackedColumnSpec extends Specification {
 		String value = randString()
 	}
 	Stub instance = new Stub()
+	Record<UUID, Stub> record = new ConfigurableRecord<>(UUID.randomUUID(), instance)
 
 	String name = "value"
 	SqlobType sqlobType = Mock()
@@ -34,7 +36,7 @@ class FieldBackedColumnSpec extends Specification {
 		int index = randInt()
 
 		when:
-		column.contribute(statement, new Record<>(UUID.randomUUID(), instance), index, context)
+		column.contribute(statement, record, index, context)
 
 		then:
 		1 * context.metadata >> metaData
@@ -45,7 +47,7 @@ class FieldBackedColumnSpec extends Specification {
 		String newValue = randString()
 
 		when:
-		column.contribute(instance, rs, context)
+		column.contribute(record, rs, context)
 
 		then:
 		1 * context.metadata >> metaData

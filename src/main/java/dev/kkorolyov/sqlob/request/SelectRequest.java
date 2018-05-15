@@ -3,15 +3,14 @@ package dev.kkorolyov.sqlob.request;
 import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.column.KeyColumn;
-import dev.kkorolyov.sqlob.contributor.ResultInstanceContributor;
+import dev.kkorolyov.sqlob.contributor.ResultRecordContributor;
 import dev.kkorolyov.sqlob.contributor.WhereStatementContributor;
+import dev.kkorolyov.sqlob.result.ConfigurableRecord;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
-import dev.kkorolyov.sqlob.result.Record;
 import dev.kkorolyov.sqlob.result.Result;
+import dev.kkorolyov.sqlob.util.ReflectionHelper;
 import dev.kkorolyov.sqlob.util.Where;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -85,25 +84,14 @@ public class SelectRequest<T> extends Request<T> {
 		ConfigurableResult<T> result = new ConfigurableResult<>();
 
 		while (rs.next()) {
-			result.add(new Record<>(KeyColumn.ID.getValue(rs, context), toInstance(rs, context)));
+			ConfigurableRecord<UUID, T> record = new ConfigurableRecord<UUID, T>()
+					.setObject(ReflectionHelper.newInstance(getType()));
+
+			streamColumns(ResultRecordContributor.class)
+					.forEach(column -> column.contribute(record, rs, context));
+
+			result.add(record);
 		}
 		return result;
-	}
-	private T toInstance(ResultSet rs, ExecutionContext context) {
-		try {
-			Constructor<T> noArgConstructor = getType().getDeclaredConstructor();
-			noArgConstructor.setAccessible(true);
-
-			T instance = noArgConstructor.newInstance();
-
-			streamColumns(ResultInstanceContributor.class)
-					.forEach(column -> column.contribute(instance, rs, context));
-
-			return instance;
-		} catch (NoSuchMethodException e) {
-			throw new IllegalArgumentException(getType() + " does not provide a no-arg constructor");
-		} catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
-			throw new RuntimeException(e);
-		}
 	}
 }

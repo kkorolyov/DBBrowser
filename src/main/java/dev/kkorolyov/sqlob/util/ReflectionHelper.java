@@ -1,6 +1,8 @@
 package dev.kkorolyov.sqlob.util;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * Provides static utility methods for dealing with reflection operations.
@@ -36,6 +38,26 @@ public class ReflectionHelper {
 			return instance;
 		} catch (IllegalAccessException e) {
 			throw new IllegalArgumentException("Unable to contribute " + f + " to " + instance, e);
+		}
+	}
+
+	/**
+	 * Instances a new instance of {@code c}.
+	 * @param c class to instantiate
+	 * @param <T> instantiated type
+	 * @return new {@code T}
+	 * @throws IllegalArgumentException if {@code c} has no no-arg constructor
+	 */
+	public static <T> T newInstance(Class<T> c) {
+		try {
+			Constructor<T> noArgConstructor = c.getDeclaredConstructor();
+			noArgConstructor.setAccessible(true);
+
+			return noArgConstructor.newInstance();
+		} catch (NoSuchMethodException e) {
+			throw new IllegalArgumentException(c + " does not provide a no-arg constructor");
+		} catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
+			throw new RuntimeException(e);
 		}
 	}
 }

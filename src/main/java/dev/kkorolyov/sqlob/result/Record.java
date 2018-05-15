@@ -10,30 +10,19 @@ import java.util.stream.Collector;
  * @param <K> key type
  * @param <O> object type
  */
-public class Record<K, O> {
-	private final K key;
-	private final O object;
-
-	/**
-	 * Constructs a new record.
-	 * @param key record key
-	 * @param object record object
-	 */
-	public Record(K key, O object) {
-		this.key = key;
-		this.object = object;
-	}
-
+public interface Record<K, O> {
 	/**
 	 * @param keyGenerator supplies a unique key for each collected object
 	 * @param <K> record key type
-	 * @param <V> record object type
+	 * @param <O> record object type
 	 * @return collector which collects objects into records
 	 */
-	public static <K, V> Collector<V, ?, Collection<Record<K, V>>> collector(Function<V, K> keyGenerator) {
+	static <K, O> Collector<O, ?, Collection<Record<K, O>>> collector(Function<O, K> keyGenerator) {
 		return Collector.of(
 				HashSet::new,
-				(records, object) -> records.add(new Record<K, V>(keyGenerator.apply(object), object)),
+				(records, object) -> records.add(new ConfigurableRecord<K, O>()
+						.setKey(keyGenerator.apply(object))
+						.setObject(object)),
 				(set1, set2) -> {
 					set1.addAll(set2);
 					return set1;
@@ -42,11 +31,7 @@ public class Record<K, O> {
 	}
 
 	/** @return record key */
-	public K getKey() {
-		return key;
-	}
+	K getKey();
 	/** @return record object */
-	public O getObject() {
-		return object;
-	}
+	O getObject();
 }

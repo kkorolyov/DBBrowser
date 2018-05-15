@@ -3,6 +3,7 @@ package dev.kkorolyov.sqlob.request;
 import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.contributor.RecordStatementContributor;
+import dev.kkorolyov.sqlob.result.ConfigurableRecord;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Record;
 import dev.kkorolyov.sqlob.result.Result;
@@ -35,7 +36,7 @@ public class InsertRequest<T> extends Request<T> {
 	 * @see #InsertRequest(Collection)
 	 */
 	public InsertRequest(UUID id, T instance) {
-		this(Collections.singleton(new Record<>(id, instance)));
+		this(Collections.singleton(new ConfigurableRecord<>(id, instance)));
 	}
 	/**
 	 * Constructs an insert request with random IDs.
@@ -84,7 +85,7 @@ public class InsertRequest<T> extends Request<T> {
 				.reduce(Where::or)
 				.orElseThrow(() -> new IllegalStateException("This should never happen"))
 		).execute(context)
-				.getIds();
+				.getKeys();
 
 		Collection<Record<UUID, T>> remainingRecords = records.stream()
 				.filter(record -> !existing.contains(record.getKey()))
