@@ -1,5 +1,9 @@
 package dev.kkorolyov.sqlob
 
+import dev.kkorolyov.sqlob.column.FieldBackedColumn
+import dev.kkorolyov.sqlob.column.handler.ColumnHandler
+import dev.kkorolyov.sqlob.column.handler.factory.ColumnHandlerFactory
+import dev.kkorolyov.sqlob.request.CreateRequest
 import dev.kkorolyov.sqlob.request.Request
 import dev.kkorolyov.sqlob.result.Result
 
@@ -7,47 +11,59 @@ import spock.lang.Specification
 
 import javax.sql.DataSource
 import java.sql.Connection
-import java.sql.Statement
 
 import static dev.kkorolyov.simplespecs.SpecUtilities.getField
+import static dev.kkorolyov.simplespecs.SpecUtilities.setField
 
 class SessionSpec extends Specification {
 	DataSource dataSource = Mock()
 	Connection connection = Mock()
-	ExecutionContext context = new ExecutionContext(connection)
+
+	ColumnHandler columnHandler = Mock(ColumnHandler) {
+		accepts(_) >> true
+		get(_) >> Mock(FieldBackedColumn)
+	}.with {
+		setField("COLUMN_FACTORIES", ColumnHandlerFactory, [it])
+		it
+	}
 
 	Class<?> type = String
-	Request request = Spy(constructorArgs: [type]) {
+	Request request = Spy(Request, constructorArgs: [type]) {
 		executeThrowing(_) >> null
 	}
 
-	Session session = new Session(dataSource).with {
-		(getField("prepared", it) as Set<Class<?>>).add(type)
+	Session session = Spy(Session, constructorArgs: [dataSource]).with {
+		(getField("prepared", Session, it) as Set<Class<?>>).add(type)
 		it
 	}
 
 	def "creates necessary tables, executes request with current connection"() {
-		Statement statement = Mock()
+		(getField("prepared", Session, session) as Set<Class<?>>).clear()
+
+		CreateRequest<?> createRequest = Mock()
 		Result<?> expected = Mock()
-		(getField("prepared", session) as Set<Class<?>>).clear()
 
 		when:
 		Result<?> result = session.execute(request)
 
 		then:
 		1 * dataSource.getConnection() >> connection
-		1 * connection.createStatement() >> statement
-		1 * statement.addBatch({ it.contains("CREATE TABLE IF NOT EXISTS ${type.getSimpleName()}") })
-		1 * request.executeThrowing(_) >> expected
+		1 * session.create(type) >> createRequest
+		1 * createRequest.executeThrowing(_ as ExecutionContext)
+		1 * request.executeThrowing(_ as ExecutionContext) >> expected
 		result == expected
 	}
 	def "does not create table if already prepared"() {
+		Result<?> expected = Mock()
+
 		when:
-		session.execute(request)
+		Result<?> result = session.execute(request)
 
 		then:
 		1 * dataSource.getConnection() >> connection
-		0 * connection.createStatement()
+		0 * session.create(_)
+		1 * request.executeThrowing(_ as ExecutionContext) >> expected
+		result == expected
 	}
 
 	def "rolls back connection if has connection"() {

@@ -58,7 +58,7 @@ public class Session implements AutoCloseable {
 	public <T> Result<T> execute(Request<T> request) {
 		try (ExecutionContext context = startTransaction()) {
 			if (!prepared.contains(request.getType())) {
-				new CreateRequest<>(request.getType()).execute(context);
+				create(request.getType()).execute(context);
 				prepared.add(request.getType());
 			}
 			Result<T> result = request.execute(context);
@@ -118,5 +118,9 @@ public class Session implements AutoCloseable {
 				", bufferCounter=" + bufferCounter +
 				", prepared=" + prepared +
 				'}';
+	}
+
+	<T> CreateRequest<T> create(Class<T> c) {
+		return new CreateRequest<>(c);
 	}
 }
