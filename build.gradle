@@ -38,18 +38,33 @@ dependencies {
 
 test {
 	filter.includeTestsMatching '*Spec'
+
+	testLogging {
+		events 'passed', 'skipped', 'failed'
+		exceptionFormat 'full'
+	}
 }
 task integration(type: Test) {
 	group = 'verification'
 	description = "Runs integration tests."
 
 	filter.includeTestsMatching '*Int'
+
+	testLogging {
+		events 'passed', 'skipped', 'failed'
+		exceptionFormat 'full'
+	}
 }
 task performance(type: Test) {
 	group = 'verification'
 	description = """Runs performance tests."""
 
 	filter.includeTestsMatching '*Perf'
+
+	testLogging {
+		events 'passed', 'skipped', 'failed'
+		exceptionFormat 'full'
+	}
 }
 
 check.dependsOn(
