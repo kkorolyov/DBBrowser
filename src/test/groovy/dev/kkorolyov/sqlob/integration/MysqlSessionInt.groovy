@@ -7,7 +7,7 @@ import javax.sql.DataSource
 class MysqlSessionInt extends SessionInt {
 	protected DataSource buildDataSource() {
 		MysqlDataSource ds = new MysqlDataSource()
-		ds.setUrl("jdbc:mysql://127.1/sqlobtest?useLegacyDatetimeCode=false&serverTimezone=America/Los_Angeles")
+		ds.setUrl("jdbc:mysql://127.1/sqlobtest?useLegacyDatetimeCode=false")
 		ds.setUser("travis")
 
 		return ds
