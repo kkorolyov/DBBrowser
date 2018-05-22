@@ -1,110 +1,102 @@
 package dev.kkorolyov.sqlob
 
-import dev.kkorolyov.sqlob.utility.Condition
+import dev.kkorolyov.sqlob.column.FieldBackedColumn
+import dev.kkorolyov.sqlob.column.handler.ColumnHandler
+import dev.kkorolyov.sqlob.column.handler.factory.ColumnHandlerFactory
+import dev.kkorolyov.sqlob.request.CreateRequest
+import dev.kkorolyov.sqlob.request.Request
+import dev.kkorolyov.sqlob.result.Result
+
 import spock.lang.Specification
 
 import javax.sql.DataSource
 import java.sql.Connection
-import java.sql.PreparedStatement
-import java.sql.ResultSet
-import java.sql.Statement
+
+import static dev.kkorolyov.simplespecs.SpecUtilities.getField
+import static dev.kkorolyov.simplespecs.SpecUtilities.setField
 
 class SessionSpec extends Specification {
-	ResultSet rs = Mock()
-	Statement s = Mock()
-	PreparedStatement ps = Mock()
-	Connection conn = Mock()
-	DataSource ds = Mock()
+	DataSource dataSource = Mock()
+	Connection connection = Mock()
 
-	Session session = new Session(ds)
-
-	def setup() {
-		s.executeQuery(_) >> rs
-		ps.executeQuery() >> rs
-		conn.createStatement() >> s
-		conn.prepareStatement(_) >> ps
-		ds.getConnection() >> conn
-	}
-	def cleanup() {
-		session.close()
+	ColumnHandler columnHandler = Mock(ColumnHandler) {
+		accepts(_) >> true
+		get(_) >> Mock(FieldBackedColumn)
+	}.with {
+		setField("COLUMN_FACTORIES", ColumnHandlerFactory, [it])
+		it
 	}
 
-	def "query actions do not commit underlying Connection"() {
-		session = new Session(ds, 0)
-
-		Class c = Object
-		Object o = new Object()
-		UUID id = UUID.randomUUID()
-		Condition condition = new Condition()
-
-		when:
-		session.get(c, id)
-		then:
-		0 * conn.commit()
-
-		when:
-		session.get(c, condition)
-		then:
-		0 * conn.commit()
-
-		when:
-		session.getId(o)
-		then:
-		0 * conn.commit()
+	Class<?> type = String
+	Request request = Spy(Request, constructorArgs: [type]) {
+		executeThrowing(_) >> null
 	}
 
-	def "commits underlying Connection when update actions fill buffer"() {
-		session = new Session(ds, bufferSize)
-
-		Class c = Object
-		Object o = new Object()
-		UUID id = UUID.randomUUID()
-		Condition condition = new Condition()
-
-		int cycles = 5
-
-		when:
-		(1..(cycles * bufferSize)).each { session.put(o) }
-		then:
-		cycles * conn.commit()
-
-		when:
-		(1..(cycles * bufferSize)).each { session.put(id, o) }
-		then:
-		cycles * conn.commit()
-
-		when:
-		(1..(cycles * bufferSize)).each { session.drop(c, id) }
-		then:
-		cycles * conn.commit()
-
-		when:
-		(1..(cycles * bufferSize)).each { session.drop(c, condition) }
-		then:
-		cycles * conn.commit()
-
-		where:
-		bufferSize << (1..100)
+	Session session = Spy(Session, constructorArgs: [dataSource]).with {
+		(getField("prepared", Session, it) as Set<Class<?>>).add(type)
+		it
 	}
 
-	def "flush() commits underlying Connection"() {
-		Object o = new Object()
+	def "creates necessary tables, executes request with current connection"() {
+		(getField("prepared", Session, session) as Set<Class<?>>).clear()
+
+		CreateRequest<?> createRequest = Mock()
+		Result<?> expected = Mock()
 
 		when:
-		session.getId(o)
-		session.flush()
+		Result<?> result = session.execute(request)
 
 		then:
-		1 * conn.commit()
+		1 * dataSource.getConnection() >> connection
+		1 * session.create(type) >> createRequest
+		1 * createRequest.executeThrowing(_ as ExecutionContext)
+		1 * request.executeThrowing(_ as ExecutionContext) >> expected
+		result == expected
 	}
-	def "close() commits underlying Connection"() {
-		Object o = new Object()
+	def "does not create table if already prepared"() {
+		Result<?> expected = Mock()
 
 		when:
-		session.getId(o)
+		Result<?> result = session.execute(request)
+
+		then:
+		1 * dataSource.getConnection() >> connection
+		0 * session.create(_)
+		1 * request.executeThrowing(_ as ExecutionContext) >> expected
+		result == expected
+	}
+
+	def "rolls back connection if has connection"() {
+		when:
+		session.execute(request)
+		session.rollback()
+
+		then:
+		1 * dataSource.getConnection() >> connection
+		1 * connection.rollback()
+	}
+	def "does nothing on rollback if no connection"() {
+		when:
+		session.rollback()
+
+		then:
+		0 * connection.rollback()
+	}
+
+	def "commits on close if has connection"() {
+		when:
+		session.execute(request)
 		session.close()
 
 		then:
-		1 * conn.commit()
+		1 * dataSource.getConnection() >> connection
+		1 * connection.close()
+	}
+	def "does nothing on close if no connection"() {
+		when:
+		session.close()
+
+		then:
+		0 * connection.close()
 	}
 }
