@@ -66,7 +66,7 @@ public class SelectRequest<T> extends Request<T> {
 	}
 
 	@Override
-	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
+	protected Result<T> executeThrowing(ExecutionContext context) throws SQLException {
 		String sql = streamColumns()
 				.map(Column::getName)
 				.collect(Collectors.joining(", ",

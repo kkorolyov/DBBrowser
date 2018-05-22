@@ -77,7 +77,7 @@ public class InsertRequest<T> extends Request<T> {
 	}
 
 	@Override
-	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
+	protected Result<T> executeThrowing(ExecutionContext context) throws SQLException {
 		// Avoid re-inserting existing instances
 		Collection<UUID> existing = select(getType(), records.stream()
 				.map(Record::getObject)
@@ -115,7 +115,8 @@ public class InsertRequest<T> extends Request<T> {
 	}
 
 	private String generateColumns(Function<Column, String> columnValueMapper) {
-		return streamColumns()
+		return streamColumns(RecordStatementContributor.class)
+				.map(Column.class::cast)	// These are all columns
 				.map(columnValueMapper)
 				.collect(Collectors.joining(", ", "(", ")"));
 	}

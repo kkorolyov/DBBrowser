@@ -65,8 +65,6 @@ package sqlob {
 		Request <|-- InsertRequest
 		Request <|-- DeleteRequest
 		Request <|--SelectRequest
-
-		Request -> Result
 	}
 
 	package result {
@@ -93,6 +91,8 @@ package sqlob {
 			+size(size: Integer): ConfigurableResult<T>
 		}
 		Result <|.. ConfigurableResult
+
+		Request --> Result
 	}
 }
 

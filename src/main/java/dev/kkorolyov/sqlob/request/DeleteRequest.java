@@ -78,7 +78,7 @@ public class DeleteRequest<T> extends Request<T> {
 	}
 
 	@Override
-	Result<T> executeThrowing(ExecutionContext context) throws SQLException {
+	protected Result<T> executeThrowing(ExecutionContext context) throws SQLException {
 		String sql = "DELETE FROM " + getName() + " WHERE " + where.getSql();
 		logStatements(sql);
 

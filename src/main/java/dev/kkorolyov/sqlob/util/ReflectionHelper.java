@@ -3,6 +3,9 @@ package dev.kkorolyov.sqlob.util;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Arrays;
 
 /**
  * Provides static utility methods for dealing with reflection operations.
@@ -58,6 +61,37 @@ public class ReflectionHelper {
 			throw new IllegalArgumentException(c + " does not provide a no-arg constructor");
 		} catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * Verifies that {@code f}'s type is a subclass of {@code c}.
+	 * @param f field to verify
+	 * @param c expected field type
+	 * @throws IllegalArgumentException if {@code f}'s type is not assignable from {@code c}
+	 */
+	public static void verifyType(Field f, Class<?> c) {
+		if (!c.isAssignableFrom(f.getType())) {
+			throw new IllegalArgumentException(f + " must be a assignable from " + c);
+		}
+	}
+
+	/**
+	 * @param f field to get generic parameters from
+	 * @return generic parameters of {@code f}'s type as {@code Class}es, with non-{@code Class} parameters replaced with {@code null}
+	 * @throws IllegalArgumentException if {@code f}'s type is not parameterized
+	 */
+	public static Class[] getGenericParameters(Field f) {
+		Type type = f.getGenericType();
+		if (type instanceof ParameterizedType) {
+			return Arrays.stream(((ParameterizedType) type).getActualTypeArguments())
+					.map(t ->
+							t instanceof Class
+									? (Class) t
+									: null)
+					.toArray(Class[]::new);
+		} else {
+			throw new IllegalArgumentException(f + " is not of a parameterized type");
 		}
 	}
 }

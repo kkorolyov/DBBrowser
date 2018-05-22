@@ -18,6 +18,7 @@ public final class PersistenceHelper {
 	/**
 	 * Returns the name of the table associated with class {@code c}.
 	 * Table name defaults to the name of the class, but may be customized with the {@link Table} annotation.
+	 * @param c class to get table name for
 	 * @return name of table matching {@code c}
 	 * @see Table
 	 */
@@ -30,6 +31,7 @@ public final class PersistenceHelper {
 	/**
 	 * Returns the name of the column associated with field {@code f}.
 	 * Column name defaults to the name of the field, but may be customized with the {@link Column} annotation.
+	 * @param f field to get column name for
 	 * @return name of column matching {@code f}
 	 * @see Column
 	 */
@@ -38,6 +40,17 @@ public final class PersistenceHelper {
 		if (override != null && override.value().length() <= 0) throw new IllegalArgumentException(f + " has a Column annotation with an empty name");
 
 		return (override == null) ? f.getName() : override.value();
+	}
+
+	/**
+	 * Returns the name of the table associated with field {@code f}.
+	 * This is meant for special cases where a field requires its own table instead of a column on the declaring class's table.
+	 * Table name is defined as {@code {DECLARING_CLASS_NAME}_{FIELD_NAME}}
+	 * @param f field to get table name for
+	 * @return name of table matching {@code f}
+	 */
+	public static String getFieldTableName(Field f) {
+		return getName(f.getDeclaringClass()) + "_" + getName(f);
 	}
 
 	/** @return all declared fields in {@code c} matching the requirements of {@link #isPersistable(Field)} */

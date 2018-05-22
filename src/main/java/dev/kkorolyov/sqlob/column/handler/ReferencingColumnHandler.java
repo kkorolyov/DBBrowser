@@ -75,12 +75,9 @@ public class ReferencingColumnHandler implements ColumnHandler {
 		private final KeyColumn keyDelegate;
 
 		ReferencingColumn(Field f) {
-			this(f, KeyColumn.foreign(PersistenceHelper.getName(f), PersistenceHelper.getName(f.getType())));
-		}
-		private ReferencingColumn(Field f, KeyColumn keyDelegate) {
 			// Relies on delegate
 			super(f, null);
-			this.keyDelegate = keyDelegate;
+			this.keyDelegate = KeyColumn.foreign(PersistenceHelper.getName(f), PersistenceHelper.getName(f.getType()));
 		}
 
 		@Override

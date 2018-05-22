@@ -38,7 +38,7 @@ public abstract class Request<T> {
 		this(type, PersistenceHelper.getName(type));
 	}
 	/**
-	 * Constructs a new request.
+	 * Constructs a new request with an ID column and additional columns generated from each persistable field in {@code type}.
 	 * @param type associated type
 	 * @param name associated table name
 	 */
@@ -52,6 +52,10 @@ public abstract class Request<T> {
 				).collect(Collectors.toList()));
 	}
 
+	/** @see #Request(Class, String, Iterable) */
+	protected Request(Class<T> type, String name, Column<?>... columns) {
+		this(type, name, Arrays.asList(columns));
+	}
 	/**
 	 * Constructs a new request with custom columns.
 	 * @param type associated type
@@ -74,17 +78,17 @@ public abstract class Request<T> {
 	public final Result<T> execute(ExecutionContext context) {
 		return wrapSqlException(() -> executeThrowing(context));
 	}
-	abstract Result<T> executeThrowing(ExecutionContext context) throws SQLException;
+	protected abstract Result<T> executeThrowing(ExecutionContext context) throws SQLException;
 
 	/** @see #logStatements(Iterable) */
-	void logStatements(String... statements) {
+	protected void logStatements(String... statements) {
 		logStatements(Arrays.asList(statements));
 	}
 	/**
 	 * Logs a message that this request is executing statements.
 	 * @param statements statements to write to log
 	 */
-	void logStatements(Iterable<String> statements) {
+	protected void logStatements(Iterable<String> statements) {
 		Logger.getLogger(getClass().getName())
 				.debug("Executing statements: {}", statements);
 	}
