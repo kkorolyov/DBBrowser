@@ -58,13 +58,27 @@ abstract class SessionInt extends Specification {
 		select(BasicStub, bsId) == bs
 		select(SmartStub, ssId) == ss
 	}
-
 	def "inserts and deletes"() {
 		when:
 		UUID bsId = insert(bs)
 		UUID ssId = insert(ss)
 		delete(BasicStub, bsId)
 		delete(SmartStub, ssId)
+
+		then:
+		!select(BasicStub, bsId)
+		!select(SmartStub, ssId)
+	}
+
+	def "rolls back changes"() {
+		when:
+		insert(BasicStub.random())
+		insert(SmartStub.random())
+		session.close()	// Commit table creations
+
+		UUID bsId = insert(bs)
+		UUID ssId = insert(ss)
+		session.rollback()
 
 		then:
 		!select(BasicStub, bsId)

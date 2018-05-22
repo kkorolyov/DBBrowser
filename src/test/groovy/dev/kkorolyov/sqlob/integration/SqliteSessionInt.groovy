@@ -11,7 +11,7 @@ class SqliteSessionInt extends SessionInt {
 		config.enforceForeignKeys(true)
 
 		SQLiteDataSource ds = new SQLiteDataSource(config)
-		ds.setUrl("jdbc:sqlite::memory:")
+		ds.setUrl("jdbc:sqlite:test.db")
 
 		return ds
 	}

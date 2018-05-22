@@ -1,7 +1,6 @@
 package dev.kkorolyov.sqlob;
 
 import dev.kkorolyov.simplefuncs.function.ThrowingRunnable;
-import dev.kkorolyov.simplefuncs.function.ThrowingSupplier;
 import dev.kkorolyov.sqlob.logging.Logger;
 import dev.kkorolyov.sqlob.request.CreateRequest;
 import dev.kkorolyov.sqlob.request.Request;
@@ -40,7 +39,7 @@ public class Session implements AutoCloseable {
 	/**
 	 * Executes a request using an available connection and returns its result.
 	 * Because a session is auto-closeable but infinitely reusable,
-	 * 	this method should be called with the session instance in a try-with-resources block to group related transactions and avoid unhandled commit failures.
+	 * this method should be called with the session instance in a try-with-resources block to group related transactions and avoid unhandled commit failures.
 	 * <pre>
 	 *   Session session = new Session(ds);
 	 *   try (session) {
@@ -70,7 +69,11 @@ public class Session implements AutoCloseable {
 	}
 	private ExecutionContext startTransaction() {
 		if (connection == null) {
-			connection = wrapSqlException((ThrowingSupplier<Connection, SQLException>) dataSource::getConnection);
+			connection = wrapSqlException(() -> {
+				Connection conn = dataSource.getConnection();
+				conn.setAutoCommit(false);
+				return conn;
+			});
 		}
 		return new ExecutionContext(connection);
 	}
@@ -100,6 +103,7 @@ public class Session implements AutoCloseable {
 	public void close() {
 		if (connection != null) {
 			wrapSqlException(() -> {
+				connection.commit();
 				connection.close();
 				connection = null;
 
