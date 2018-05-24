@@ -1,5 +1,6 @@
 package dev.kkorolyov.sqlob
 
+import dev.kkorolyov.simplefiles.Providers
 import dev.kkorolyov.sqlob.column.FieldBackedColumn
 import dev.kkorolyov.sqlob.column.handler.ColumnHandler
 import dev.kkorolyov.sqlob.column.handler.factory.ColumnHandlerFactory
@@ -23,7 +24,7 @@ class SessionSpec extends Specification {
 		accepts(_) >> true
 		get(_) >> Mock(FieldBackedColumn)
 	}.with {
-		setField("COLUMN_FACTORIES", ColumnHandlerFactory, [it])
+		setField("COLUMN_FACTORIES", ColumnHandlerFactory, Providers.fromInstances(ColumnHandler, [it] as Set))
 		it
 	}
 

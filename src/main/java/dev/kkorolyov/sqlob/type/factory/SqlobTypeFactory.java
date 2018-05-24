@@ -1,17 +1,18 @@
 package dev.kkorolyov.sqlob.type.factory;
 
+import dev.kkorolyov.simplefiles.Providers;
 import dev.kkorolyov.sqlob.type.SqlobType;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.ServiceLoader;
-import java.util.stream.StreamSupport;
 
 /**
  * Provides for retrieval of {@link SqlobType}s by the associated Java type.
  */
-public class SqlobTypeFactory {
-	private static final Iterable<SqlobType> SQLOB_TYPES = ServiceLoader.load(SqlobType.class);
+public final class SqlobTypeFactory {
+	private static final Providers<SqlobType> SQLOB_TYPES = Providers.fromConfig(SqlobType.class);
+
+	private SqlobTypeFactory() {}
 
 	/**
 	 * @param value value to get SQLOb type for
@@ -35,7 +36,7 @@ public class SqlobTypeFactory {
 	 * @return optional containing most appropriate SQLOb type for {@code type}
 	 */
 	public static <T> Optional<? extends SqlobType<T>> poll(Class<T> type) {
-		return StreamSupport.stream(SQLOB_TYPES.spliterator(), false)
+		return SQLOB_TYPES.stream()
 				.map(sqlobType -> (SqlobType<?>) sqlobType)  // Cast raw to wildcard
 				.filter(sqlobType -> sqlobType.getTypes().stream()
 						.anyMatch(acceptedType -> acceptedType.isAssignableFrom(type)))

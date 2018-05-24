@@ -5,9 +5,12 @@ import dev.kkorolyov.sqlob.column.Column;
 import dev.kkorolyov.sqlob.column.handler.factory.ColumnHandlerFactory;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
+import dev.kkorolyov.sqlob.util.PersistenceHelper;
 
+import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,7 +36,12 @@ public class CreateRequest<T> extends Request<T> {
 
 	@Override
 	protected Result<T> executeThrowing(ExecutionContext context) throws SQLException {
+		Collection<Field> persistableFields = PersistenceHelper.getPersistableFields(getType())
+				.collect(Collectors.toSet());
+
 		List<String> sql = ColumnHandlerFactory.stream()
+				.filter(columnHandler -> persistableFields.stream()
+						.anyMatch(columnHandler::accepts))
 				.flatMap(columnHandler -> columnHandler.expandCreates(this))
 				.map(createRequest -> createRequest.getCreateStatement(context))
 				.collect(Collectors.toList());
