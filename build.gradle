@@ -2,37 +2,48 @@ plugins {
 	id 'java-library'
 	id 'groovy'
 	id 'maven-publish'
-	id 'com.jfrog.bintray' version '1.7.3'
+	id 'com.jfrog.bintray' version '1.8.0'
 }
 
 group = 'dev.kkorolyov'
-version = '3.0'
+version = '4.0-SNAPSHOT'
 description = "Java library providing for persistence of Java objects in a SQL database"
 
 repositories {
 	jcenter()
-	maven {
-		url 'https://dl.bintray.com/kkorolyov/java'
-	}
+	maven { url 'https://dl.bintray.com/kkorolyov/java' }
 }
 
 dependencies {
 	compileOnly 'dev.kkorolyov:simple-logs:3.+'
+
+	implementation(
+			'dev.kkorolyov:simple-files:1.+',
+			'dev.kkorolyov:simple-funcs:1.+',
+			'dev.kkorolyov:simple-graphs:1.+'
+	)
 	testImplementation(
 			'org.spockframework:spock-core:1.1-groovy-2.4',
-			'net.bytebuddy:byte-buddy:1.+',
+			'cglib:cglib-nodep:3.+',
+			'org.objenesis:objenesis:1.+',
 
 			'org.xerial:sqlite-jdbc:3.+',
 			'org.postgresql:postgresql:42.+',
 			'mysql:mysql-connector-java:6.+',
 
 			'dev.kkorolyov:simple-logs:3.+',
-			'dev.kkorolyov:simple-props:4.+'
+			'dev.kkorolyov:simple-props:4.+',
+			'dev.kkorolyov:simple-specs:1.+'
 	)
 }
 
 test {
 	filter.includeTestsMatching '*Spec'
+
+	testLogging {
+		events 'passed', 'skipped', 'failed'
+		exceptionFormat 'full'
+	}
 }
 task integration(type: Test) {
 	group = 'verification'
@@ -40,14 +51,27 @@ task integration(type: Test) {
 
 	filter.includeTestsMatching '*Int'
 
-	build.dependsOn integration
+	testLogging {
+		events 'passed', 'skipped', 'failed'
+		exceptionFormat 'full'
+	}
 }
 task performance(type: Test) {
 	group = 'verification'
 	description = """Runs performance tests."""
 
 	filter.includeTestsMatching '*Perf'
+
+	testLogging {
+		events 'passed', 'skipped', 'failed'
+		exceptionFormat 'full'
+	}
 }
+
+check.dependsOn(
+		test,
+		integration
+)
 
 task sourcesJar(type: Jar) {
 	classifier = 'sources'
@@ -69,7 +93,11 @@ publishing {
 bintray {
 	user = System.getenv('BINTRAY_USER')
 	key = System.getenv('BINTRAY_KEY')
+
 	publications = ['Pub']
+	publish = true
+	override = true
+
 	pkg {
 		repo = 'java'
 		name = project.name

@@ -1,0 +1,2 @@
+dev.kkorolyov.sqlob.column.handler.PrimitiveColumnHandler
+dev.kkorolyov.sqlob.column.handler.ReferencingColumnHandler
