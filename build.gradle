@@ -18,6 +18,7 @@ dependencies {
 	compileOnly 'dev.kkorolyov:simple-logs:3.+'
 
 	implementation(
+			'dev.kkorolyov:simple-files:1.+',
 			'dev.kkorolyov:simple-funcs:1.+',
 			'dev.kkorolyov:simple-graphs:1.+'
 	)
