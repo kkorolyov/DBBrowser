@@ -7,7 +7,7 @@ import java.util.Collection;
 
 /**
  * A database-specific direct mapping between SQL and Java types.
- * @param <T>> associated base Java type
+ * @param <T> associated base Java type
  */
 public interface SqlobType<T> {
 	/** @return all associated Java types */
