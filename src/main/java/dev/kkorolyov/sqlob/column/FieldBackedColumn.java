@@ -1,8 +1,6 @@
 package dev.kkorolyov.sqlob.column;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
-import dev.kkorolyov.sqlob.contributor.RecordStatementContributor;
-import dev.kkorolyov.sqlob.contributor.ResultRecordContributor;
 import dev.kkorolyov.sqlob.result.ConfigurableRecord;
 import dev.kkorolyov.sqlob.result.Record;
 import dev.kkorolyov.sqlob.type.SqlobType;
@@ -10,7 +8,6 @@ import dev.kkorolyov.sqlob.util.PersistenceHelper;
 import dev.kkorolyov.sqlob.util.ReflectionHelper;
 
 import java.lang.reflect.Field;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.UUID;
 
@@ -18,7 +15,7 @@ import java.util.UUID;
  * A {@link Column} backed by a field on an object.
  * @param <T> column value type
  */
-public class FieldBackedColumn<T> extends Column<T> implements RecordStatementContributor, ResultRecordContributor {
+public class FieldBackedColumn<T> extends Column<T> {
 	private final Field f;
 
 	/**
@@ -32,13 +29,12 @@ public class FieldBackedColumn<T> extends Column<T> implements RecordStatementCo
 	}
 
 	@Override
-	public <O> PreparedStatement contribute(PreparedStatement statement, Record<UUID, O> record, int index, ExecutionContext context) {
-		getSqlobType().set(context.getMetadata(), statement, index, (T) ReflectionHelper.getValue(record.getObject(), f));
-		return statement;
+	public Object get(Record<UUID, ?> record, ExecutionContext context) {
+		return getSqlobType().get(context.getMetadata(), (T) ReflectionHelper.getValue(record.getObject(), f));
 	}
 	@Override
-	public <O> ConfigurableRecord<UUID, O> contribute(ConfigurableRecord<UUID, O> record, ResultSet rs, ExecutionContext context) {
-		ReflectionHelper.setValue(record.getObject(), getField(), getValue(rs, context));
+	public <O> ConfigurableRecord<UUID, O> set(ConfigurableRecord<UUID, O> record, ResultSet rs, ExecutionContext context) {
+		ReflectionHelper.setValue(record.getObject(), getField(), get(rs, context));
 
 		return record;
 	}

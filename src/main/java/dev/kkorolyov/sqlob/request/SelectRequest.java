@@ -2,16 +2,13 @@ package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.Column;
-import dev.kkorolyov.sqlob.column.KeyColumn;
-import dev.kkorolyov.sqlob.contributor.ResultRecordContributor;
-import dev.kkorolyov.sqlob.contributor.WhereStatementContributor;
 import dev.kkorolyov.sqlob.result.ConfigurableRecord;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
+import dev.kkorolyov.sqlob.statement.SelectStatementBuilder;
 import dev.kkorolyov.sqlob.util.ReflectionHelper;
 import dev.kkorolyov.sqlob.util.Where;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
@@ -32,8 +29,10 @@ public class SelectRequest<T> extends Request<T> {
 	 * @see #SelectRequest(Class, Where)
 	 */
 	public SelectRequest(T instance) {
-		this((Class<T>) instance.getClass(),
-				eqObject(instance));
+		this(
+				(Class<T>) instance.getClass(),
+				eqObject(instance)
+		);
 	}
 	/**
 	 * Constructs a select request retrieving by ID.
@@ -41,8 +40,10 @@ public class SelectRequest<T> extends Request<T> {
 	 * @see #SelectRequest(Class, Where)
 	 */
 	public SelectRequest(Class<T> type, UUID id) {
-		this(type,
-				eqId(id));
+		this(
+				type,
+				eqId(id)
+		);
 	}
 	/**
 	 * Constructs a new select request.
@@ -67,30 +68,28 @@ public class SelectRequest<T> extends Request<T> {
 
 	@Override
 	protected Result<T> executeThrowing(ExecutionContext context) throws SQLException {
-		String sql = streamColumns()
-				.map(Column::getName)
-				.collect(Collectors.joining(", ",
-						"SELECT " + KeyColumn.ID.getName() + ", ",
-						" FROM " + getName() + " WHERE " + where.getSql()));
-		logStatements(sql.replace(where.getSql(), where.toString()));
+		SelectStatementBuilder statementBuilder = new SelectStatementBuilder(
+				context::generateStatement,
+				getName(),
+				streamColumns()
+						.map(Column::getName)
+						.collect(Collectors.toSet()),
+				resolve(where, context)
+		);
 
-		PreparedStatement statement = context.generateStatement(sql);
-
-		streamColumns(WhereStatementContributor.class)
-				.forEach(column -> column.contribute(statement, where, context));
-
-		ResultSet rs = statement.executeQuery();
+		ResultSet rs = statementBuilder.build()
+				.executeQuery();
 
 		ConfigurableResult<T> result = new ConfigurableResult<>();
 
 		while (rs.next()) {
-			ConfigurableRecord<UUID, T> record = new ConfigurableRecord<UUID, T>()
-					.setObject(ReflectionHelper.newInstance(getType()));
-
-			streamColumns(ResultRecordContributor.class)
-					.forEach(column -> column.contribute(record, rs, context));
-
-			result.add(record);
+			result.add(streamColumns()
+					.reduce(
+							new ConfigurableRecord<UUID, T>()
+									.setObject(ReflectionHelper.newInstance(getType())),
+							(record, column) -> column.set(record, rs, context),
+							(record, record1) -> record
+					));
 		}
 		return result;
 	}

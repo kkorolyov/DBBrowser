@@ -2,16 +2,12 @@ package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.Column;
-import dev.kkorolyov.sqlob.column.handler.factory.ColumnHandlerFactory;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
-import dev.kkorolyov.sqlob.util.PersistenceHelper;
+import dev.kkorolyov.sqlob.statement.CreateStatementBuilder;
 
-import java.lang.reflect.Field;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Collection;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -36,30 +32,14 @@ public class CreateRequest<T> extends Request<T> {
 
 	@Override
 	protected Result<T> executeThrowing(ExecutionContext context) throws SQLException {
-		Collection<Field> persistableFields = PersistenceHelper.getPersistableFields(getType())
-				.collect(Collectors.toSet());
+		CreateStatementBuilder statementBuilder = new CreateStatementBuilder(context::generateStatement);
+		statementBuilder.batch(toTable(context), streamColumns()
+				.map(column -> column.getPrerequisites(context))
+				.flatMap(Collection::stream)
+				.collect(Collectors.toSet()));
 
-		List<String> sql = ColumnHandlerFactory.stream()
-				.filter(columnHandler -> persistableFields.stream()
-						.anyMatch(columnHandler::accepts))
-				.flatMap(columnHandler -> columnHandler.expandCreates(this))
-				.map(createRequest -> createRequest.getCreateStatement(context))
-				.collect(Collectors.toList());
-
-		logStatements(sql);
-
-		Statement statement = context.generateStatement();
-		for (String s : sql) statement.addBatch(s);
-		statement.executeBatch();
+		statementBuilder.build().executeBatch();
 
 		return new ConfigurableResult<>();
-	}
-
-	private String getCreateStatement(ExecutionContext context) {
-		return streamColumns()
-				.map(column -> column.getSql(context))
-				.collect(Collectors.joining(", ",
-						"CREATE TABLE IF NOT EXISTS " + getName() + " (",
-						")"));
 	}
 }

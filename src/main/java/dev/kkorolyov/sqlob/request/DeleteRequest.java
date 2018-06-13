@@ -2,12 +2,11 @@ package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.Column;
-import dev.kkorolyov.sqlob.contributor.WhereStatementContributor;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Result;
+import dev.kkorolyov.sqlob.statement.DeleteStatementBuilder;
 import dev.kkorolyov.sqlob.util.Where;
 
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
@@ -32,11 +31,13 @@ public class DeleteRequest<T> extends Request<T> {
 	 * @throws NoSuchElementException if {@code instances} is empty
 	 */
 	public DeleteRequest(Iterable<T> instances) {
-		this((Class<T>) instances.iterator().next().getClass(),
+		this(
+				(Class<T>) instances.iterator().next().getClass(),
 				StreamSupport.stream(instances.spliterator(), false)
 						.map(Where::eqObject)
 						.reduce(Where::or)
-						.orElseThrow(() -> new NoSuchElementException("No instances specified")));
+						.orElseThrow(() -> new NoSuchElementException("No instances specified"))
+		);
 	}
 
 	/** @see #DeleteRequest(Class, Iterable) */
@@ -49,11 +50,13 @@ public class DeleteRequest<T> extends Request<T> {
 	 * @throws java.util.NoSuchElementException if {@code ids} is empty
 	 */
 	public DeleteRequest(Class<T> type, Iterable<UUID> ids) {
-		this(type,
+		this(
+				type,
 				StreamSupport.stream(ids.spliterator(), false)
 						.map(Where::eqId)
 						.reduce(Where::or)
-						.orElseThrow(() -> new NoSuchElementException("No IDs specified")));
+						.orElseThrow(() -> new NoSuchElementException("No IDs specified"))
+		);
 	}
 
 	/**
@@ -79,15 +82,14 @@ public class DeleteRequest<T> extends Request<T> {
 
 	@Override
 	protected Result<T> executeThrowing(ExecutionContext context) throws SQLException {
-		String sql = "DELETE FROM " + getName() + " WHERE " + where.getSql();
-		logStatements(sql);
+		DeleteStatementBuilder statementBuilder = new DeleteStatementBuilder(
+				context::generateStatement,
+				getName(),
+				resolve(where, context)
+		);
 
-		PreparedStatement statement = context.generateStatement(sql);
-
-		streamColumns(WhereStatementContributor.class)
-				.forEach(column -> column.contribute(statement, where, context));
-
-		int updated = statement.executeUpdate();
+		int updated = statementBuilder.build()
+				.executeUpdate();
 
 		return new ConfigurableResult<T>()
 				.size(updated);

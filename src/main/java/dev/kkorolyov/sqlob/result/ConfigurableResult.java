@@ -21,6 +21,14 @@ public class ConfigurableResult<T> implements Result<T> {
 		records.add(record);
 		return this;
 	}
+	/**
+	 * @param records records to add
+	 * @return {@code this}
+	 */
+	public ConfigurableResult<T> add(Iterable<Record<UUID, T>> records) {
+		records.forEach(this.records::add);
+		return this;
+	}
 
 	/**
 	 * @param size custom size to set, overrides the default of {@code records.size()}
