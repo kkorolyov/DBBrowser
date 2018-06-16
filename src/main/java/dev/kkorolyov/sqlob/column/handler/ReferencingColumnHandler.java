@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * Accepts all types not accepted by any other column handler.
  */
 public class ReferencingColumnHandler implements ColumnHandler {
-	private final Map<String, Collection<Table>> prerequisites = new HashMap<>();
+	private final Map<String, Collection<CreateRequest<?>>> prerequisites = new HashMap<>();
 
 	SelectRequest<?> select(Object value) {
 		return new SelectRequest<>(value);
@@ -51,7 +51,7 @@ public class ReferencingColumnHandler implements ColumnHandler {
 				.noneMatch(columnHandler -> columnHandler.accepts(f));
 	}
 
-	private Collection<Table> buildPrerequisites(Class<?> c, ExecutionContext context) {
+	private Collection<CreateRequest<?>> buildPrerequisites(Class<?> c) {
 		Map<Class<?>, CreateRequest<?>> requests = new HashMap<>();
 		Queue<CreateRequest<?>> requestQueue = new ArrayDeque<>();
 
@@ -65,9 +65,7 @@ public class ReferencingColumnHandler implements ColumnHandler {
 					.map(CreateRequest::new)
 					.forEach(requestQueue::add);
 		}
-		return requests.values().stream()
-				.map(request -> request.toTable(context))
-				.collect(Collectors.toSet());
+		return requests.values();
 	}
 
 	private class ReferencingColumn extends FieldBackedColumn<Object> {
@@ -113,7 +111,10 @@ public class ReferencingColumnHandler implements ColumnHandler {
 
 		@Override
 		public Collection<Table> getPrerequisites(ExecutionContext context) {
-			return prerequisites.computeIfAbsent(getName(), k -> buildPrerequisites(getType(), context));
+			return prerequisites.computeIfAbsent(getName(), k -> buildPrerequisites(getType()))
+					.stream()
+					.map(request -> request.toTable(context))
+					.collect(Collectors.toSet());
 		}
 	}
 }
