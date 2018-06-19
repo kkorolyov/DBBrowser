@@ -1,0 +1,13 @@
+dev.kkorolyov.sqlob
+dev.kkorolyov.sqlob.annotation
+dev.kkorolyov.sqlob.column
+dev.kkorolyov.sqlob.column.handler
+dev.kkorolyov.sqlob.column.handler.factory
+dev.kkorolyov.sqlob.logging
+dev.kkorolyov.sqlob.request
+dev.kkorolyov.sqlob.result
+dev.kkorolyov.sqlob.statement
+dev.kkorolyov.sqlob.struct
+dev.kkorolyov.sqlob.type
+dev.kkorolyov.sqlob.type.factory
+dev.kkorolyov.sqlob.util
