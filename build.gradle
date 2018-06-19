@@ -97,7 +97,6 @@ bintray {
 
 	publications = ['Pub']
 	publish = true
-	override = true
 
 	pkg {
 		repo = 'java'
