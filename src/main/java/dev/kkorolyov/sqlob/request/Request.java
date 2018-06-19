@@ -30,6 +30,7 @@ import static dev.kkorolyov.sqlob.util.UncheckedSqlException.wrapSqlException;
  * @param <T> handled type
  */
 public abstract class Request<T> {
+	// TODO Use struct.Table
 	private final Class<T> type;
 	private final String name;
 	private final Map<String, Column<?>> columns;

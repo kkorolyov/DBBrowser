@@ -32,14 +32,18 @@ public class CreateRequest<T> extends Request<T> {
 
 	@Override
 	protected Result<T> executeThrowing(ExecutionContext context) throws SQLException {
-		CreateStatementBuilder statementBuilder = new CreateStatementBuilder(context::generateStatement);
-		statementBuilder.batch(toTable(context), streamColumns()
-				.map(column -> column.getPrerequisites(context))
-				.flatMap(Collection::stream)
-				.collect(Collectors.toSet()));
-
-		statementBuilder.build().executeBatch();
+		createBuilder(context)
+				.batch(toTable(context), streamColumns()
+						.map(column -> column.getPrerequisites(context))
+						.flatMap(Collection::stream)
+						.collect(Collectors.toSet()))
+				.build()
+				.executeBatch();
 
 		return new ConfigurableResult<>();
+	}
+
+	CreateStatementBuilder createBuilder(ExecutionContext context) {
+		return new CreateStatementBuilder(context::generateStatement);
 	}
 }

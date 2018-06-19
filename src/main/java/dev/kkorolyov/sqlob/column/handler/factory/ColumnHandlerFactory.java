@@ -11,7 +11,7 @@ import java.util.stream.Stream;
  * Provides for retrieval of {@link ColumnHandler}s by accepted field.
  */
 public final class ColumnHandlerFactory {
-	private static final Providers<ColumnHandler> COLUMN_FACTORIES = Providers.fromConfig(ColumnHandler.class);
+	private static final Providers<ColumnHandler> COLUMN_HANDLERS = Providers.fromConfig(ColumnHandler.class);
 
 	private ColumnHandlerFactory() {}
 
@@ -21,11 +21,11 @@ public final class ColumnHandlerFactory {
 	 * @throws NoSuchElementException if no column handler accepts {@code f}
 	 */
 	public static ColumnHandler get(Field f) {
-		return COLUMN_FACTORIES.get(columnHandler -> columnHandler.accepts(f));
+		return COLUMN_HANDLERS.get(columnHandler -> columnHandler.accepts(f));
 	}
 
 	/** @return stream over all column factories */
 	public static Stream<ColumnHandler> stream() {
-		return COLUMN_FACTORIES.stream();
+		return COLUMN_HANDLERS.stream();
 	}
 }

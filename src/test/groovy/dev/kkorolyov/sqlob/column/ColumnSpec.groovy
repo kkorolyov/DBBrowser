@@ -2,12 +2,10 @@ package dev.kkorolyov.sqlob.column
 
 import dev.kkorolyov.sqlob.ExecutionContext
 import dev.kkorolyov.sqlob.type.SqlobType
-import dev.kkorolyov.sqlob.util.Where
 
 import spock.lang.Specification
 
 import java.sql.DatabaseMetaData
-import java.sql.PreparedStatement
 import java.sql.ResultSet
 
 import static dev.kkorolyov.simplespecs.SpecUtilities.randString
@@ -19,19 +17,18 @@ class ColumnSpec extends Specification {
 	ExecutionContext context = Mock()
 	DatabaseMetaData metaData = Mock()
 
-	Column<String> column = new Column<>(name, sqlobType)
+	Column<String> column = Spy(Column, constructorArgs: [name, sqlobType])
 
-	def "contributes criterion directly"() {
-		Object value = randString()
-		Where where = Where.eq(name, value);
-		PreparedStatement statement = Mock()
+	def "resolves value using sqlob type"() {
+		String expectedValue = randString()
 
 		when:
-		column.contribute(statement, where, context);
+		String value = column.resolve(expectedValue, context)
 
 		then:
 		1 * context.metadata >> metaData
-		sqlobType.set(metaData, statement, 0, value)
+		1 * sqlobType.get(metaData, expectedValue) >> expectedValue
+		value == expectedValue
 	}
 
 	def "gets value from result set using sqlob type"() {
@@ -39,7 +36,7 @@ class ColumnSpec extends Specification {
 		String expectedValue = randString()
 
 		when:
-		String value = column.getValue(rs, context)
+		String value = column.get(rs, context)
 
 		then:
 		1 * context.metadata >> metaData
@@ -48,14 +45,19 @@ class ColumnSpec extends Specification {
 	}
 
 	def "sql is name and sqlob type"() {
-		String expectedSqlTypo = randString()
+		String expectedSqlType = randString()
 
 		when:
 		String sqlType = column.getSql(context)
 
 		then:
 		1 * context.metadata >> metaData
-		1 * sqlobType.getSqlType(metaData) >> expectedSqlTypo
-		sqlType == "$name $expectedSqlTypo"
+		1 * sqlobType.getSqlType(metaData) >> expectedSqlType
+		sqlType == "$name $expectedSqlType"
+	}
+
+	def "has no prerequisites"() {
+		expect:
+		column.getPrerequisites(context) == [] as Set
 	}
 }

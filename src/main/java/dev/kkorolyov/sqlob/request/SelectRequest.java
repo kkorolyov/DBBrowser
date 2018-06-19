@@ -68,16 +68,7 @@ public class SelectRequest<T> extends Request<T> {
 
 	@Override
 	protected Result<T> executeThrowing(ExecutionContext context) throws SQLException {
-		SelectStatementBuilder statementBuilder = new SelectStatementBuilder(
-				context::generateStatement,
-				getName(),
-				streamColumns()
-						.map(Column::getName)
-						.collect(Collectors.toSet()),
-				resolve(where, context)
-		);
-
-		ResultSet rs = statementBuilder.build()
+		ResultSet rs = selectBuilder(context).build()
 				.executeQuery();
 
 		ConfigurableResult<T> result = new ConfigurableResult<>();
@@ -92,5 +83,16 @@ public class SelectRequest<T> extends Request<T> {
 					));
 		}
 		return result;
+	}
+
+	SelectStatementBuilder selectBuilder(ExecutionContext context) {
+		return new SelectStatementBuilder(
+				context::generateStatement,
+				getName(),
+				streamColumns()
+						.map(Column::getName)
+						.collect(Collectors.toSet()),
+				resolve(where, context)
+		);
 	}
 }

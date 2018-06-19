@@ -1,9 +1,6 @@
 package dev.kkorolyov.sqlob
 
-import dev.kkorolyov.simplefiles.Providers
-import dev.kkorolyov.sqlob.column.FieldBackedColumn
-import dev.kkorolyov.sqlob.column.handler.ColumnHandler
-import dev.kkorolyov.sqlob.column.handler.factory.ColumnHandlerFactory
+import dev.kkorolyov.sqlob.column.Column
 import dev.kkorolyov.sqlob.request.CreateRequest
 import dev.kkorolyov.sqlob.request.Request
 import dev.kkorolyov.sqlob.result.Result
@@ -14,22 +11,15 @@ import javax.sql.DataSource
 import java.sql.Connection
 
 import static dev.kkorolyov.simplespecs.SpecUtilities.getField
-import static dev.kkorolyov.simplespecs.SpecUtilities.setField
+import static dev.kkorolyov.simplespecs.SpecUtilities.randString
 
 class SessionSpec extends Specification {
 	DataSource dataSource = Mock()
 	Connection connection = Mock()
 
-	ColumnHandler columnHandler = Mock(ColumnHandler) {
-		accepts(_) >> true
-		get(_) >> Mock(FieldBackedColumn)
-	}.with {
-		setField("COLUMN_FACTORIES", ColumnHandlerFactory, Providers.fromInstances(ColumnHandler, [it] as Set))
-		it
-	}
-
 	Class<?> type = String
-	Request request = Spy(Request, constructorArgs: [type]) {
+	String name = randString()
+	Request<?> request = Spy(Request, constructorArgs: [type, name, [Mock(Column)]]) {
 		executeThrowing(_) >> null
 	}
 

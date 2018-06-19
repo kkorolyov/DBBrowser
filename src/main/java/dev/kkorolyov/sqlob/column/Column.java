@@ -17,6 +17,7 @@ import java.util.UUID;
  * @param <T> column value type
  */
 public abstract class Column<T> {
+	// TODO Use struct.Column
 	private final String name;
 	private final SqlobType<T> sqlobType;
 

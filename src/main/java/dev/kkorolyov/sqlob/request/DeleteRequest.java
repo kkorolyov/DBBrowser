@@ -82,16 +82,18 @@ public class DeleteRequest<T> extends Request<T> {
 
 	@Override
 	protected Result<T> executeThrowing(ExecutionContext context) throws SQLException {
-		DeleteStatementBuilder statementBuilder = new DeleteStatementBuilder(
-				context::generateStatement,
-				getName(),
-				resolve(where, context)
-		);
-
-		int updated = statementBuilder.build()
+		int updated = deleteBuilder(context).build()
 				.executeUpdate();
 
 		return new ConfigurableResult<T>()
 				.size(updated);
+	}
+
+	DeleteStatementBuilder deleteBuilder(ExecutionContext context) {
+		return new DeleteStatementBuilder(
+				context::generateStatement,
+				getName(),
+				resolve(where, context)
+		);
 	}
 }
