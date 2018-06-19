@@ -1,6 +1,6 @@
 # Change Log
 
-## 4.0 - 2018-05-24
+## 4.0-alpha - 2018-06-18
 ### Changes
 * Overhauled architecture _again_
 	* Basic usage involves using a `Session` to execute various `Request` implementations
