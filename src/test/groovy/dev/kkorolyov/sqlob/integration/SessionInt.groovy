@@ -20,10 +20,10 @@ import static dev.kkorolyov.sqlob.Stub.BasicStub
 import static dev.kkorolyov.sqlob.Stub.SmartStub
 
 abstract class SessionInt extends Specification {
-	@Shared BasicStub bs = BasicStub.random()
-	@Shared SmartStub ss = SmartStub.random()
+	@Shared DataSource dataSource = buildDataSource()
 
-	@Shared DataSource dataSource = buildDataSource();
+	BasicStub bs = BasicStub.random()
+	SmartStub ss = SmartStub.random()
 
 	Session session = new Session(dataSource)
 
@@ -58,6 +58,20 @@ abstract class SessionInt extends Specification {
 		select(BasicStub, bsId) == bs
 		select(SmartStub, ssId) == ss
 	}
+	def "inserts and updates"() {
+		when:
+		UUID bsId = insert(bs)
+		UUID ssId = insert(ss)
+
+		bs = BasicStub.random()
+		ss = SmartStub.random()
+
+		then:
+		insert(bs, bsId) == bsId
+		insert(ss, ssId) == ssId
+		select(BasicStub, bsId) == bs
+		select(SmartStub, ssId) == ss
+	}
 	def "inserts and deletes"() {
 		when:
 		UUID bsId = insert(bs)
@@ -88,8 +102,8 @@ abstract class SessionInt extends Specification {
 	private <T> T select(Class<T> c, UUID id) {
 		session.execute(new SelectRequest<>(c, id)).object.orElse(null)
 	}
-	private UUID insert(Object o) {
-		session.execute(new InsertRequest<>(o)).key.orElse(null)
+	private UUID insert(Object o, UUID id = UUID.randomUUID()) {
+		session.execute(new InsertRequest<>(id, o)).key.orElse(null)
 	}
 	private void delete(Class<?> c, UUID id) {
 		session.execute(new DeleteRequest<>(c, id))

@@ -1,20 +1,17 @@
 package dev.kkorolyov.sqlob.column;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
-import dev.kkorolyov.sqlob.contributor.RecordStatementContributor;
-import dev.kkorolyov.sqlob.contributor.ResultRecordContributor;
 import dev.kkorolyov.sqlob.result.ConfigurableRecord;
 import dev.kkorolyov.sqlob.result.Record;
 import dev.kkorolyov.sqlob.type.factory.SqlobTypeFactory;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.UUID;
 
 /**
  * A {@link Column} with value being a primary or foreign key.
  */
-public abstract class KeyColumn extends Column<UUID> implements RecordStatementContributor, ResultRecordContributor {
+public abstract class KeyColumn extends Column<UUID> {
 	/** Column corresponding to the default primary key of all persisted types */
 	public static final KeyColumn ID = primary("id");
 
@@ -60,7 +57,6 @@ public abstract class KeyColumn extends Column<UUID> implements RecordStatementC
 			@Override
 			public String getSql(ExecutionContext context) {
 				return super.getSql(context)
-						+ ", FOREIGN KEY (" + getName() + ")"
 						+ " REFERENCES " + referencedName + "(" + ID.getName() + ")"
 						+ " ON DELETE SET NULL";
 			}
@@ -68,13 +64,11 @@ public abstract class KeyColumn extends Column<UUID> implements RecordStatementC
 	}
 
 	@Override
-	public <O> PreparedStatement contribute(PreparedStatement statement, Record<UUID, O> record, int index, ExecutionContext context) {
-		getSqlobType().set(context.getMetadata(), statement, index, record.getKey());
-
-		return statement;
+	public Object get(Record<UUID, ?> record, ExecutionContext context) {
+		return getSqlobType().get(context.getMetadata(), record.getKey());
 	}
 	@Override
-	public <O> ConfigurableRecord<UUID, O> contribute(ConfigurableRecord<UUID, O> record, ResultSet rs, ExecutionContext context) {
-		return record.setKey(getValue(rs, context));
+	public <O> ConfigurableRecord<UUID, O> set(ConfigurableRecord<UUID, O> record, ResultSet rs, ExecutionContext context) {
+		return record.setKey(get(rs, context));
 	}
 }

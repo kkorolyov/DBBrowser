@@ -1,7 +1,6 @@
 package dev.kkorolyov.sqlob.type;
 
 import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Collection;
 
@@ -19,6 +18,13 @@ public interface SqlobType<T> {
 	String getSqlType(DatabaseMetaData metaData);
 
 	/**
+	 * Gets the converted representation of a Java value within the context of a specific database.
+	 * @param metaData metadata containing relevant database type
+	 * @param value value to convert to database-specific type
+	 * @return {@code value} converted to database-specific type
+	 */
+	Object get(DatabaseMetaData metaData, T value);
+	/**
 	 * Gets an instance of this SQLOb type's Java type from a result set within the context of a specific database.
 	 * @param metaData metadata containing relevant database type
 	 * @param rs result set to get from
@@ -26,12 +32,4 @@ public interface SqlobType<T> {
 	 * @return Java type retrieved from {@code column} in {@code rs} within the context of {@code metaData}
 	 */
 	T get(DatabaseMetaData metaData, ResultSet rs, String column);
-	/**
-	 * Sets a value in a prepared statement within the context of a specific database.
-	 * @param metaData metadata containing relevant database type
-	 * @param statement statement to set in
-	 * @param index statement parameter index to set at, starts at {@code 0}
-	 * @param value value to set
-	 */
-	void set(DatabaseMetaData metaData, PreparedStatement statement, int index, T value);
 }

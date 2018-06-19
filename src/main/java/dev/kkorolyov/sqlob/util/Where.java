@@ -1,5 +1,8 @@
 package dev.kkorolyov.sqlob.util;
 
+import dev.kkorolyov.simplefuncs.function.ThrowingBiConsumer;
+import dev.kkorolyov.simplefuncs.function.ThrowingBiFunction;
+import dev.kkorolyov.simplefuncs.function.ThrowingFunction;
 import dev.kkorolyov.sqlob.column.KeyColumn;
 
 import java.sql.PreparedStatement;
@@ -7,7 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Matcher;
+import java.util.stream.Collectors;
 
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getName;
 import static dev.kkorolyov.sqlob.util.PersistenceHelper.getPersistableFields;
@@ -25,8 +31,8 @@ import static dev.kkorolyov.sqlob.util.ReflectionHelper.getValue;
  * </pre>
  */
 public class Where {
-	private final StringBuilder sql = new StringBuilder();
-	private final List<WhereNode> nodes = new ArrayList<>();
+	private final StringBuilder sql;
+	private final List<WhereNode> nodes;
 
 	/** @return where for {@code attribute == value}; translates to {@link #isNull(String)} if {@code value} is {@code null} */
 	public static Where eq(String attribute, Object value) {
@@ -86,7 +92,14 @@ public class Where {
 	 * @param value value to match
 	 */
 	public Where(String attribute, String operator, Object value) {
+		sql = new StringBuilder();
+		nodes = new ArrayList<>();
+
 		append(new WhereNode(attribute, operator, value));
+	}
+	private Where(StringBuilder sql, List<WhereNode> nodes) {
+		this.sql = sql;
+		this.nodes = nodes;
 	}
 
 	/**
@@ -141,6 +154,31 @@ public class Where {
 	}
 
 	/**
+	 * Maps each attribute value in this where clause to a new name and value, creating a matching where clause with different attribute names and values.
+	 * @param nameMapper mapper supplying new name of each attribute, invoked with {@code attributeName}
+	 * @param valueMapper mapper supplying new value of each attribute, invoked with {@code (newAttributeName, value)}
+	 * @return matching where clause with mapped attribute values
+	 */
+	public Where map(ThrowingFunction<String, String, ?> nameMapper, ThrowingBiFunction<String, Object, Object, ?> valueMapper) {
+		return new Where(
+				new StringBuilder(sql.toString()),
+				nodes.stream()
+						.map(node -> new WhereNode(node, nameMapper, valueMapper))
+						.collect(Collectors.toList())
+		);
+	}
+
+	/**
+	 * Iterates over all attribute values in this where clause, invoking the given consumer for each
+	 * @param consumer consumer of each attribute value, invoked with {@code (index, value)} of each attribute
+	 */
+	public void forEach(ThrowingBiConsumer<Integer, Object, ?> consumer) {
+		for (int i = 0; i < nodes.size(); i++) {
+			consumer.accept(i, nodes.get(i).value);
+		}
+	}
+
+	/**
 	 * Consumes all {index, value} pairs of an attribute.
 	 * @param attribute attribute to filter on
 	 * @param action bi-consumer invoked with each {index, value} pair of {@code attribute} in this where clause
@@ -159,9 +197,11 @@ public class Where {
 	@Override
 	public String toString() {
 		return nodes.stream()
-				.reduce(sql.toString(),
+				.reduce(
+						sql.toString(),
 						(sql, node) -> sql.replaceFirst("\\?", Matcher.quoteReplacement(String.valueOf(node.value))),
-						(sql1, sql2) -> sql1);
+						(sql1, sql2) -> sql1
+				);
 	}
 
 	private static class WhereNode {
@@ -169,6 +209,11 @@ public class Where {
 		private final String operator;
 		private final Object value;
 
+		WhereNode(WhereNode template, Function<String, String> nameMapper, BiFunction<String, Object, Object> valueMapper) {
+			this.attribute = nameMapper.apply(template.attribute);
+			this.operator = template.operator;
+			this.value = valueMapper.apply(this.attribute, template.value);
+		}
 		WhereNode(String attribute, String operator, Object value) {
 			this.attribute = attribute;
 			this.operator = operator;

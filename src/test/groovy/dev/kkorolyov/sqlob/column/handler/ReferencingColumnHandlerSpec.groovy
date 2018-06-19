@@ -1,123 +1,116 @@
 package dev.kkorolyov.sqlob.column.handler
 
+import dev.kkorolyov.simplefiles.Providers
 import dev.kkorolyov.sqlob.ExecutionContext
 import dev.kkorolyov.sqlob.column.Column
 import dev.kkorolyov.sqlob.column.FieldBackedColumn
 import dev.kkorolyov.sqlob.column.KeyColumn
-import dev.kkorolyov.sqlob.request.CreateRequest
+import dev.kkorolyov.sqlob.column.handler.factory.ColumnHandlerFactory
 import dev.kkorolyov.sqlob.request.InsertRequest
 import dev.kkorolyov.sqlob.request.SelectRequest
 import dev.kkorolyov.sqlob.result.ConfigurableRecord
 import dev.kkorolyov.sqlob.result.Record
 import dev.kkorolyov.sqlob.result.Result
 import dev.kkorolyov.sqlob.type.SqlobType
-import dev.kkorolyov.sqlob.util.Where
 
 import spock.lang.Specification
 
 import java.lang.reflect.Field
 import java.sql.DatabaseMetaData
-import java.sql.PreparedStatement
 import java.sql.ResultSet
-import java.util.stream.Collectors
 
-import static dev.kkorolyov.simplespecs.SpecUtilities.*
+import static dev.kkorolyov.simplespecs.SpecUtilities.getField
+import static dev.kkorolyov.simplespecs.SpecUtilities.randString
+import static dev.kkorolyov.simplespecs.SpecUtilities.setField
 
 class ReferencingColumnHandlerSpec extends Specification {
-	class Stub {
-		Stub1 value = new Stub1()
-		String otherValue = randString()
-	}
-	class Stub1 {
-		String value = randString()
-	}
-	Stub instance = new Stub()
-	Record<UUID, Stub> record = new ConfigurableRecord<>(UUID.randomUUID(), instance)
+	static final Providers<ColumnHandler> ORIGINAL_COLUMN_HANDLERS = getField("COLUMN_HANDLERS", ColumnHandlerFactory)
 
+	// HANDLER TESTS
+	ColumnHandler otherHandler = Mock()
+
+	ReferencingColumnHandler handler = Spy()
+
+	def cleanupSpec() {
+		setField("COLUMN_HANDLERS", ColumnHandlerFactory, ORIGINAL_COLUMN_HANDLERS)
+	}
+
+	def setup() {
+		setupHandler()
+		setupColumn()
+	}
+	def setupHandler() {
+		setField("COLUMN_HANDLERS", ColumnHandlerFactory, Providers.fromInstances(ColumnHandler, [otherHandler, handler] as Set))
+	}
+
+	def "rejects field accepted by other handlers"() {
+		1 * otherHandler.accepts(_) >> true
+
+		expect:
+		!handler.accepts(Stub.getDeclaredField("value"))
+	}
+	def "accepts field not accepted by other handlers"() {
+		1 * otherHandler.accepts(_) >> false
+
+		expect:
+		handler.accepts(Stub.getDeclaredField("value"))
+	}
+
+	// COLUMN TESTS
 	String name = "value"
 	SqlobType<UUID> sqlobType = Mock()
 	Field f = Stub.getDeclaredField(name)
 
+	Stub instance = new Stub()
+	Record<UUID, Stub> record = new ConfigurableRecord<>(UUID.randomUUID(), instance)
+
 	ExecutionContext context = Mock()
 	DatabaseMetaData metaData = Mock()
 
-	ReferencingColumnHandler handler = Spy()
 	FieldBackedColumn<?> column = handler.get(f)
 
-	def setup() {
+	def setupColumn() {
 		KeyColumn keyDelegate = getField("keyDelegate", column) as KeyColumn
 		setField("sqlobType", Column, keyDelegate, sqlobType)
 	}
 
-	def "accepts field not accepted by other handlers"() {
-		// TODO Write in a way that works
-//		expect:
-//		handler.accepts(f)
-	}
-	def "rejects field accepted by primitive handler"() {
+	def "resolves null criterion to null"() {
 		expect:
-		!handler.accepts(Stub.getDeclaredField("otherValue"))
+		column.resolve(null, context) == null
 	}
-
-	def "expands creates to entire referenced type hierarchy"() {
-		expect:
-		handler.expandCreates(
-				new CreateRequest<Stub>(Stub)).collect(Collectors.toSet()) ==
-				[Stub, Stub1].collect { new CreateRequest<>(it) } as Set
-	}
-
-	def "contributes null criterion as null"() {
-		UUID value = null
-		Where where = Where.eq(name, value)
-
-		PreparedStatement statement = Mock()
-
-		when:
-		column.contribute(statement, where, context);
-
-		then:
-		1 * context.metadata >> metaData
-		1 * sqlobType.set(metaData, statement, 0, value)
-	}
-	def "contributes criterion as select result's ID"() {
+	def "resolves criterion to select result's ID"() {
 		Object value = randString()
 		UUID id = UUID.randomUUID()
-		Where where = Where.eq(name, value)
-
-		PreparedStatement statement = Mock()
 
 		SelectRequest<?> request = Mock()
 		Result<?> result = Mock()
 
 		when:
-		column.contribute(statement, where, context)
+		def resolved = column.resolve(value, context)
 
 		then:
-		1 * context.getMetadata() >> metaData
 		1 * handler.select(value) >> request
 		// FIXME? Can't mock final execute()
 		1 * request.executeThrowing(context) >> result
 		1 * result.key >> Optional.of(id)
-		1 * sqlobType.set(metaData, statement, 0, id)
+		resolved == id
 	}
 
-	def "contributes persisted field value record's ID to statement"() {
-		PreparedStatement statement = Mock()
-		int index = randInt()
-
+	def "gets persisted field value record's ID"() {
 		InsertRequest<?> request = Mock()
 		Result<?> result = Mock()
 
 		when:
-		column.contribute(statement, record, index, context)
+		def value = column.get(record, context)
 
 		then:
-		1 * context.getMetadata() >> metaData
 		1 * handler.insert(instance.value) >> request
 		// FIXME? Can't mock final execute()
 		1 * request.executeThrowing(context) >> result
 		1 * result.key >> Optional.of(record.key)
-		1 * sqlobType.set(metaData, statement, index, record.key)
+		1 * context.getMetadata() >> metaData
+		1 * sqlobType.get(metaData, record.key) >> record.key
+		value == record.key
 	}
 
 	def "gets field value record's object from result set"() {
@@ -129,7 +122,7 @@ class ReferencingColumnHandlerSpec extends Specification {
 		Result<?> result = Mock()
 
 		when:
-		Object value = column.getValue(rs, context)
+		def value = column.get(rs, context)
 
 		then:
 		1 * context.getMetadata() >> metaData
@@ -140,5 +133,15 @@ class ReferencingColumnHandlerSpec extends Specification {
 		1 * result.getObject() >> Optional.of(instance.value)
 
 		value == instance.value
+	}
+
+	// TODO Test prerequisites
+
+	class Stub {
+		Stub1 value = new Stub1()
+	}
+
+	class Stub1 {
+		String value = randString()
 	}
 }
