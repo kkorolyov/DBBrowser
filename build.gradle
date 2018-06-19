@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'dev.kkorolyov'
-version = '4.0-SNAPSHOT'
+version = '4.0-alpha'
 description = "Java library providing for persistence of Java objects in a SQL database"
 
 repositories {
@@ -97,7 +97,6 @@ bintray {
 
 	publications = ['Pub']
 	publish = true
-	override = true
 
 	pkg {
 		repo = 'java'

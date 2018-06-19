@@ -2,6 +2,7 @@ package dev.kkorolyov.sqlob.result;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -19,6 +20,14 @@ public class ConfigurableResult<T> implements Result<T> {
 	 */
 	public ConfigurableResult<T> add(Record<UUID, T> record) {
 		records.add(record);
+		return this;
+	}
+	/**
+	 * @param records records to add
+	 * @return {@code this}
+	 */
+	public ConfigurableResult<T> add(Iterable<Record<UUID, T>> records) {
+		records.forEach(this.records::add);
 		return this;
 	}
 
@@ -71,5 +80,19 @@ public class ConfigurableResult<T> implements Result<T> {
 	public Optional<Result<T>> asOptional() {
 		return getObject()
 				.map(o -> this);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		ConfigurableResult<?> result = (ConfigurableResult<?>) o;
+		return Objects.equals(records, result.records)
+				&& Objects.equals(customSize, result.customSize);
+	}
+	@Override
+	public int hashCode() {
+		return Objects.hash(records, customSize);
 	}
 }

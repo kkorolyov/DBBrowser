@@ -4,7 +4,6 @@ import dev.kkorolyov.simplefuncs.function.ThrowingBiFunction;
 import dev.kkorolyov.simplefuncs.stream.Iterables;
 
 import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
@@ -50,14 +49,14 @@ public abstract class BaseSqlobType<T> implements SqlobType<T> {
 	}
 
 	@Override
+	public Object get(DatabaseMetaData metaData, T value) {
+		return wrapSqlException(() -> getDelegate(metaData)
+				.get(metaData, value));
+	}
+	@Override
 	public T get(DatabaseMetaData metaData, ResultSet rs, String column) {
 		return wrapSqlException(() -> getDelegate(metaData)
 				.get(metaData, rs, column));
-	}
-	@Override
-	public void set(DatabaseMetaData metaData, PreparedStatement statement, int index, T value) {
-		wrapSqlException(() -> getDelegate(metaData)
-				.set(metaData, statement, index, value));
 	}
 
 	private SqlobType<T> getDelegate(DatabaseMetaData metaData) throws SQLException {
@@ -118,12 +117,12 @@ public abstract class BaseSqlobType<T> implements SqlobType<T> {
 		}
 
 		@Override
-		public T get(DatabaseMetaData metaData, ResultSet rs, String column) {
-			return extractor.apply(rs, column);
+		public Object get(DatabaseMetaData metaData, T value) {
+			return converter.apply(value);
 		}
 		@Override
-		public void set(DatabaseMetaData metaData, PreparedStatement statement, int index, T value) {
-			wrapSqlException(() -> statement.setObject(index + 1, converter.apply(value)));
+		public T get(DatabaseMetaData metaData, ResultSet rs, String column) {
+			return extractor.apply(rs, column);
 		}
 	}
 }

@@ -2,25 +2,19 @@ package dev.kkorolyov.sqlob.column
 
 import dev.kkorolyov.sqlob.ExecutionContext
 import dev.kkorolyov.sqlob.result.ConfigurableRecord
-import dev.kkorolyov.sqlob.result.Record
 import dev.kkorolyov.sqlob.type.SqlobType
 
 import spock.lang.Specification
 
 import java.lang.reflect.Field
 import java.sql.DatabaseMetaData
-import java.sql.PreparedStatement
 import java.sql.ResultSet
 
-import static dev.kkorolyov.simplespecs.SpecUtilities.randInt
 import static dev.kkorolyov.simplespecs.SpecUtilities.randString
 
 class FieldBackedColumnSpec extends Specification {
-	class Stub {
-		String value = randString()
-	}
 	Stub instance = new Stub()
-	Record<UUID, Stub> record = new ConfigurableRecord<>(UUID.randomUUID(), instance)
+	ConfigurableRecord<UUID, Stub> record = new ConfigurableRecord<>(UUID.randomUUID(), instance)
 
 	String name = "value"
 	SqlobType sqlobType = Mock()
@@ -31,27 +25,40 @@ class FieldBackedColumnSpec extends Specification {
 
 	FieldBackedColumn<String> column = new FieldBackedColumn(f, sqlobType)
 
-	def "contributes instance field value to statement"() {
-		PreparedStatement statement = Mock()
-		int index = randInt()
+	def "uses non-annotated field name as name"() {
+		expect:
+		new FieldBackedColumn(Stub.getDeclaredField("value"), sqlobType).name == "value"
+	}
+	def "uses annotation's value as name"() {
+		expect:
+		new FieldBackedColumn(Stub.getDeclaredField("annotated"), sqlobType).name == "custom"
+	}
 
+	def "gets record's object's field value"() {
 		when:
-		column.contribute(statement, record, index, context)
+		Object result = column.get(record, context)
 
 		then:
 		1 * context.metadata >> metaData
-		1 * sqlobType.set(metaData, statement, index, instance.value)
+		1 * sqlobType.get(metaData, instance.value) >> instance.value
+		result == instance.value
 	}
-	def "contributes result set value to instance field"() {
+	def "sets resultSet value on record's object's field"() {
 		ResultSet rs = Mock()
 		String newValue = randString()
 
 		when:
-		column.contribute(record, rs, context)
+		column.set(record, rs, context)
 
 		then:
 		1 * context.metadata >> metaData
 		1 * sqlobType.get(metaData, rs, name) >> newValue
 		instance.value == newValue
+	}
+
+	class Stub {
+		String value = randString()
+		@dev.kkorolyov.sqlob.annotation.Column("custom")
+		String annotated = randString()
 	}
 }

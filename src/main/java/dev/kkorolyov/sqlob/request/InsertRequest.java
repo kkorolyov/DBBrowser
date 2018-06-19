@@ -2,14 +2,15 @@ package dev.kkorolyov.sqlob.request;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
 import dev.kkorolyov.sqlob.column.Column;
-import dev.kkorolyov.sqlob.contributor.RecordStatementContributor;
+import dev.kkorolyov.sqlob.column.FieldBackedColumn;
 import dev.kkorolyov.sqlob.result.ConfigurableRecord;
 import dev.kkorolyov.sqlob.result.ConfigurableResult;
 import dev.kkorolyov.sqlob.result.Record;
 import dev.kkorolyov.sqlob.result.Result;
+import dev.kkorolyov.sqlob.statement.InsertStatementBuilder;
+import dev.kkorolyov.sqlob.statement.UpdateStatementBuilder;
 import dev.kkorolyov.sqlob.util.Where;
 
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
@@ -78,49 +79,80 @@ public class InsertRequest<T> extends Request<T> {
 
 	@Override
 	protected Result<T> executeThrowing(ExecutionContext context) throws SQLException {
-		// Avoid re-inserting existing instances
-		Collection<UUID> existing = select(getType(), records.stream()
-				.map(Record::getObject)
-				.map(Where::eqObject)
-				.reduce(Where::or)
-				.orElseThrow(() -> new IllegalStateException("This should never happen"))
-		).execute(context)
-				.getKeys();
+		Collection<UUID> ignoreIds = selectIds(whereRecordsExist(Record::getObject, Where::eqObject), context);  // Avoid re-inserting existing instances
+		Collection<UUID> updateIds = selectIds(whereRecordsExist(Record::getKey, Where::eqId), context);  // Update existing records instead of trying to re-insert
 
-		Collection<Record<UUID, T>> remainingRecords = records.stream()
-				.filter(record -> !existing.contains(record.getKey()))
-				.collect(Collectors.toSet());
-
+		return new ConfigurableResult<T>()
+				.add(insert(
+						records.stream()
+								.filter(record -> !ignoreIds.contains(record.getKey()))
+								.filter(record -> !updateIds.contains(record.getKey()))
+								.collect(Collectors.toSet()),
+						context
+				).getRecords())
+				.add(update(
+						records.stream()
+								.filter(record -> !ignoreIds.contains(record.getKey()))
+								.filter(record -> updateIds.contains(record.getKey()))
+								.collect(Collectors.toSet()),
+						context
+				).getRecords());
+	}
+	private Result<T> insert(Collection<Record<UUID, T>> records, ExecutionContext context) throws SQLException {
 		ConfigurableResult<T> result = new ConfigurableResult<>();
 
-		if (!remainingRecords.isEmpty()) {
-			String sql = "INSERT INTO " + getName() + " "
-					+ generateColumns(Column::getName)
-					+ " VALUES " + generateColumns(column -> "?");
-			logStatements(sql);
-
-			PreparedStatement statement = context.generateStatement(sql);
-
-			for (Record<UUID, T> record : remainingRecords) {
-				forEachColumn(RecordStatementContributor.class,
-						(i, column) -> column.contribute(statement, record, i, context));
-
-				statement.addBatch();
-
+		if (!records.isEmpty()) {
+			InsertStatementBuilder statementBuilder = new InsertStatementBuilder(
+					context::generateStatement,
+					getName(),
+					streamColumns()
+							.map(Column::getName)
+							.collect(Collectors.toList())
+			);
+			for (Record<UUID, T> record : records) {
+				statementBuilder.batch(buildBatch(record, context));
 				result.add(record);
 			}
-			statement.executeBatch();
+			statementBuilder.build()
+					.executeBatch();
+		}
+		return result;
+	}
+	private Result<T> update(Collection<Record<UUID, T>> records, ExecutionContext context) throws SQLException {
+		ConfigurableResult<T> result = new ConfigurableResult<>();
+
+		if (!records.isEmpty()) {
+			UpdateStatementBuilder statementBuilder = new UpdateStatementBuilder(
+					context::generateStatement,
+					getName(),
+					streamColumns(FieldBackedColumn.class)
+							.map(Column::getName)
+							.collect(Collectors.toList()),
+					resolve(Where.eqId(UUID.randomUUID()), context)
+			);
+			for (Record<UUID, T> record : records) {
+				statementBuilder.batch(buildBatch(record, context), resolve(Where.eqId(record.getKey()), context));
+				result.add(record);
+			}
+			statementBuilder.build()
+					.executeBatch();
 		}
 		return result;
 	}
 
-	private String generateColumns(Function<Column, String> columnValueMapper) {
-		return streamColumns(RecordStatementContributor.class)
-				.map(Column.class::cast)	// These are all columns
-				.map(columnValueMapper)
-				.collect(Collectors.joining(", ", "(", ")"));
+	private <R> Where whereRecordsExist(Function<Record<UUID, T>, R> recordMapper, Function<R, Where> whereMapper) {
+		return records.stream()
+				.map(recordMapper)
+				.map(whereMapper)
+				.reduce(Where::or)
+				.orElseThrow(() -> new IllegalStateException("This should never happen"));
 	}
 
+	private Collection<UUID> selectIds(Where where, ExecutionContext context) {
+		return select(getType(), where)
+				.execute(context)
+				.getKeys();
+	}
 	SelectRequest<?> select(Class<?> c, Where where) {
 		return new SelectRequest<>(c, where);
 	}

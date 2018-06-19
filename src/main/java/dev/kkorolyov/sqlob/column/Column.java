@@ -1,19 +1,23 @@
 package dev.kkorolyov.sqlob.column;
 
 import dev.kkorolyov.sqlob.ExecutionContext;
-import dev.kkorolyov.sqlob.contributor.WhereStatementContributor;
+import dev.kkorolyov.sqlob.result.ConfigurableRecord;
+import dev.kkorolyov.sqlob.result.Record;
+import dev.kkorolyov.sqlob.struct.Table;
 import dev.kkorolyov.sqlob.type.SqlobType;
-import dev.kkorolyov.sqlob.util.Where;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Performs operations involving a single SQL column.
  * @param <T> column value type
  */
-public class Column<T> implements WhereStatementContributor {
+public abstract class Column<T> {
+	// TODO Use struct.Column
 	private final String name;
 	private final SqlobType<T> sqlobType;
 
@@ -27,11 +31,30 @@ public class Column<T> implements WhereStatementContributor {
 		this.sqlobType = sqlobType;
 	}
 
-	@Override
-	public PreparedStatement contribute(PreparedStatement statement, Where where, ExecutionContext context) {
-		where.consumeValues(name, (index, value) -> sqlobType.set(context.getMetadata(), statement, index, (T) value));
-		return statement;
+	/**
+	 * @param value value to resolve
+	 * @param context context to work in
+	 * @return resolved representation of {@code value} in the current context
+	 */
+	public Object resolve(Object value, ExecutionContext context) {
+		return getSqlobType().get(context.getMetadata(), (T) value);
 	}
+
+	/**
+	 * @param record record to get associated value from
+	 * @param context context to work in
+	 * @return value in {@code record} associated with this column represented in the current context
+	 * @throws dev.kkorolyov.sqlob.util.UncheckedSqlException if a SQL issue occurs
+	 */
+	public abstract Object get(Record<UUID, ?> record, ExecutionContext context);
+	/**
+	 * Sets this column's associated value in a result set on a record.
+	 * @param record record to update
+	 * @param rs result set to get value from
+	 * @param context context to work in
+	 * @return {@code record}
+	 */
+	public abstract <O> ConfigurableRecord<UUID, O> set(ConfigurableRecord<UUID, O> record, ResultSet rs, ExecutionContext context);
 
 	/**
 	 * @param rs result set to extract from
@@ -39,8 +62,8 @@ public class Column<T> implements WhereStatementContributor {
 	 * @return object value extracted from the associated column in {@code rs}
 	 * @throws dev.kkorolyov.sqlob.util.UncheckedSqlException if a SQL issue occurs
 	 */
-	public T getValue(ResultSet rs, ExecutionContext context) {
-		return sqlobType.get(context.getMetadata(), rs, name);
+	public T get(ResultSet rs, ExecutionContext context) {
+		return getSqlobType().get(context.getMetadata(), rs, getName());
 	}
 
 	/**
@@ -48,7 +71,15 @@ public class Column<T> implements WhereStatementContributor {
 	 * @return SQL representation of this column within {@code context}
 	 */
 	public String getSql(ExecutionContext context) {
-		return name + " " + sqlobType.getSqlType(context.getMetadata());
+		return getName() + " " + getSqlobType().getSqlType(context.getMetadata());
+	}
+
+	/**
+	 * @param context context to work in
+	 * @return all prerequisite tables within {@code context} which must exist before a table with this column may
+	 */
+	public Collection<Table> getPrerequisites(ExecutionContext context) {
+		return Collections.emptySet();
 	}
 
 	/** @return column name */
