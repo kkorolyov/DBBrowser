@@ -53,7 +53,7 @@
     },
     "testCompileClasspath": {
         "cglib:cglib-nodep": {
-            "locked": "3.2.6",
+            "locked": "3.2.10",
             "requested": "3.+"
         },
         "dev.kkorolyov:simple-files": {
@@ -89,7 +89,7 @@
             "requested": "1.+"
         },
         "org.postgresql:postgresql": {
-            "locked": "42.2.2",
+            "locked": "42.2.5",
             "requested": "42.+"
         },
         "org.spockframework:spock-core": {
@@ -97,13 +97,13 @@
             "requested": "1.1-groovy-2.4"
         },
         "org.xerial:sqlite-jdbc": {
-            "locked": "3.23.1",
+            "locked": "3.25.2",
             "requested": "3.+"
         }
     },
     "testRuntimeClasspath": {
         "cglib:cglib-nodep": {
-            "locked": "3.2.6",
+            "locked": "3.2.10",
             "requested": "3.+"
         },
         "dev.kkorolyov:simple-files": {
@@ -139,7 +139,7 @@
             "requested": "1.+"
         },
         "org.postgresql:postgresql": {
-            "locked": "42.2.2",
+            "locked": "42.2.5",
             "requested": "42.+"
         },
         "org.spockframework:spock-core": {
@@ -147,7 +147,7 @@
             "requested": "1.1-groovy-2.4"
         },
         "org.xerial:sqlite-jdbc": {
-            "locked": "3.23.1",
+            "locked": "3.25.2",
             "requested": "3.+"
         }
     }

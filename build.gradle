@@ -13,6 +13,7 @@ description = "Java library providing for persistence of Java objects in a SQL d
 repositories {
 	jcenter()
 	maven { url 'https://dl.bintray.com/kkorolyov/java' }
+	maven { url 'https://dl.bintray.com/kkorolyov/groovy' }
 }
 
 dependencies {
