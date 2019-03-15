@@ -1,3 +1,4 @@
+[![Build Status][build-status-img]][build-status]
 [![Download][latest-img]][latest]
 
 # SQLOb
@@ -29,7 +30,7 @@ try (session) {	// An individual Session is infinitely AutoCloseable
 	UUID key = insertResult.getKey().orElse(null);	// Generated key of the inserted instance
 	
 	Request<PersistedClass> select = new SelectRequest<>(PersistedClass.class, key);	// Request to select instance with key
-	Result<PersistedClass> selectResult = session.execute()
+	Result<PersistedClass> selectResult = session.execute(select)
 	
 	PersistedClass selectedObj = selectResult.getObject().orElse(null);	// Retrieved representation of 'obj'
 } catch (UncheckedSqlException e) {
@@ -52,6 +53,8 @@ Further documentation found in the [Javadoc](https://kkorolyov.github.io/SQLOb).
 ## License
 [BSD-new license](LICENSE).  
 
+[build-status]: https://travis-ci.org/kkorolyov/SQLOb
+[build-status-img]: https://travis-ci.org/kkorolyov/SQLOb.svg?branch=master
 [latest]: https://bintray.com/kkorolyov/java/sqlob/_latestVersion
 [latest-img]: https://api.bintray.com/packages/kkorolyov/java/sqlob/images/download.svg
 [simple-logs]: https://github.com/kkorolyov/SimpleLogs
